@@ -35,8 +35,14 @@ abstract final class AppTheme {
   static const double radius = 10;
   static final _shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
 
+  /// --radius-sm = 0.6 × --radius = 6px (globals.css) — bo góc của theme tối.
+  static const double darkRadius = 6;
+  static final _darkShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(darkRadius));
+
   /// Theme tối — trang chủ + 4 tòa. Inter cho nội dung, Noto Serif cho
   /// display/headline (tương đương font-sans / font-serif-display bên web).
+  // Bo góc 6px lấy từ rounded-sm thật trong tang-kinh-cac/ui.tsx (ScrollCard) —
+  // --radius-sm bị globals.css ghi đè còn 0.6× thay vì mặc định Tailwind, không phải 4px.
   static ThemeData get darkTheme {
     final base = ThemeData(brightness: Brightness.dark);
     final inter = GoogleFonts.interTextTheme(base.textTheme);
@@ -67,6 +73,11 @@ abstract final class AppTheme {
         surfaceContainerHighest: AppColors.ink800,
       ),
       textTheme: textTheme,
+      cardTheme: CardThemeData(shape: _darkShape),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(shape: _darkShape)),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(shape: _darkShape)),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(shape: _darkShape)),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(shape: _darkShape)),
     );
   }
 
