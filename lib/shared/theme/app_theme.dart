@@ -13,6 +13,16 @@ abstract final class AppColors {
   static const kincha400 = Color(0xFFECCB8A);
   static const kincha200 = Color(0xFFF3E2C0);
 
+  // Không phải token của globals.css: màu mặc định Tailwind, amber-v3 dùng
+  // nhất quán cho trạng thái "xong" (StatusBadge READ, TaskStatusBadge DONE,
+  // hoc-tap "Đã xong").
+  // Giá trị đo pixel thật, không tra bảng màu: Tailwind v4.3.3 (bản amber-v3
+  // cài), vẽ giá trị lab() của CSS đã build lên canvas sRGB trong Chromium.
+  static const emerald300 = Color(0xFF5EE9B5);
+  // Không dùng 0xFF00D294: đó là hex dự phòng cho trình duyệt không hỗ trợ
+  // lab(), lệch màu thật 2 đơn vị ở kênh G và B.
+  static const emerald400 = Color(0xFF00D492);
+
   // Theme sáng "đất nung"
   static const bgLight = Color(0xFFFAF3E7);
   static const primary50 = Color(0xFFFBF3E9);
