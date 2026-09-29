@@ -8,6 +8,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../models/publication.dart';
 import '../providers/publication_provider.dart';
 import '../services/publication_api.dart';
+import '../services/upload_api.dart';
 import 'status_badge.dart';
 
 /// Port AddBookModal (web). Bottom sheet thay cho dialog: form 6 trường, trên
@@ -66,9 +67,8 @@ class _AddBookModalState extends ConsumerState<AddBookModal> {
       _error = null;
     });
     try {
-      final url = await ref
-          .read(publicationApiProvider)
-          .uploadCover(bytes: bytes, filename: picked.name, mimeType: picked.mimeType);
+      final url =
+          await ref.read(uploadApiProvider).upload(bytes: bytes, filename: picked.name, mimeType: picked.mimeType);
       if (mounted) setState(() => _coverUrl = url);
     } on DioException {
       if (mounted) {

@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/document.dart';
 import '../providers/document_provider.dart';
+import '../widgets/add_document_modal.dart';
 import '../widgets/document_card.dart';
+import '../widgets/document_viewer_modal.dart';
 import '../widgets/type_tag.dart';
 
 // Thứ tự giống bộ lọc bên web (null = Tất cả).
@@ -38,10 +40,7 @@ class _TaiLieuScreenState extends ConsumerState<TaiLieuScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Tài liệu')),
       floatingActionButton: FloatingActionButton.extended(
-        // TODO: mở AddDocumentModal (bước 2).
-        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('TODO: AddDocumentModal')),
-        ),
+        onPressed: () => showAddDocumentModal(context),
         icon: const Icon(Icons.add),
         label: const Text('Lưu tài liệu'),
       ),
@@ -85,8 +84,10 @@ class _TaiLieuScreenState extends ConsumerState<TaiLieuScreen> {
                             padding: const EdgeInsets.fromLTRB(16, 4, 16, 96), // chừa chỗ cho FAB
                             itemCount: items.length,
                             separatorBuilder: (_, _) => const SizedBox(height: 16), // gap-4
-                            // TODO: onTap mở DocumentViewerModal (bước 2).
-                            itemBuilder: (_, i) => DocumentCard(doc: items[i]),
+                            itemBuilder: (_, i) => DocumentCard(
+                              doc: items[i],
+                              onTap: () => showDocumentViewerModal(context, items[i]),
+                            ),
                           ),
                   ),
                 ),

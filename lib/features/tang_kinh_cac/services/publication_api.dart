@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -83,23 +81,6 @@ class PublicationApi {
   /// Highlight của sách bị xoá theo (cascade). File ảnh bìa trên Vercel Blob
   /// thì KHÔNG bị xoá — backend chưa có route xoá blob (web cũng vậy).
   Future<void> deletePublication(String id) => _dio.delete<void>('/api/tang-kinh-cac/publications/$id');
-
-  /// POST /upload (multipart, field `file`) → `{url}` dạng đường dẫn tương đối
-  /// `/api/tang-kinh-cac/blob/...`, dùng làm coverUrl và tải qua ApiImage.
-  /// Nhận bytes (không phải dart:io File) để chạy được cả trên web.
-  Future<String> uploadCover({required Uint8List bytes, required String filename, String? mimeType}) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/api/tang-kinh-cac/upload',
-      data: FormData.fromMap({
-        'file': MultipartFile.fromBytes(
-          bytes,
-          filename: filename,
-          contentType: mimeType == null ? null : DioMediaType.parse(mimeType),
-        ),
-      }),
-    );
-    return res.data!['url'] as String;
-  }
 }
 
 final publicationApiProvider = Provider<PublicationApi>((ref) => PublicationApi(ref.watch(apiClientProvider)));
