@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'features/auth/screens/login_screen.dart';
 import 'shared/theme/app_theme.dart';
-import 'shared/widgets/rating_stars.dart';
-import 'shared/widgets/scroll_card.dart';
-import 'shared/widgets/tag.dart';
 
 void main() {
-  runApp(const AmberApp());
+  runApp(const ProviderScope(child: AmberApp()));
 }
 
 class AmberApp extends StatelessWidget {
@@ -19,35 +18,8 @@ class AmberApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       // Theme tối là mặc định; AppTheme.lightTheme để sẵn cho login/register/settings.
       theme: AppTheme.darkTheme,
-      // TODO: ví dụ tạm để xem Tag/RatingStars, xóa khi có màn hình thật.
-      home: const Scaffold(
-        body: Padding(
-          padding: EdgeInsets.all(24),
-          child: ScrollCard(
-            glow: ScrollCardGlow.kincha,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 16,
-              children: [
-                Row(
-                  spacing: 8,
-                  children: [
-                    Tag(label: 'Đang đọc', color: AppColors.kincha400),
-                    Tag(
-                      label: 'Xong',
-                      color: AppColors.emerald400,
-                      foregroundColor: AppColors.emerald300,
-                      variant: TagVariant.tonal,
-                    ),
-                  ],
-                ),
-                RatingStars(rating: 3),
-              ],
-            ),
-          ),
-        ),
-      ),
+      // TODO: tạm vào thẳng LoginScreen, thay bằng router thật khi có nhiều màn hình.
+      home: const LoginScreen(),
     );
   }
 }
