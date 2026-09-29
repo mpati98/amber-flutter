@@ -22,6 +22,15 @@ Dio createApiClient(TokenStorage storage, {String baseUrl = apiBaseUrl}) {
   // token đã bị xoá, nhận 401 và làm mất phiên đăng nhập.
   Future<_RefreshResult>? inFlightRefresh;
 
+  // So origin (scheme + host + port) của URL cuối cùng, KHÔNG so options.baseUrl
+  // (Dio giữ nguyên baseUrl cả khi path là URL tuyệt đối ra host khác) và KHÔNG
+  // dùng startsWith chuỗi (`https://api.x` là tiền tố của `https://api.x.evil.com`).
+  final apiOrigin = Uri.parse(baseUrl);
+  bool isOwnApi(RequestOptions o) {
+    final uri = o.uri;
+    return uri.scheme == apiOrigin.scheme && uri.host == apiOrigin.host && uri.port == apiOrigin.port;
+  }
+
   Future<_RefreshResult> refresh() async {
     final refreshToken = await storage.readRefreshToken();
     if (refreshToken == null) return _RefreshResult.rejected;
@@ -43,7 +52,8 @@ Dio createApiClient(TokenStorage storage, {String baseUrl = apiBaseUrl}) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
-        if (!options.path.contains(_authPathPrefix)) {
+        // Không gửi Bearer cho host khác (vd ảnh bìa URL ngoài).
+        if (isOwnApi(options) && !options.path.contains(_authPathPrefix)) {
           final token = await storage.readAccessToken();
           if (token != null) options.headers['Authorization'] = 'Bearer $token';
         }
@@ -51,7 +61,9 @@ Dio createApiClient(TokenStorage storage, {String baseUrl = apiBaseUrl}) {
       },
       onError: (err, handler) async {
         final options = err.requestOptions;
+        // 401 từ host khác không liên quan phiên đăng nhập — không refresh.
         if (err.response?.statusCode != 401 ||
+            !isOwnApi(options) ||
             options.path.contains(_authPathPrefix) ||
             options.extra[_retriedKey] == true) {
           return handler.next(err);

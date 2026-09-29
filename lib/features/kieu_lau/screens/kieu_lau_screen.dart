@@ -7,6 +7,7 @@ import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/scroll_card.dart';
 import '../../auth/screens/login_screen.dart';
+import '../../tang_kinh_cac/screens/sach_screen.dart';
 import '../models/activity_log_entry.dart';
 import '../models/alert.dart';
 import '../models/feed_article.dart';
@@ -41,6 +42,12 @@ class KieuLauScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Kiều Lâu'),
         actions: [
+          // TODO: lối vào tạm để test Tàng Kinh Các — thay bằng trang chủ Dư Đồ/router.
+          IconButton(
+            tooltip: 'Tủ sách',
+            icon: const Icon(Icons.menu_book_outlined),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const SachScreen())),
+          ),
           // TODO: tạm để test luồng auth — chuyển sang màn Cài đặt khi có router.
           IconButton(
             tooltip: 'Đăng xuất',
