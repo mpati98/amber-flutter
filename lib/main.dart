@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'shared/theme/app_theme.dart';
-import 'shared/widgets/progress_bar.dart';
-import 'shared/widgets/progress_ring.dart';
+import 'shared/widgets/rating_stars.dart';
 import 'shared/widgets/scroll_card.dart';
+import 'shared/widgets/tag.dart';
 
 void main() {
   runApp(const AmberApp());
@@ -19,7 +19,7 @@ class AmberApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       // Theme tối là mặc định; AppTheme.lightTheme để sẵn cho login/register/settings.
       theme: AppTheme.darkTheme,
-      // TODO: ví dụ tạm để xem ScrollCard/ProgressBar/ProgressRing, xóa khi có màn hình thật.
+      // TODO: ví dụ tạm để xem Tag/RatingStars, xóa khi có màn hình thật.
       home: const Scaffold(
         body: Padding(
           padding: EdgeInsets.all(24),
@@ -27,11 +27,22 @@ class AmberApp extends StatelessWidget {
             glow: ScrollCardGlow.kincha,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 16,
               children: [
-                ProgressBar(value: 65, max: 100),
-                SizedBox(height: 24),
-                Center(child: ProgressRing(value: 3, max: 12)),
+                Row(
+                  spacing: 8,
+                  children: [
+                    Tag(label: 'Đang đọc', color: AppColors.kincha400),
+                    Tag(
+                      label: 'Xong',
+                      color: AppColors.emerald400,
+                      foregroundColor: AppColors.emerald300,
+                      variant: TagVariant.tonal,
+                    ),
+                  ],
+                ),
+                RatingStars(rating: 3),
               ],
             ),
           ),
