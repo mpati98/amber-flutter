@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/publication.dart';
 import '../providers/publication_provider.dart';
+import '../widgets/add_book_modal.dart';
 import '../widgets/book_card.dart';
+import '../widgets/book_detail_modal.dart';
 import '../widgets/status_badge.dart';
 
 // Thứ tự giống bộ lọc bên web (null = Tất cả).
@@ -36,10 +38,7 @@ class _SachScreenState extends ConsumerState<SachScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Tủ sách')),
       floatingActionButton: FloatingActionButton.extended(
-        // TODO: mở AddBookModal (bước 2).
-        onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('TODO: AddBookModal')),
-        ),
+        onPressed: () => showAddBookModal(context),
         icon: const Icon(Icons.add),
         label: const Text('Thêm sách'),
       ),
@@ -84,8 +83,10 @@ class _SachScreenState extends ConsumerState<SachScreen> {
                             padding: const EdgeInsets.fromLTRB(16, 4, 16, 96), // chừa chỗ cho FAB
                             itemCount: items.length,
                             separatorBuilder: (_, _) => const SizedBox(height: 16), // gap-4
-                            // TODO: onTap mở BookDetailModal (bước 2).
-                            itemBuilder: (_, i) => BookCard(book: items[i]),
+                            itemBuilder: (_, i) => BookCard(
+                              book: items[i],
+                              onTap: () => showBookDetailModal(context, items[i]),
+                            ),
                           ),
                   ),
                 ),

@@ -14,6 +14,15 @@ extension PublicationStatusLabel on PublicationStatus {
       };
 }
 
+extension PublicationFormatLabel on PublicationFormat {
+  String get label => switch (this) {
+        PublicationFormat.physical => 'Sách giấy',
+        PublicationFormat.ebook => 'Ebook',
+        PublicationFormat.audiobook => 'Audiobook',
+        PublicationFormat.unknown => 'Không rõ',
+      };
+}
+
 /// Port StatusBadge (tang-kinh-cac/ui.tsx): viền màu /40, chữ 11px.
 class StatusBadge extends StatelessWidget {
   const StatusBadge(this.status, {super.key});

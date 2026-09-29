@@ -146,6 +146,33 @@ void main() {
     expect(storage.refresh, 'refresh-1');
   });
 
+  test('request tuyệt đối tới host khác KHÔNG kèm Bearer', () async {
+    final external = _FakeBackend();
+    await external.start();
+    addTearDown(() => external.server.close(force: true));
+    storage
+      ..access = 'access-1'
+      ..refresh = 'refresh-1';
+    // Host ngoài trả 401 vì không có Bearer của nó — chỉ cần xem header gửi đi.
+    await expectLater(dio.get<void>('${external.baseUrl}/cover.jpg'), throwsA(isA<DioException>()));
+    expect(external.authHeaders.single, isNull);
+    // Request tương đối tới chính API vẫn có Bearer như cũ.
+    await dio.get<void>('/api/kieu-lau/notifications');
+    expect(backend.authHeaders.single, 'Bearer access-1');
+  });
+
+  test('401 từ host khác không kích hoạt refresh, không xoá token', () async {
+    final external = _FakeBackend();
+    await external.start();
+    addTearDown(() => external.server.close(force: true));
+    storage
+      ..access = 'access-1'
+      ..refresh = 'refresh-1';
+    await expectLater(dio.get<void>('${external.baseUrl}/private'), throwsA(isA<DioException>()));
+    expect(backend.refreshCalls + external.refreshCalls, 0);
+    expect(storage.refresh, 'refresh-1');
+  });
+
   test('retry vẫn 401 thì dừng, không lặp refresh', () async {
     storage
       ..access = 'expired'
