@@ -7,6 +7,7 @@ import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/scroll_card.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import 'du_an_screen.dart';
+import 'finance_screen.dart';
 
 /// Port /nghi-su-duong: trang chính 3 mảng Dự án / Tài chính / Học tập.
 /// Xếp 1 cột thay cho lưới 1–3 cột bên web.
@@ -36,7 +37,7 @@ class NghiSuDuongScreen extends ConsumerWidget {
               children: [
                 _DuAnCard(onTap: () => push(const DuAnScreen())),
                 const SizedBox(height: 20), // gap-5
-                _FinanceCard(onTap: () => notYet('Tài chính')),
+                _FinanceCard(onTap: () => push(const FinanceScreen())),
                 const SizedBox(height: 20),
                 _LearnCard(onTap: () => notYet('Học tập')),
               ],
