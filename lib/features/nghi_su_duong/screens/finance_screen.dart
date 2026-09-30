@@ -32,9 +32,8 @@ class FinanceScreen extends ConsumerStatefulWidget {
 class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   bool _starting = false;
 
-  void _openMonth(Project month) => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => FinanceMonthScreen(projectId: month.id)),
-      );
+  void _openMonth(Project month) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FinanceMonthScreen(projectId: month.id)));
 
   Future<void> _startMonth() async {
     setState(() => _starting = true);
@@ -70,9 +69,15 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 if (showStart) ...[
-                  FilledButton(
+                  // Có thể mất vài giây (lần đầu backend tạo danh mục mặc định,
+                  // chụp số dư mọi ví, lưu trữ tháng cũ) — khoá nút + spinner
+                  // để không bấm 2 lần.
+                  FilledButton.icon(
                     onPressed: _starting ? null : _startMonth,
-                    child: Text(_starting ? 'Đang tạo...' : '+ Bắt đầu tháng mới'),
+                    icon: _starting
+                        ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.add),
+                    label: Text(_starting ? 'Đang tạo tháng mới...' : 'Bắt đầu tháng mới'),
                   ),
                   const SizedBox(height: 16),
                 ],
