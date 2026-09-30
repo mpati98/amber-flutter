@@ -15,6 +15,14 @@ class HighlightApi {
     return res.data!.map((e) => Highlight.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Highlight ngẫu nhiên (đều trên toàn bộ) kèm tên sách/tác giả — thẻ "Ôn lại".
+  /// null khi chưa có highlight nào (API trả `null`).
+  Future<ResurfacedHighlight?> getRandomHighlight() async {
+    final res = await _dio.get<Map<String, dynamic>?>('/api/tang-kinh-cac/highlights/random');
+    final data = res.data;
+    return data == null ? null : ResurfacedHighlight.fromJson(data);
+  }
+
   /// 400 nếu quote rỗng.
   Future<Highlight> createHighlight(String publicationId, {required String quote, int? page, String? note}) async {
     final res = await _dio.post<Map<String, dynamic>>(
