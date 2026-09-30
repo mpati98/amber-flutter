@@ -9,6 +9,8 @@ import '../../../shared/widgets/scroll_card.dart';
 import '../models/overview.dart';
 import '../models/task.dart';
 import '../providers/nghi_su_duong_provider.dart';
+import '../widgets/new_project_modal.dart';
+import '../widgets/new_task_modal.dart';
 import '../widgets/task_badges.dart';
 
 const _weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
@@ -53,9 +55,17 @@ class DuAnScreen extends ConsumerWidget {
     final inProgress = allTasks?.where((t) => t.status == TaskStatus.inProgress).length;
     final data = overview.value;
 
-    // TODO: mở NewProjectModal / NewTaskModal (bước sau).
-    void todo(String what) =>
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('TODO: $what')));
+    // Web ẩn nút thêm task khi chưa có dự án (task luôn thuộc 1 dự án).
+    void addTask() {
+      final projects = data?.activeProjects ?? const <ActiveProject>[];
+      if (projects.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tạo một dự án trước rồi mới thêm việc.')),
+        );
+        return;
+      }
+      showNewTaskModal(context, projects);
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Dự án')),
@@ -96,7 +106,7 @@ class DuAnScreen extends ConsumerWidget {
                 _Section(
                   title: 'Task hôm nay',
                   glow: ScrollCardGlow.kincha,
-                  action: TextButton(onPressed: () => todo('NewTaskModal'), child: const Text('+ Việc')),
+                  action: TextButton(onPressed: addTask, child: const Text('+ Việc')),
                   child: tasks.hasError
                       ? Text('Không tải được task.', style: _muted(12))
                       : todayTasks == null
@@ -109,7 +119,7 @@ class DuAnScreen extends ConsumerWidget {
                 _Section(
                   title: 'Dự án đang chạy',
                   glow: ScrollCardGlow.yugen,
-                  action: TextButton(onPressed: () => todo('NewProjectModal'), child: const Text('+ Dự án')),
+                  action: TextButton(onPressed: () => showNewProjectModal(context), child: const Text('+ Dự án')),
                   child: overview.hasError
                       ? Text('Không tải được dự án.', style: _muted(12))
                       : data == null
