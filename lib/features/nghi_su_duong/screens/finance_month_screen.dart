@@ -15,6 +15,10 @@ import '../models/finance_transaction.dart';
 import '../providers/finance_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/finance_api.dart';
+import '../widgets/add_account_modal.dart';
+import '../widgets/add_category_modal.dart';
+import '../widgets/add_transaction_modal.dart';
+import '../widgets/set_budget_modal.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -39,8 +43,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
   // Dismissible đã dismiss mà còn trong cây widget sẽ báo lỗi.
   final _deletedIds = <String>{};
 
-  void _todo(String what) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('TODO: $what')));
+  void _addAccount() => showAddAccountModal(context, projectId: widget.projectId);
 
   void _refreshAfterWrite() {
     ref.invalidate(financeSummaryProvider(widget.projectId));
@@ -75,9 +78,8 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
       return true;
     } on DioException {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không xoá được giao dịch, thử lại nhé.')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Không xoá được giao dịch, thử lại nhé.')));
       }
       return false; // dòng trượt về chỗ cũ
     }
@@ -101,7 +103,8 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
       floatingActionButton: summary == null || ended || !accounts.hasValue
           ? null
           : FloatingActionButton.extended(
-              onPressed: () => _todo(hasAccounts ? 'AddTransactionModal' : 'AddAccountModal'),
+              onPressed: () =>
+                  hasAccounts ? showAddTransactionModal(context, projectId: widget.projectId) : _addAccount(),
               icon: const Icon(Icons.add),
               label: Text(hasAccounts ? 'Thêm giao dịch' : 'Thêm ví trước'),
             ),
@@ -141,7 +144,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
                   _Section(
                     title: 'Ví & tài khoản',
                     glow: ScrollCardGlow.yugen,
-                    action: TextButton(onPressed: () => _todo('AddAccountModal'), child: const Text('+ Thêm ví')),
+                    action: TextButton(onPressed: _addAccount, child: const Text('+ Thêm ví')),
                     child: accounts.when(
                       loading: () => Text('Đang tải...', style: _muted(12)),
                       error: (_, _) => Text('Không tải được ví.', style: _muted(12)),
@@ -156,7 +159,15 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
                     glow: ScrollCardGlow.kincha,
                     action: ended
                         ? null
-                        : TextButton(onPressed: () => _todo('SetBudgetModal'), child: const Text('+ Đặt ngân sách')),
+                        : TextButton(
+                            onPressed: () => showSetBudgetModal(
+                              context,
+                              projectId: widget.projectId,
+                              projectName: s.projectName,
+                              currentLimits: {for (final b in s.budgetProgress) b.categoryId: b.limitAmount},
+                            ),
+                            child: const Text('+ Đặt ngân sách'),
+                          ),
                     child: s.budgetProgress.isEmpty
                         ? Text('Chưa đặt ngân sách cho danh mục nào.', style: _muted(12))
                         : Column(spacing: 12, children: [for (final b in s.budgetProgress) _BudgetRow(b)]),
@@ -165,7 +176,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
                   _Section(
                     title: 'Giao dịch',
                     glow: ScrollCardGlow.shuiro,
-                    action: TextButton(onPressed: () => _todo('AddCategoryModal'), child: const Text('+ Danh mục')),
+                    action: TextButton(onPressed: () => showAddCategoryModal(context), child: const Text('+ Danh mục')),
                     child: transactions.when(
                       loading: () => Text('Đang tải...', style: _muted(12)),
                       error: (_, _) => Text('Không tải được giao dịch.', style: _muted(12)),
@@ -287,11 +298,8 @@ class _Stat extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
+              style: Theme.of(context).textTheme.headlineSmall
+                  ?.copyWith(fontSize: 16, fontWeight: FontWeight.w600, color: color),
             ),
           ),
           if (note != null) Text(note!, style: _muted(9), maxLines: 1, overflow: TextOverflow.ellipsis),
