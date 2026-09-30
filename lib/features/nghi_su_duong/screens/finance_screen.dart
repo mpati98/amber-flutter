@@ -11,6 +11,7 @@ import '../providers/finance_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/finance_api.dart';
 import '../utils/finance_month.dart';
+import 'finance_month_screen.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -31,10 +32,9 @@ class FinanceScreen extends ConsumerStatefulWidget {
 class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   bool _starting = false;
 
-  void _openMonth(Project month) {
-    // TODO: điều hướng màn chi tiết tháng (bước 2).
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('TODO: chi tiết ${month.name}')));
-  }
+  void _openMonth(Project month) => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => FinanceMonthScreen(projectId: month.id)),
+      );
 
   Future<void> _startMonth() async {
     setState(() => _starting = true);
