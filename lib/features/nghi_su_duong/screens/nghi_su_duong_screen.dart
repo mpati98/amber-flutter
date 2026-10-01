@@ -8,6 +8,7 @@ import '../../../shared/widgets/scroll_card.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import 'du_an_screen.dart';
 import 'finance_screen.dart';
+import 'hoc_tap_screen.dart';
 
 /// Port /nghi-su-duong: trang chính 3 mảng Dự án / Tài chính / Học tập.
 /// Xếp 1 cột thay cho lưới 1–3 cột bên web.
@@ -17,9 +18,6 @@ class NghiSuDuongScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     void push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
-    // TODO: thay bằng màn thật khi port Tài chính / Học tập.
-    void notYet(String name) =>
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name: chưa khả dụng trên app.')));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nghị Sự Đường')),
@@ -39,7 +37,7 @@ class NghiSuDuongScreen extends ConsumerWidget {
                 const SizedBox(height: 20), // gap-5
                 _FinanceCard(onTap: () => push(const FinanceScreen())),
                 const SizedBox(height: 20),
-                _LearnCard(onTap: () => notYet('Học tập')),
+                _LearnCard(onTap: () => push(const HocTapScreen())),
               ],
             ),
           ),
