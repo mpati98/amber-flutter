@@ -8,6 +8,8 @@ import '../../../shared/widgets/scroll_card.dart';
 import '../../../shared/widgets/tag.dart';
 import '../models/course.dart';
 import '../providers/learn_provider.dart';
+import '../widgets/add_course_modal.dart';
+import 'course_detail_screen.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -50,8 +52,6 @@ class HocTapScreen extends ConsumerStatefulWidget {
 class _HocTapScreenState extends ConsumerState<HocTapScreen> {
   String? _expandedId;
 
-  void _todo(String what) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('TODO: $what')));
-
   @override
   Widget build(BuildContext context) {
     final courses = ref.watch(coursesProvider);
@@ -59,8 +59,7 @@ class _HocTapScreenState extends ConsumerState<HocTapScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Học tập')),
       floatingActionButton: FloatingActionButton.extended(
-        // TODO: mở AddCourseModal (bước 2).
-        onPressed: () => _todo('AddCourseModal'),
+        onPressed: () => showAddCourseModal(context),
         icon: const Icon(Icons.add),
         label: const Text('Thêm khóa học'),
       ),
@@ -88,8 +87,9 @@ class _HocTapScreenState extends ConsumerState<HocTapScreen> {
                           course: c,
                           expanded: _expandedId == c.id,
                           onTap: () => setState(() => _expandedId = _expandedId == c.id ? null : c.id),
-                          // TODO: điều hướng màn chi tiết khóa học (bước 2).
-                          onOpenDetail: () => _todo('chi tiết ${c.name}'),
+                          onOpenDetail: () =>
+                              Navigator.of(context)
+                                  .push(MaterialPageRoute<void>(builder: (_) => CourseDetailScreen(courseId: c.id))),
                         );
                       },
                     ),
