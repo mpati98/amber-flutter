@@ -6,6 +6,7 @@ import '../models/placement_test.dart';
 import '../models/practice_message.dart';
 import '../models/practice_session.dart';
 import '../models/skill_score.dart';
+import 'recording_file.dart';
 
 /// Trà Đình — luyện tiếng Anh với AI. Mọi route lọc theo user đăng nhập.
 class TraDinhApi {
@@ -57,6 +58,18 @@ class TraDinhApi {
       userMessage: PracticeMessage.fromJson(data['userMessage'] as Map<String, dynamic>),
       assistantMessage: PracticeMessage.fromJson(data['assistantMessage'] as Map<String, dynamic>),
     );
+  }
+
+  /// Gửi bản ghi âm cho Groq Whisper → văn bản. [filePath] là đường dẫn do
+  /// RecordingService trả (web: URL blob); [filename] phải có đuôi đúng định
+  /// dạng thật (Whisper đoán theo đuôi). 502 `ai_unavailable` nếu Groq lỗi.
+  Future<String> transcribe(String filePath, {String filename = 'recording.webm'}) async {
+    final bytes = await readRecording(filePath);
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/tra-dinh/transcribe',
+      data: FormData.fromMap({'file': MultipartFile.fromBytes(bytes, filename: filename)}),
+    );
+    return res.data!['text'] as String;
   }
 
   /// Đề không kèm đáp án.

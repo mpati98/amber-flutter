@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/practice_session.dart';
 import '../providers/tra_dinh_provider.dart';
+import '../services/recording_service.dart';
+import '../services/tra_dinh_api.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -14,8 +18,14 @@ String? _errorCode(DioException e) {
   return data is Map && data['error'] is String ? data['error'] as String : null;
 }
 
-/// Port /tra-dinh/[sessionId] — phần tin nhắn văn bản. Chưa có ghi âm, phát
-/// audio, kết thúc buổi.
+enum _MicState { idle, recording, transcribing }
+
+/// Ghi quá mức này thì tự dừng và chuyển chữ — tránh quên bấm dừng (Groq
+/// Whisper nhận tối đa 25MB, bản ghi dài cũng chuyển chữ chậm).
+const maxRecordingDuration = Duration(minutes: 3);
+
+/// Port /tra-dinh/[sessionId] — tin nhắn văn bản + ghi âm thành chữ. Chưa có
+/// phát audio, kết thúc buổi.
 class PracticeChatScreen extends ConsumerStatefulWidget {
   const PracticeChatScreen({super.key, required this.sessionId});
 
@@ -32,6 +42,14 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
   /// chờ vài giây.
   String? _pending;
 
+  var _mic = _MicState.idle;
+  int _recordSeconds = 0;
+  Timer? _ticker;
+  Timer? _autoStop;
+
+  /// Giữ tham chiếu để huỷ ghi trong dispose (lúc đó không dùng ref được nữa).
+  RecordingService? _recorder;
+
   @override
   void initState() {
     super.initState();
@@ -40,8 +58,87 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
 
   @override
   void dispose() {
+    _stopTimers();
+    // Rời màn khi đang ghi: huỷ và bỏ bản ghi (record tự xoá file khi cancel).
+    if (_mic == _MicState.recording) _recorder?.cancelRecording();
     _input.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleMic() async {
+    final recorder = _recorder!;
+    switch (_mic) {
+      case _MicState.idle:
+        try {
+          await recorder.startRecording();
+        } on RecordingException catch (e) {
+          if (mounted) _snack(e.message);
+          return;
+        }
+        if (!mounted) return;
+        setState(() {
+          _mic = _MicState.recording;
+          _recordSeconds = 0;
+        });
+        _ticker = Timer.periodic(const Duration(seconds: 1), (_) => setState(() => _recordSeconds++));
+        _autoStop = Timer(maxRecordingDuration, () {
+          _snack('Đã tự dừng ghi âm sau ${maxRecordingDuration.inMinutes} phút');
+          _stopAndTranscribe(recorder);
+        });
+      case _MicState.recording:
+        await _stopAndTranscribe(recorder);
+      case _MicState.transcribing:
+        return;
+    }
+  }
+
+  void _stopTimers() {
+    _ticker?.cancel();
+    _autoStop?.cancel();
+    _ticker = _autoStop = null;
+  }
+
+  /// Dùng chung cho bấm dừng và tự dừng: huỷ cả 2 timer trước, nên tự dừng
+  /// không thể chạy lần nữa sau khi người dùng đã dừng tay (và ngược lại).
+  Future<void> _stopAndTranscribe(RecordingService recorder) async {
+    if (_mic != _MicState.recording) return;
+    _stopTimers();
+    setState(() => _mic = _MicState.transcribing);
+    await _transcribe(recorder);
+  }
+
+  /// Dừng ghi → gửi transcribe → nối chữ vào ô nhập (không tự gửi, như web).
+  /// File tạm luôn bị xoá, thành công hay lỗi.
+  Future<void> _transcribe(RecordingService recorder) async {
+    final path = await recorder.stopRecording();
+    if (path == null) {
+      if (mounted) {
+        setState(() => _mic = _MicState.idle);
+        _snack('Không lấy được bản ghi âm — thử ghi lại nhé.');
+      }
+      return;
+    }
+    try {
+      final text = (await ref.read(traDinhApiProvider).transcribe(path, filename: recorder.fileName)).trim();
+      if (!mounted) return;
+      if (text.isEmpty) {
+        _snack('Không nghe rõ câu nào — thử nói to, rõ hơn nhé.');
+      } else {
+        final prev = _input.text.trim();
+        _input.text = prev.isEmpty ? text : '$prev $text';
+        _input.selection = TextSelection.collapsed(offset: _input.text.length);
+      }
+    } on DioException catch (e) {
+      if (mounted) {
+        _snack('Không chuyển giọng nói thành chữ được (${e.response?.statusCode ?? e.type.name}) — thử lại nhé.');
+      }
+    } catch (_) {
+      // Đọc file ghi âm lỗi (hiếm) — vẫn báo thay vì im lặng.
+      if (mounted) _snack('Không đọc được bản ghi âm — thử ghi lại nhé.');
+    } finally {
+      await recorder.deleteFile(path);
+      if (mounted) setState(() => _mic = _MicState.idle);
+    }
   }
 
   void _snack(String message) => ScaffoldMessenger.of(context)
@@ -87,6 +184,8 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
   Widget build(BuildContext context) {
     final detail = ref.watch(sessionDetailProvider(widget.sessionId));
     final session = detail.value;
+    // watch để giữ service (autoDispose) sống suốt màn hình.
+    _recorder = ref.watch(recordingServiceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -101,7 +200,15 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
               ),
       ),
       body: switch (detail) {
-        AsyncValue(value: final s?) => _ChatBody(session: s, pending: _pending, input: _input, onSend: _send),
+        AsyncValue(value: final s?) => _ChatBody(
+          session: s,
+          pending: _pending,
+          input: _input,
+          onSend: _send,
+          mic: _mic,
+          recordSeconds: _recordSeconds,
+          onMic: _toggleMic,
+        ),
         AsyncValue(error: final e?) => _LoadError(
           message: e is DioException && e.response?.statusCode == 404
               ? 'Không tìm thấy buổi luyện này.'
@@ -115,12 +222,23 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
 }
 
 class _ChatBody extends StatelessWidget {
-  const _ChatBody({required this.session, required this.pending, required this.input, required this.onSend});
+  const _ChatBody({
+    required this.session,
+    required this.pending,
+    required this.input,
+    required this.onSend,
+    required this.mic,
+    required this.recordSeconds,
+    required this.onMic,
+  });
 
   final PracticeSession session;
   final String? pending;
   final TextEditingController input;
   final VoidCallback onSend;
+  final _MicState mic;
+  final int recordSeconds;
+  final VoidCallback onMic;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +268,15 @@ class _ChatBody extends StatelessWidget {
                       itemBuilder: (_, i) => items[i],
                     ),
             ),
-            if (!session.isEnded) _InputBar(controller: input, sending: sending, onSend: onSend),
+            if (!session.isEnded)
+              _InputBar(
+                controller: input,
+                sending: sending,
+                onSend: onSend,
+                mic: mic,
+                recordSeconds: recordSeconds,
+                onMic: onMic,
+              ),
           ],
         ),
       ),
@@ -250,15 +376,27 @@ class _SummaryBox extends StatelessWidget {
 }
 
 class _InputBar extends StatelessWidget {
-  const _InputBar({required this.controller, required this.sending, required this.onSend});
+  const _InputBar({
+    required this.controller,
+    required this.sending,
+    required this.onSend,
+    required this.mic,
+    required this.recordSeconds,
+    required this.onMic,
+  });
 
   final TextEditingController controller;
   final bool sending;
   final VoidCallback onSend;
+  final _MicState mic;
+  final int recordSeconds;
+  final VoidCallback onMic;
 
   @override
   Widget build(BuildContext context) {
-    final canSend = !sending && controller.text.trim().isNotEmpty;
+    // Đang ghi/chuyển chữ thì chưa gửi được (chữ sắp được điền vào ô); đang gửi
+    // thì chưa ghi được.
+    final canSend = !sending && mic == _MicState.idle && controller.text.trim().isNotEmpty;
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
@@ -270,6 +408,7 @@ class _InputBar extends StatelessWidget {
           child: Row(
             spacing: 8,
             children: [
+              _MicButton(state: mic, seconds: recordSeconds, onPressed: sending ? null : onMic),
               Expanded(
                 child: TextField(
                   controller: controller,
@@ -308,5 +447,86 @@ class _LoadError extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Nút 🎙️: nghỉ → đang ghi (đỏ, nhấp nháy, đếm giây) → đang chuyển chữ (spinner).
+class _MicButton extends StatefulWidget {
+  const _MicButton({required this.state, required this.seconds, required this.onPressed});
+
+  final _MicState state;
+  final int seconds;
+  final VoidCallback? onPressed;
+
+  @override
+  State<_MicButton> createState() => _MicButtonState();
+}
+
+class _MicButtonState extends State<_MicButton> with SingleTickerProviderStateMixin {
+  late final _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+
+  @override
+  void initState() {
+    super.initState();
+    _syncPulse();
+  }
+
+  @override
+  void didUpdateWidget(_MicButton old) {
+    super.didUpdateWidget(old);
+    _syncPulse();
+  }
+
+  void _syncPulse() {
+    if (widget.state == _MicState.recording) {
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
+    } else {
+      _pulse
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.seconds;
+    return switch (widget.state) {
+      _MicState.idle => IconButton(tooltip: 'Ghi âm', onPressed: widget.onPressed, icon: const Icon(Icons.mic_none)),
+      _MicState.recording => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FadeTransition(
+            opacity: Tween(begin: 1.0, end: 0.45).animate(_pulse),
+            child: IconButton(
+              tooltip: 'Dừng ghi',
+              onPressed: widget.onPressed,
+              style: IconButton.styleFrom(backgroundColor: AppColors.shuiro500.withValues(alpha: 0.2)),
+              icon: const Icon(Icons.stop_rounded, color: AppColors.shuiro500),
+            ),
+          ),
+          Text(
+            '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.shuiro500,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+      _MicState.transcribing => const Tooltip(
+        message: 'Đang chuyển giọng nói thành chữ',
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      ),
+    };
   }
 }

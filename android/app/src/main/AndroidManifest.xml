@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gọi API backend. Template Flutter chỉ khai báo ở debug/profile — thiếu ở
+         đây thì bản release không có mạng. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ghi âm câu nói ở màn chat Trà Đình (package record). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
         android:label="amber_flutter"
         android:name="${applicationName}"
