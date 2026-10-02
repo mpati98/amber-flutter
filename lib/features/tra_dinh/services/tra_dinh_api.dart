@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/services/api_client.dart';
+import '../models/placement_test.dart';
 import '../models/practice_session.dart';
 import '../models/skill_score.dart';
 
@@ -30,6 +31,31 @@ class TraDinhApi {
       data: {'mode': mode.apiValue, 'name': ?name},
     );
     return PracticeSession.fromJson(res.data!);
+  }
+
+  /// Đề không kèm đáp án.
+  Future<PlacementTest> getPlacementTest() async {
+    final res = await _dio.get<Map<String, dynamic>>('/api/tra-dinh/placement-test');
+    return PlacementTest.fromJson(res.data!);
+  }
+
+  /// Đáp án = chỉ số lựa chọn theo id câu. Server chấm trắc nghiệm theo đáp án
+  /// gốc, gọi AI chấm bài viết (chậm vài giây), rồi ghi đè điểm GRAMMAR,
+  /// VOCABULARY, READING, WRITING của user.
+  Future<PlacementResult> submitPlacementTest({
+    required Map<String, int> grammarVocabularyAnswers,
+    required Map<String, int> readingAnswers,
+    required String writingResponse,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/tra-dinh/placement-test/submit',
+      data: {
+        'grammarVocabularyAnswers': grammarVocabularyAnswers,
+        'readingAnswers': readingAnswers,
+        'writingResponse': writingResponse,
+      },
+    );
+    return PlacementResult.fromJson(res.data!);
   }
 }
 

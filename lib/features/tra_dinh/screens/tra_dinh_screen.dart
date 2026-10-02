@@ -11,6 +11,7 @@ import '../models/practice_session.dart';
 import '../models/skill_score.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../widgets/new_practice_session_modal.dart';
+import 'placement_test_screen.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -27,7 +28,7 @@ String _errorText(Object e, String what) =>
 class TraDinhScreen extends ConsumerWidget {
   const TraDinhScreen({super.key});
 
-  // TODO: bỏ khi có màn placement-test và màn chat.
+  // TODO: bỏ khi có màn chat.
   static void _todo(BuildContext context, String message) => ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
@@ -64,7 +65,9 @@ class TraDinhScreen extends ConsumerWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: OutlinedButton(
-                      onPressed: () => _todo(context, 'TODO: bài test đầu vào chưa có trên app.'),
+                      onPressed: () =>
+                          Navigator.of(context)
+                              .push(MaterialPageRoute<void>(builder: (_) => const PlacementTestScreen())),
                       child: Text(rows.any((s) => s.hasResult) ? 'Làm lại bài test' : 'Làm bài test đầu vào'),
                     ),
                   ),
