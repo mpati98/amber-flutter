@@ -12,6 +12,7 @@ import '../models/skill_score.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../widgets/new_practice_session_modal.dart';
 import 'placement_test_screen.dart';
+import 'practice_chat_screen.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -28,15 +29,14 @@ String _errorText(Object e, String what) =>
 class TraDinhScreen extends ConsumerWidget {
   const TraDinhScreen({super.key});
 
-  // TODO: bỏ khi có màn chat.
-  static void _todo(BuildContext context, String message) => ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text(message)));
+  static void _openChat(BuildContext context, String sessionId) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => PracticeChatScreen(sessionId: sessionId)));
 
+  /// Như web: tạo xong vào thẳng buổi vừa tạo.
   Future<void> _newSession(BuildContext context) async {
     final created = await showNewPracticeSessionModal(context);
     if (created == null || !context.mounted) return;
-    _todo(context, 'Đã tạo "${created.name}" — TODO: mở màn chat khi có.');
+    _openChat(context, created.id);
   }
 
   @override
@@ -97,10 +97,7 @@ class TraDinhScreen extends ConsumerWidget {
                       ? [Text('Chưa có buổi luyện nào.', style: _muted(12))]
                       : [
                           for (final s in items) ...[
-                            _SessionCard(
-                              session: s,
-                              onTap: () => _todo(context, 'TODO: mở "${s.name}" khi có màn chat.'),
-                            ),
+                            _SessionCard(session: s, onTap: () => _openChat(context, s.id)),
                             const SizedBox(height: 8),
                           ],
                         ],

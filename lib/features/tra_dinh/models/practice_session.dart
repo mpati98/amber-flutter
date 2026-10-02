@@ -1,3 +1,5 @@
+import 'practice_message.dart';
+
 /// Giá trị `practice_session_details.mode` (zod enum của POST /tra-dinh/sessions).
 enum PracticeMode {
   conversation('CONVERSATION', 'Trò chuyện tự do'),
@@ -19,7 +21,8 @@ enum PracticeMode {
 }
 
 /// Buổi luyện = 1 project type PRACTICE + practice_session_details. GET list và
-/// POST đều trả `{...project, practiceDetails: {projectId, mode, summary}}`.
+/// POST đều trả `{...project, practiceDetails: {projectId, mode, summary}}`;
+/// GET /sessions/[id] kèm thêm `practiceMessages` (cũ trước) → [messages].
 class PracticeSession {
   const PracticeSession({
     required this.id,
@@ -28,6 +31,7 @@ class PracticeSession {
     this.summary,
     this.archivedAt,
     required this.createdAt,
+    this.messages = const [],
   });
 
   factory PracticeSession.fromJson(Map<String, dynamic> json) {
@@ -39,6 +43,10 @@ class PracticeSession {
       summary: details?['summary'] as String?,
       archivedAt: json['archivedAt'] == null ? null : DateTime.parse(json['archivedAt'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      messages: [
+        for (final m in json['practiceMessages'] as List<dynamic>? ?? const [])
+          PracticeMessage.fromJson(m as Map<String, dynamic>),
+      ],
     );
   }
 
@@ -54,5 +62,18 @@ class PracticeSession {
   final DateTime? archivedAt;
   final DateTime createdAt;
 
+  /// Chỉ có khi lấy chi tiết 1 buổi; danh sách buổi luôn rỗng.
+  final List<PracticeMessage> messages;
+
   bool get isEnded => archivedAt != null;
+
+  PracticeSession copyWith({List<PracticeMessage>? messages}) => PracticeSession(
+    id: id,
+    name: name,
+    mode: mode,
+    summary: summary,
+    archivedAt: archivedAt,
+    createdAt: createdAt,
+    messages: messages ?? this.messages,
+  );
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/services/api_client.dart';
 import '../models/placement_test.dart';
+import '../models/practice_message.dart';
 import '../models/practice_session.dart';
 import '../models/skill_score.dart';
 
@@ -31,6 +32,31 @@ class TraDinhApi {
       data: {'mode': mode.apiValue, 'name': ?name},
     );
     return PracticeSession.fromJson(res.data!);
+  }
+
+  /// Kèm toàn bộ tin nhắn (cũ trước). 404 nếu không có hoặc không thuộc user.
+  Future<PracticeSession> getSessionDetail(String id) async {
+    final res = await _dio.get<Map<String, dynamic>>('/api/tra-dinh/sessions/$id');
+    return PracticeSession.fromJson(res.data!);
+  }
+
+  /// Server gọi AI (không stream, vài giây), thành công mới ghi cả 2 tin.
+  /// Lỗi: 400 `session_ended` (buổi đã kết thúc), 502 `ai_unavailable` (không
+  /// ghi gì — gửi lại an toàn).
+  Future<({PracticeMessage userMessage, PracticeMessage assistantMessage})> sendMessage(
+    String sessionId, {
+    required String content,
+    String? audioUrl,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/tra-dinh/sessions/$sessionId/messages',
+      data: {'content': content, 'audioUrl': ?audioUrl},
+    );
+    final data = res.data!;
+    return (
+      userMessage: PracticeMessage.fromJson(data['userMessage'] as Map<String, dynamic>),
+      assistantMessage: PracticeMessage.fromJson(data['assistantMessage'] as Map<String, dynamic>),
+    );
   }
 
   /// Đề không kèm đáp án.
