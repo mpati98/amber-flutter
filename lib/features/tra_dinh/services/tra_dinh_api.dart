@@ -41,6 +41,15 @@ class TraDinhApi {
     return PracticeSession.fromJson(res.data!);
   }
 
+  /// Kết thúc buổi: AI đánh giá cả bản ghi (chậm, vài giây tới vài chục giây),
+  /// lưu trữ project + tóm tắt và ghi đè điểm các kỹ năng AI chấm được, trong 1
+  /// transaction. Response KHÔNG kèm tin nhắn ([PracticeSession.messages] rỗng).
+  /// Server không chặn buổi đã kết thúc — gọi lại sẽ chấm lại từ đầu.
+  Future<PracticeSession> endSession(String sessionId) async {
+    final res = await _dio.patch<Map<String, dynamic>>('/api/tra-dinh/sessions/$sessionId');
+    return PracticeSession.fromJson(res.data!);
+  }
+
   /// Server gọi AI (không stream, vài giây), thành công mới ghi cả 2 tin.
   /// Lỗi: 400 `session_ended` (buổi đã kết thúc), 502 `ai_unavailable` (không
   /// ghi gì — gửi lại an toàn).

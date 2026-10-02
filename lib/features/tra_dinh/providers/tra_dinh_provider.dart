@@ -31,6 +31,17 @@ class SessionDetailNotifier extends AsyncNotifier<PracticeSession> {
     state = AsyncData(current.copyWith(messages: [...current.messages, sent.userMessage, sent.assistantMessage]));
   }
 
+  /// Kết thúc buổi. Thành công → gộp archivedAt + tóm tắt vào state (giữ nguyên
+  /// tin nhắn, vì response PATCH không kèm). Lỗi → state KHÔNG đổi (buổi vẫn mở,
+  /// đúng với server) và ném lại để màn hình báo — không đặt AsyncError, vì
+  /// như vậy cả màn chat sẽ bị thay bằng màn lỗi.
+  Future<void> endSession() async {
+    final ended = await ref.read(traDinhApiProvider).endSession(sessionId);
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncData(current.copyWith(archivedAt: ended.archivedAt, summary: ended.summary));
+  }
+
   /// Lấy lại từ server mà không về trạng thái loading (giữ màn hình đang hiện).
   Future<void> reload() async {
     state = AsyncData(await ref.read(traDinhApiProvider).getSessionDetail(sessionId));

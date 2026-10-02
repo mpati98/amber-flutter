@@ -29,7 +29,7 @@ enum _SpeakState { loading, playing }
 const maxRecordingDuration = Duration(minutes: 3);
 
 /// Port /tra-dinh/[sessionId] — tin nhắn văn bản, ghi âm thành chữ, đọc tin AI
-/// thành tiếng. Chưa có kết thúc buổi.
+/// thành tiếng, kết thúc buổi.
 class PracticeChatScreen extends ConsumerStatefulWidget {
   const PracticeChatScreen({super.key, required this.sessionId});
 
@@ -45,6 +45,9 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
   /// Tin đang gửi, hiện mờ cuối danh sách kèm "đang trả lời" — AI không stream,
   /// chờ vài giây.
   String? _pending;
+
+  /// Đang PATCH kết thúc buổi (AI tóm tắt + chấm điểm cả buổi, có thể lâu).
+  bool _ending = false;
 
   var _mic = _MicState.idle;
   int _recordSeconds = 0;
@@ -219,6 +222,43 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
     }
   }
 
+  /// Xác nhận rồi kết thúc buổi. Lỗi → báo và giữ nguyên buổi mở (state chỉ
+  /// đổi khi server trả về thành công), nút vẫn còn để thử lại.
+  Future<void> _confirmEnd() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Kết thúc buổi luyện?'),
+        content: const Text(
+          'AI sẽ tóm tắt và chấm điểm cả buổi, điểm kỹ năng sẽ được cập nhật. '
+          'Sau khi kết thúc, buổi này không nhận thêm tin nhắn — không hoàn tác được.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Kết thúc')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    setState(() => _ending = true);
+    try {
+      await ref.read(sessionDetailProvider(widget.sessionId).notifier).endSession();
+      // Trang chính Trà Đình: điểm kỹ năng mới + buổi này thành "Đã kết thúc".
+      ref
+        ..invalidate(skillScoresProvider)
+        ..invalidate(practiceSessionsProvider);
+    } on DioException catch (e) {
+      if (mounted) {
+        _snack('Không kết thúc được buổi (${e.response?.statusCode ?? e.type.name}) — buổi vẫn đang mở, thử lại nhé.');
+      }
+    } catch (_) {
+      if (mounted) _snack('Không kết thúc được buổi — buổi vẫn đang mở, thử lại nhé.');
+    } finally {
+      if (mounted) setState(() => _ending = false);
+    }
+  }
+
   Future<void> _reloadQuietly() async {
     try {
       await ref.read(sessionDetailProvider(widget.sessionId).notifier).reload();
@@ -247,6 +287,22 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
                   Text(session.isEnded ? '${session.mode.label} · Đã kết thúc' : session.mode.label, style: _muted(12)),
                 ],
               ),
+        actions: [
+          if (session != null && !session.isEnded)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton(
+                // Đang gửi/ghi âm/chuyển chữ thì chưa cho kết thúc — ô nhập sẽ biến
+                // mất giữa chừng (vd mic còn ghi mà không còn nút dừng).
+                onPressed: !_ending && _pending == null && _mic == _MicState.idle ? _confirmEnd : null,
+                style: TextButton.styleFrom(foregroundColor: AppColors.shuiro500),
+                child: Text(_ending ? 'Đang kết thúc...' : 'Kết thúc buổi'),
+              ),
+            ),
+        ],
+        bottom: _ending
+            ? const PreferredSize(preferredSize: Size.fromHeight(2), child: LinearProgressIndicator(minHeight: 2))
+            : null,
       ),
       body: switch (detail) {
         AsyncValue(value: final s?) => _ChatBody(
@@ -260,6 +316,7 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
           speakingId: _speakingId,
           speakState: _speakState,
           onSpeak: _toggleSpeak,
+          locked: _ending,
         ),
         AsyncValue(error: final e?) => _LoadError(
           message: e is DioException && e.response?.statusCode == 404
@@ -285,6 +342,7 @@ class _ChatBody extends StatelessWidget {
     required this.speakingId,
     required this.speakState,
     required this.onSpeak,
+    required this.locked,
   });
 
   final PracticeSession session;
@@ -297,6 +355,9 @@ class _ChatBody extends StatelessWidget {
   final String? speakingId;
   final _SpeakState? speakState;
   final void Function(PracticeMessage) onSpeak;
+
+  /// Đang kết thúc buổi — khoá gửi và ghi âm.
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -342,6 +403,7 @@ class _ChatBody extends StatelessWidget {
                 mic: mic,
                 recordSeconds: recordSeconds,
                 onMic: onMic,
+                locked: locked,
               ),
           ],
         ),
@@ -459,6 +521,7 @@ class _InputBar extends StatelessWidget {
     required this.mic,
     required this.recordSeconds,
     required this.onMic,
+    required this.locked,
   });
 
   final TextEditingController controller;
@@ -467,12 +530,13 @@ class _InputBar extends StatelessWidget {
   final _MicState mic;
   final int recordSeconds;
   final VoidCallback onMic;
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
     // Đang ghi/chuyển chữ thì chưa gửi được (chữ sắp được điền vào ô); đang gửi
     // thì chưa ghi được.
-    final canSend = !sending && mic == _MicState.idle && controller.text.trim().isNotEmpty;
+    final canSend = !sending && !locked && mic == _MicState.idle && controller.text.trim().isNotEmpty;
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
@@ -484,7 +548,7 @@ class _InputBar extends StatelessWidget {
           child: Row(
             spacing: 8,
             children: [
-              _MicButton(state: mic, seconds: recordSeconds, onPressed: sending ? null : onMic),
+              _MicButton(state: mic, seconds: recordSeconds, onPressed: sending || locked ? null : onMic),
               Expanded(
                 child: TextField(
                   controller: controller,

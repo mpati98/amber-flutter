@@ -67,12 +67,12 @@ class PracticeSession {
 
   bool get isEnded => archivedAt != null;
 
-  PracticeSession copyWith({List<PracticeMessage>? messages}) => PracticeSession(
+  PracticeSession copyWith({List<PracticeMessage>? messages, DateTime? archivedAt, String? summary}) => PracticeSession(
     id: id,
     name: name,
     mode: mode,
-    summary: summary,
-    archivedAt: archivedAt,
+    summary: summary ?? this.summary,
+    archivedAt: archivedAt ?? this.archivedAt,
     createdAt: createdAt,
     messages: messages ?? this.messages,
   );
