@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/scroll_card.dart';
@@ -111,7 +112,8 @@ class _PlacementTestScreenState extends ConsumerState<PlacementTestScreen> {
 
   void _backToHub() {
     ref.invalidate(skillScoresProvider);
-    Navigator.of(context).pop();
+    // Mở thẳng bằng URL thì không có màn nào bên dưới để pop.
+    context.canPop() ? context.pop() : context.go('/tra-dinh');
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/currency.dart';
@@ -11,7 +12,6 @@ import '../providers/finance_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/finance_api.dart';
 import '../utils/finance_month.dart';
-import 'finance_month_screen.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -32,8 +32,7 @@ class FinanceScreen extends ConsumerStatefulWidget {
 class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   bool _starting = false;
 
-  void _openMonth(Project month) =>
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => FinanceMonthScreen(projectId: month.id)));
+  void _openMonth(Project month) => context.push('/finance/${month.id}');
 
   Future<void> _startMonth() async {
     setState(() => _starting = true);

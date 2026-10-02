@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/services/api_client.dart';
-import '../../kieu_lau/screens/kieu_lau_screen.dart';
 
-// Màn login tối thiểu để test luồng JWT thật — làm lại UI khi có router.
+// Màn login tối thiểu để test luồng JWT thật — làm lại UI sau.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -33,12 +32,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _submitting = false);
 
     final auth = ref.read(authControllerProvider);
-    if (auth.value is Authenticated) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const KieuLauScreen()),
-      );
-      return;
-    }
+    // Thành công: router tự chuyển (redirect /login → đích trong ?from= hoặc '/').
+    if (auth.value is Authenticated) return;
     final error = auth.error;
     final message = error is DioException && error.response?.statusCode == 401
         ? 'Sai email hoặc mật khẩu.'

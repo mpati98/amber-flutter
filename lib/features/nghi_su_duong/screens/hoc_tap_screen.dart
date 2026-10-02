@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/duration_format.dart';
@@ -9,7 +10,6 @@ import '../../../shared/widgets/tag.dart';
 import '../models/course.dart';
 import '../providers/learn_provider.dart';
 import '../widgets/add_course_modal.dart';
-import 'course_detail_screen.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -87,9 +87,7 @@ class _HocTapScreenState extends ConsumerState<HocTapScreen> {
                           course: c,
                           expanded: _expandedId == c.id,
                           onTap: () => setState(() => _expandedId = _expandedId == c.id ? null : c.id),
-                          onOpenDetail: () =>
-                              Navigator.of(context)
-                                  .push(MaterialPageRoute<void>(builder: (_) => CourseDetailScreen(courseId: c.id))),
+                          onOpenDetail: () => context.push('/hoc-tap/${c.id}'),
                         );
                       },
                     ),

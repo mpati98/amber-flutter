@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/vn_time.dart';
@@ -11,8 +12,6 @@ import '../models/practice_session.dart';
 import '../models/skill_score.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../widgets/new_practice_session_modal.dart';
-import 'placement_test_screen.dart';
-import 'practice_chat_screen.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -29,8 +28,7 @@ String _errorText(Object e, String what) =>
 class TraDinhScreen extends ConsumerWidget {
   const TraDinhScreen({super.key});
 
-  static void _openChat(BuildContext context, String sessionId) =>
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => PracticeChatScreen(sessionId: sessionId)));
+  static void _openChat(BuildContext context, String sessionId) => context.push('/tra-dinh/$sessionId');
 
   /// Như web: tạo xong vào thẳng buổi vừa tạo.
   Future<void> _newSession(BuildContext context) async {
@@ -65,9 +63,7 @@ class TraDinhScreen extends ConsumerWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: OutlinedButton(
-                      onPressed: () =>
-                          Navigator.of(context)
-                              .push(MaterialPageRoute<void>(builder: (_) => const PlacementTestScreen())),
+                      onPressed: () => context.push('/tra-dinh/placement-test'),
                       child: Text(rows.any((s) => s.hasResult) ? 'Làm lại bài test' : 'Làm bài test đầu vào'),
                     ),
                   ),

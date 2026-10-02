@@ -14,6 +14,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 /// FinanceApi giả — không gọi mạng, không đụng DB. Danh sách tháng rỗng nên
 /// nút "Bắt đầu tháng mới" luôn hiện, bất kể hôm nay là ngày mấy.
@@ -80,7 +81,25 @@ Future<void> _pump(WidgetTester tester, _FakeFinanceApi api) async {
           )),
     ],
     // Theme mặc định: AppTheme dùng google_fonts, tải font qua mạng trong test.
-    child: MaterialApp(theme: ThemeData.dark(), home: const FinanceScreen()),
+    // 2 route giống app_router thật: màn tháng mở bằng context.push('/finance/<id>').
+    child: MaterialApp.router(
+      theme: ThemeData.dark(),
+      routerConfig: GoRouter(
+        initialLocation: '/finance',
+        routes: [
+          GoRoute(
+            path: '/finance',
+            builder: (_, _) => const FinanceScreen(),
+            routes: [
+              GoRoute(
+                path: ':projectId',
+                builder: (_, state) => FinanceMonthScreen(projectId: state.pathParameters['projectId']!),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
   ));
   await tester.pumpAndSettle();
 }

@@ -1,15 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/scroll_card.dart';
-import '../../auth/screens/login_screen.dart';
-import '../../nghi_su_duong/screens/nghi_su_duong_screen.dart';
-import '../../tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
-import '../../tra_dinh/screens/tra_dinh_screen.dart';
 import '../models/activity_log_entry.dart';
 import '../models/alert.dart';
 import '../models/feed_article.dart';
@@ -44,23 +41,21 @@ class KieuLauScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Kiều Lâu'),
         actions: [
-          // TODO: lối vào tạm để test Tàng Kinh Các — thay bằng trang chủ Dư Đồ/router.
+          // TODO: lối vào tạm từ trước khi có trang chủ — bỏ khi Dư Đồ làm xong.
           IconButton(
             tooltip: 'Tàng Kinh Các',
             icon: const Icon(Icons.account_balance_outlined),
-            onPressed: () =>
-                Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const TangKinhCacScreen())),
+            onPressed: () => context.push('/tang-kinh-cac'),
           ),
           IconButton(
             tooltip: 'Nghị Sự Đường',
             icon: const Icon(Icons.work_outline),
-            onPressed: () =>
-                Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NghiSuDuongScreen())),
+            onPressed: () => context.push('/nghi-su-duong'),
           ),
           IconButton(
             tooltip: 'Trà Đình',
             icon: const Icon(Icons.emoji_food_beverage_outlined),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const TraDinhScreen())),
+            onPressed: () => context.push('/tra-dinh'),
           ),
           // TODO: tạm để test luồng auth — chuyển sang màn Cài đặt khi có router.
           IconButton(
@@ -69,7 +64,9 @@ class KieuLauScreen extends ConsumerWidget {
             onPressed: () async {
               await ref.read(authControllerProvider.notifier).logout();
               if (!context.mounted) return;
-              Navigator.of(context).pushReplacement(MaterialPageRoute<void>(builder: (_) => const LoginScreen()));
+              // Redirect cũng tự đưa về /login, nhưng kèm ?from=/kieu-lau — đăng
+              // xuất chủ động thì không cần quay lại đây sau khi đăng nhập lại.
+              context.go('/login');
             },
           ),
         ],

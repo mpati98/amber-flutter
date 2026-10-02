@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/currency.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/scroll_card.dart';
 import '../providers/nghi_su_duong_provider.dart';
-import 'du_an_screen.dart';
-import 'finance_screen.dart';
-import 'hoc_tap_screen.dart';
 
 /// Port /nghi-su-duong: trang chính 3 mảng Dự án / Tài chính / Học tập.
 /// Xếp 1 cột thay cho lưới 1–3 cột bên web.
@@ -17,7 +15,8 @@ class NghiSuDuongScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    void push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    // Đường dẫn cấp gốc như web (không nằm dưới /nghi-su-duong).
+    void push(String path) => context.push(path);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nghị Sự Đường')),
@@ -33,11 +32,11 @@ class NghiSuDuongScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _DuAnCard(onTap: () => push(const DuAnScreen())),
+                _DuAnCard(onTap: () => push('/du-an')),
                 const SizedBox(height: 20), // gap-5
-                _FinanceCard(onTap: () => push(const FinanceScreen())),
+                _FinanceCard(onTap: () => push('/finance')),
                 const SizedBox(height: 20),
-                _LearnCard(onTap: () => push(const HocTapScreen())),
+                _LearnCard(onTap: () => push('/hoc-tap')),
               ],
             ),
           ),

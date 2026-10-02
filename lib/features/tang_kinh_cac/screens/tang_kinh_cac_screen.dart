@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/scroll_card.dart';
@@ -9,9 +10,6 @@ import '../providers/document_provider.dart';
 import '../providers/publication_provider.dart';
 import '../providers/tang_kinh_cac_provider.dart';
 import '../widgets/section_card.dart';
-import 'ke_hoach_doc_screen.dart';
-import 'sach_screen.dart';
-import 'tai_lieu_screen.dart';
 
 /// Port /tang-kinh-cac (trang chính của tòa): thẻ "Ôn lại" + 3 lối vào.
 /// Xếp 1 cột thay cho lưới 1-3 cột bên web.
@@ -47,7 +45,7 @@ class TangKinhCacScreen extends ConsumerWidget {
           error: (_, _) => 'Không tải được số liệu',
         );
 
-    void push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    void push(String sub) => context.push('/tang-kinh-cac/$sub');
 
     return Scaffold(
       appBar: AppBar(title: const Text('Tàng Kinh Các')),
@@ -68,7 +66,7 @@ class TangKinhCacScreen extends ConsumerWidget {
                 description: 'Thư viện sách đang đọc, đã đọc và muốn đọc — kèm review và highlight.',
                 stat: bookStat,
                 glow: ScrollCardGlow.kincha,
-                onTap: () => push(const SachScreen()),
+                onTap: () => push('sach'),
               ),
               const SizedBox(height: 20), // gap-5
               SectionCard(
@@ -77,7 +75,7 @@ class TangKinhCacScreen extends ConsumerWidget {
                 description: 'Ghi chú, checklist, mindmap, hình ảnh và tệp bạn muốn lưu lại để xem sau.',
                 stat: docStat,
                 glow: ScrollCardGlow.yugen,
-                onTap: () => push(const TaiLieuScreen()),
+                onTap: () => push('tai-lieu'),
               ),
               const SizedBox(height: 20),
               SectionCard(
@@ -86,7 +84,7 @@ class TangKinhCacScreen extends ConsumerWidget {
                 description: 'Đặt mục tiêu đọc theo năm và theo dõi tiến độ.',
                 stat: goalStat,
                 glow: ScrollCardGlow.shuiro,
-                onTap: () => push(const KeHoachDocScreen()),
+                onTap: () => push('ke-hoach-doc'),
               ),
             ],
           ),
