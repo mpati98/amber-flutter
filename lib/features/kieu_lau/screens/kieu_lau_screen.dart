@@ -41,22 +41,6 @@ class KieuLauScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Kiều Lâu'),
         actions: [
-          // TODO: lối vào tạm từ trước khi có trang chủ — bỏ khi Dư Đồ làm xong.
-          IconButton(
-            tooltip: 'Tàng Kinh Các',
-            icon: const Icon(Icons.account_balance_outlined),
-            onPressed: () => context.push('/tang-kinh-cac'),
-          ),
-          IconButton(
-            tooltip: 'Nghị Sự Đường',
-            icon: const Icon(Icons.work_outline),
-            onPressed: () => context.push('/nghi-su-duong'),
-          ),
-          IconButton(
-            tooltip: 'Trà Đình',
-            icon: const Icon(Icons.emoji_food_beverage_outlined),
-            onPressed: () => context.push('/tra-dinh'),
-          ),
           // TODO: tạm để test luồng auth — chuyển sang màn Cài đặt khi có router.
           IconButton(
             tooltip: 'Đăng xuất',
@@ -149,10 +133,9 @@ class _AlertTile extends StatelessWidget {
       dense: true,
       title: Text(alert.title),
       subtitle: alert.detail == null ? null : Text(alert.detail!),
-      // TODO: điều hướng thật (alert.href là đường dẫn web) khi Nghị Sự Đường được build.
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Chưa khả dụng: ${alert.href}')),
-      ),
+      // Route table khớp đường dẫn web nên dùng thẳng href (/du-an, /finance/<id>...).
+      // push (không go) để back được về Kiều Lâu.
+      onTap: () => context.push(alert.href),
     );
   }
 }

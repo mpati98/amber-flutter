@@ -18,6 +18,7 @@ class Alert {
   final String title;
   final String? detail;
 
-  /// Đường dẫn bên web (vd `/du-an`, `/finance/<id>`) — chưa map sang route app.
+  /// Đường dẫn bên web (vd `/du-an`, `/finance/<id>`) — trùng route của app
+  /// (app_router.dart), điều hướng thẳng được.
   final String href;
 }
