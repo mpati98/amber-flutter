@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/auth_provider.dart';
 import 'token_storage.dart';
 
 const apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:3000');
@@ -12,7 +13,10 @@ const _retriedKey = 'amber_retried_after_refresh';
 
 /// Dio dùng chung: tự gắn `Authorization: Bearer <accessToken>`, gặp 401 thì
 /// refresh token một lần rồi retry đúng request gốc.
-Dio createApiClient(TokenStorage storage, {String baseUrl = apiBaseUrl}) {
+///
+/// [onSessionExpired] chạy khi server từ chối refresh token (phiên đã hết) —
+/// để tầng auth chuyển sang chưa đăng nhập và router đưa về /login.
+Dio createApiClient(TokenStorage storage, {String baseUrl = apiBaseUrl, void Function()? onSessionExpired}) {
   final dio = Dio(BaseOptions(baseUrl: baseUrl));
   // Instance riêng KHÔNG gắn interceptor bên dưới — chỉ để gọi refresh, tránh đệ quy.
   final refreshDio = Dio(BaseOptions(baseUrl: baseUrl));
@@ -73,7 +77,10 @@ Dio createApiClient(TokenStorage storage, {String baseUrl = apiBaseUrl}) {
         if (result != _RefreshResult.success) {
           // Chỉ xoá token khi server từ chối refresh token; lỗi mạng thì giữ
           // lại để lần sau thử tiếp, không đá người dùng ra ngoài vô cớ.
-          if (result == _RefreshResult.rejected) await storage.clear();
+          if (result == _RefreshResult.rejected) {
+            await storage.clear();
+            onSessionExpired?.call();
+          }
           return handler.next(err);
         }
 
@@ -92,4 +99,11 @@ Dio createApiClient(TokenStorage storage, {String baseUrl = apiBaseUrl}) {
 
 enum _RefreshResult { success, rejected, failed }
 
-final apiClientProvider = Provider<Dio>((ref) => createApiClient(ref.watch(tokenStorageProvider)));
+final apiClientProvider = Provider<Dio>(
+  (ref) => createApiClient(
+    ref.watch(tokenStorageProvider),
+    // Đọc lúc gọi (không phải lúc tạo) — tránh phụ thuộc vòng: AuthController
+    // cũng dùng apiClientProvider để gọi login/logout.
+    onSessionExpired: () => ref.read(authControllerProvider.notifier).sessionExpired(),
+  ),
+);

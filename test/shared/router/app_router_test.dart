@@ -1,5 +1,8 @@
 import 'package:amber_flutter/features/auth/screens/login_screen.dart';
 import 'package:amber_flutter/features/du_do/screens/du_do_screen.dart';
+import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
+import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
+import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
 import 'package:amber_flutter/shared/providers/auth_provider.dart';
 import 'package:amber_flutter/shared/router/app_router.dart';
 import 'package:amber_flutter/shared/services/token_storage.dart';
@@ -69,7 +72,15 @@ void main() {
 
   group('routerProvider (router thật)', () {
     Future<ProviderContainer> pumpApp(WidgetTester tester, {String? token}) async {
-      final container = ProviderContainer(overrides: [tokenStorageProvider.overrideWithValue(_MemStorage(token))]);
+      final container = ProviderContainer(
+        overrides: [
+          tokenStorageProvider.overrideWithValue(_MemStorage(token)),
+          // Dư Đồ đọc số cảnh báo cho badge — không gọi mạng trong test.
+          notificationsProvider.overrideWith(
+            (ref) async => (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[]),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
       await tester.pumpWidget(
         UncontrolledProviderScope(

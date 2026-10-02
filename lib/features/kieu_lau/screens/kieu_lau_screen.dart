@@ -20,7 +20,7 @@ const _sourceIcon = {
   'DU_AN': '📋',
   'FINANCE': '💰',
   'LEARN': '🎓',
-  'TRA_DINH': '💬',
+  'TRA_DINH': '🍵',
   'KIEU_LAU': '📰',
 };
 

@@ -63,6 +63,12 @@ class AuthController extends AsyncNotifier<AuthState> {
     await storage.clear();
     state = const AsyncData(Unauthenticated());
   }
+
+  /// API báo refresh token bị từ chối (token đã bị xoá ở ApiClient) — chỉ cập
+  /// nhật trạng thái, router tự đưa về /login.
+  void sessionExpired() {
+    if (state.value is! Unauthenticated) state = const AsyncData(Unauthenticated());
+  }
 }
 
 final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(AuthController.new);

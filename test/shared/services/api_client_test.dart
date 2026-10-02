@@ -82,12 +82,14 @@ void main() {
   late _FakeBackend backend;
   late _MemoryTokenStorage storage;
   late Dio dio;
+  late int sessionExpiredCalls;
 
   setUp(() async {
     backend = _FakeBackend();
     await backend.start();
     storage = _MemoryTokenStorage();
-    dio = createApiClient(storage, baseUrl: backend.baseUrl);
+    sessionExpiredCalls = 0;
+    dio = createApiClient(storage, baseUrl: backend.baseUrl, onSessionExpired: () => sessionExpiredCalls++);
   });
 
   tearDown(() => backend.server.close(force: true));
@@ -110,6 +112,7 @@ void main() {
     expect(storage.access, 'access-2');
     expect(storage.refresh, 'refresh-2');
     expect(backend.authHeaders.last, 'Bearer access-2');
+    expect(sessionExpiredCalls, 0);
   });
 
   test('nhiều request cùng dính 401 chỉ refresh 1 lần (refresh token xoay vòng)', () async {
@@ -134,6 +137,7 @@ void main() {
     );
     expect(storage.access, isNull);
     expect(storage.refresh, isNull);
+    expect(sessionExpiredCalls, 1); // báo tầng auth → router đưa về /login
   });
 
   test('401 từ login không kích hoạt refresh', () async {
