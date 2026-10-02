@@ -2,10 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/form_bits.dart';
 import '../models/finance_category.dart';
 import '../providers/finance_provider.dart';
 import '../services/finance_api.dart';
-import 'finance_form_bits.dart';
 
 /// Port AddCategoryModal. Icon là ô nhập thường như web (gõ/dán 1 emoji),
 /// không có bảng chọn emoji.

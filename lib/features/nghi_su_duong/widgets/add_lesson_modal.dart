@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/utils/duration_format.dart';
 import '../../../shared/utils/vn_time.dart';
+import '../../../shared/widgets/form_bits.dart';
 import '../providers/learn_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/learn_api.dart';
-import 'finance_form_bits.dart';
 
 /// Port AddLessonModal: tên bài, ngày học (mặc định hôm nay theo giờ VN),
 /// số phút, ghi chú.

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/duration_format.dart';
 import '../../../shared/utils/vn_time.dart';
+import '../../../shared/widgets/form_bits.dart';
 import '../../../shared/widgets/scroll_card.dart';
 import '../models/course.dart';
 import '../models/lesson.dart';
@@ -12,7 +13,6 @@ import '../providers/learn_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/learn_api.dart';
 import '../widgets/add_lesson_modal.dart';
-import '../widgets/finance_form_bits.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 

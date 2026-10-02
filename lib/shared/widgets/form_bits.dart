@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/utils/currency.dart';
+import '../theme/app_theme.dart';
+import '../utils/currency.dart';
 
 /// Hàng nút chọn 1 trong nhiều (kiểu nút kincha khi chọn như các modal web).
 class ChoiceRow<T> extends StatelessWidget {

@@ -2,11 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/form_bits.dart';
 import '../models/finance_category.dart';
 import '../providers/finance_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/finance_api.dart';
-import 'finance_form_bits.dart';
 
 /// Port AddTransactionModal. Không có ô chọn ngày — như web, giao dịch ghi
 /// vào lúc tạo (service có hỗ trợ occurredAt nhưng UI chưa dùng).

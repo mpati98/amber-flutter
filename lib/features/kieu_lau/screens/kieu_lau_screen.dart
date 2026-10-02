@@ -9,6 +9,7 @@ import '../../../shared/widgets/scroll_card.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../nghi_su_duong/screens/nghi_su_duong_screen.dart';
 import '../../tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
+import '../../tra_dinh/screens/tra_dinh_screen.dart';
 import '../models/activity_log_entry.dart';
 import '../models/alert.dart';
 import '../models/feed_article.dart';
@@ -55,6 +56,11 @@ class KieuLauScreen extends ConsumerWidget {
             icon: const Icon(Icons.work_outline),
             onPressed: () =>
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const NghiSuDuongScreen())),
+          ),
+          IconButton(
+            tooltip: 'Trà Đình',
+            icon: const Icon(Icons.emoji_food_beverage_outlined),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const TraDinhScreen())),
           ),
           // TODO: tạm để test luồng auth — chuyển sang màn Cài đặt khi có router.
           IconButton(

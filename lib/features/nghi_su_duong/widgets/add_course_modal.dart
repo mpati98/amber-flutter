@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/utils/vn_time.dart';
+import '../../../shared/widgets/form_bits.dart';
 import '../models/course.dart';
 import '../providers/learn_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/learn_api.dart';
-import 'finance_form_bits.dart';
 
 /// Port AddCourseModal: tên, nguồn, lĩnh vực, trạng thái.
 Future<void> showAddCourseModal(BuildContext context) => showFinanceSheet<void>(context, const AddCourseModal());
