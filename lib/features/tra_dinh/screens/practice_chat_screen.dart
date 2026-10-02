@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../models/practice_message.dart';
 import '../models/practice_session.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../services/recording_service.dart';
 import '../services/tra_dinh_api.dart';
+import '../services/tts_service.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -20,12 +22,14 @@ String? _errorCode(DioException e) {
 
 enum _MicState { idle, recording, transcribing }
 
+enum _SpeakState { loading, playing }
+
 /// Ghi quá mức này thì tự dừng và chuyển chữ — tránh quên bấm dừng (Groq
 /// Whisper nhận tối đa 25MB, bản ghi dài cũng chuyển chữ chậm).
 const maxRecordingDuration = Duration(minutes: 3);
 
-/// Port /tra-dinh/[sessionId] — tin nhắn văn bản + ghi âm thành chữ. Chưa có
-/// phát audio, kết thúc buổi.
+/// Port /tra-dinh/[sessionId] — tin nhắn văn bản, ghi âm thành chữ, đọc tin AI
+/// thành tiếng. Chưa có kết thúc buổi.
 class PracticeChatScreen extends ConsumerStatefulWidget {
   const PracticeChatScreen({super.key, required this.sessionId});
 
@@ -49,6 +53,13 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
 
   /// Giữ tham chiếu để huỷ ghi trong dispose (lúc đó không dùng ref được nữa).
   RecordingService? _recorder;
+
+  /// Tin AI đang được đọc (null = không tin nào). Mỗi lần bấm tăng [_speakToken]
+  /// để kết quả của lần bấm cũ (tải/phát xong muộn) không ghi đè trạng thái mới.
+  String? _speakingId;
+  _SpeakState? _speakState;
+  int _speakToken = 0;
+  TtsService? _tts;
 
   @override
   void initState() {
@@ -172,6 +183,42 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
     }
   }
 
+  /// Bấm "Phát": dừng tin đang đọc (nếu có) rồi đọc tin này. Bấm lại đúng tin
+  /// đang tải/đọc → dừng. Trạng thái luôn về nghỉ trong finally, kể cả khi lỗi.
+  Future<void> _toggleSpeak(PracticeMessage message) async {
+    final tts = _tts!;
+    if (_speakingId == message.id) {
+      _speakToken++;
+      setState(() => _speakingId = _speakState = null);
+      await tts.stop();
+      return;
+    }
+    final token = ++_speakToken;
+    setState(() {
+      _speakingId = message.id;
+      _speakState = _SpeakState.loading;
+    });
+    try {
+      await tts.stop();
+      final wav = await tts.fetchSpeech(message.content);
+      if (token != _speakToken || !mounted) return;
+      setState(() => _speakState = _SpeakState.playing);
+      await tts.play(wav);
+    } on DioException catch (e) {
+      if (token == _speakToken && mounted) {
+        _snack(
+          e.response?.statusCode == 400
+              ? 'Tin này quá dài để đọc thành tiếng (tối đa 2000 ký tự).'
+              : 'Không tải được giọng đọc (${e.response?.statusCode ?? e.type.name}) — thử lại nhé.',
+        );
+      }
+    } catch (_) {
+      if (token == _speakToken && mounted) _snack('Không phát được âm thanh — thử lại nhé.');
+    } finally {
+      if (token == _speakToken && mounted) setState(() => _speakingId = _speakState = null);
+    }
+  }
+
   Future<void> _reloadQuietly() async {
     try {
       await ref.read(sessionDetailProvider(widget.sessionId).notifier).reload();
@@ -186,6 +233,8 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
     final session = detail.value;
     // watch để giữ service (autoDispose) sống suốt màn hình.
     _recorder = ref.watch(recordingServiceProvider);
+    // Rời màn → provider dispose AudioPlayer → tiếng tắt theo.
+    _tts = ref.watch(ttsServiceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -208,6 +257,9 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
           mic: _mic,
           recordSeconds: _recordSeconds,
           onMic: _toggleMic,
+          speakingId: _speakingId,
+          speakState: _speakState,
+          onSpeak: _toggleSpeak,
         ),
         AsyncValue(error: final e?) => _LoadError(
           message: e is DioException && e.response?.statusCode == 404
@@ -230,6 +282,9 @@ class _ChatBody extends StatelessWidget {
     required this.mic,
     required this.recordSeconds,
     required this.onMic,
+    required this.speakingId,
+    required this.speakState,
+    required this.onSpeak,
   });
 
   final PracticeSession session;
@@ -239,6 +294,9 @@ class _ChatBody extends StatelessWidget {
   final _MicState mic;
   final int recordSeconds;
   final VoidCallback onMic;
+  final String? speakingId;
+  final _SpeakState? speakState;
+  final void Function(PracticeMessage) onSpeak;
 
   @override
   Widget build(BuildContext context) {
@@ -248,7 +306,15 @@ class _ChatBody extends StatelessWidget {
     // không cần cuộn tay. Thứ tự hiển thị: tin cũ trên, tin mới/đang gửi dưới.
     final items = <Widget>[
       if (sending) ...[const _TypingBubble(), _Bubble(text: pending!, isUser: true, dimmed: true)],
-      for (final m in messages.reversed) _Bubble(text: m.content, isUser: m.isUser),
+      for (final m in messages.reversed)
+        _Bubble(
+          key: ValueKey(m.id),
+          text: m.content,
+          isUser: m.isUser,
+          speak: m.isUser
+              ? null
+              : _SpeakButton(state: speakingId == m.id ? speakState : null, onPressed: () => onSpeak(m)),
+        ),
     ];
 
     return Center(
@@ -285,11 +351,14 @@ class _ChatBody extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.text, required this.isUser, this.dimmed = false});
+  const _Bubble({super.key, required this.text, required this.isUser, this.dimmed = false, this.speak});
 
   final String text;
   final bool isUser;
   final bool dimmed;
+
+  /// Nút đọc thành tiếng — chỉ tin AI có.
+  final Widget? speak;
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +372,14 @@ class _Bubble extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(AppTheme.darkRadius),
       ),
-      child: SelectableText(text, style: const TextStyle(fontSize: 13, height: 1.45)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SelectableText(text, style: const TextStyle(fontSize: 13, height: 1.45)),
+          ?speak,
+        ],
+      ),
     );
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -528,5 +604,38 @@ class _MicButtonState extends State<_MicButton> with SingleTickerProviderStateMi
         ),
       ),
     };
+  }
+}
+
+/// Nút đọc tin AI: nghỉ "Phát" → "Đang tải..." (gọi /speak) → "Dừng" (đang phát).
+class _SpeakButton extends StatelessWidget {
+  const _SpeakButton({required this.state, required this.onPressed});
+
+  /// null = nghỉ.
+  final _SpeakState? state;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final (Widget icon, String label) = switch (state) {
+      null => (const Icon(Icons.volume_up_outlined, size: 16), 'Phát'),
+      _SpeakState.loading => (
+        const SizedBox.square(dimension: 12, child: CircularProgressIndicator(strokeWidth: 1.5)),
+        'Đang tải...',
+      ),
+      _SpeakState.playing => (const Icon(Icons.stop_circle_outlined, size: 16), 'Dừng'),
+    };
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: icon,
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.kincha400,
+        textStyle: const TextStyle(fontSize: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        minimumSize: const Size(0, 28),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
   }
 }

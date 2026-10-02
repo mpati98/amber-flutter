@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- just_audio phát tin Trà Đình từ bộ nhớ qua proxy HTTP localhost của nó
+     (StreamAudioSource) — chỉ mở cleartext cho 127.0.0.1, mọi nơi khác vẫn
+     bắt buộc HTTPS. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

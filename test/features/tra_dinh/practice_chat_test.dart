@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:amber_flutter/features/tra_dinh/models/practice_message.dart';
 import 'package:amber_flutter/features/tra_dinh/models/practice_session.dart';
 import 'package:amber_flutter/features/tra_dinh/screens/practice_chat_screen.dart';
+import 'package:amber_flutter/features/tra_dinh/services/recording_service.dart';
 import 'package:amber_flutter/features/tra_dinh/services/tra_dinh_api.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'fake_recorder.dart';
 
 PracticeMessage _msg(String id, MessageRole role, String content) =>
     PracticeMessage(id: id, role: role, content: content, createdAt: DateTime.utc(2026, 10, 2));
@@ -65,7 +68,11 @@ class _FakeApi extends TraDinhApi {
 Future<void> _pump(WidgetTester tester, _FakeApi api) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [traDinhApiProvider.overrideWithValue(api)],
+      overrides: [
+        traDinhApiProvider.overrideWithValue(api),
+        // Không tạo AudioRecorder thật (plugin) trong test.
+        recordingServiceProvider.overrideWithValue(FakeRecorder()),
+      ],
       child: MaterialApp(
         theme: ThemeData.dark(),
         home: const PracticeChatScreen(sessionId: 's1'),

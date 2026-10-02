@@ -2,6 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Proxy localhost của just_audio (phát audio từ bộ nhớ). Chỉ nới cho
+		     mạng cục bộ, không tắt ATS cho Internet như NSAllowsArbitraryLoads. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Amber dùng micro để ghi câu nói tiếng Anh của bạn ở Trà Đình và chuyển thành chữ.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
