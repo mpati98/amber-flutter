@@ -1,4 +1,4 @@
-/// 6 kỹ năng, đúng thứ tự `SKILLS` bên amber-v3/src/lib/skills.ts — GET
+/// 6 kỹ năng, đúng thứ tự `SKILLS` bên amber-v4/src/lib/skills.ts — GET
 /// /tra-dinh/skills trả về theo thứ tự này và lưới kỹ năng giữ nguyên.
 enum Skill {
   grammar('GRAMMAR', 'Ngữ pháp'),
