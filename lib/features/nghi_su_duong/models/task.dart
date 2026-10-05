@@ -61,6 +61,20 @@ class Task {
   final String? dueDate;
   final int? prepLeadDays;
 
+  Task copyWith({String? title, TaskStatus? status, int? importance}) => Task(
+        id: id,
+        projectId: projectId,
+        title: title ?? this.title,
+        description: description,
+        status: status ?? this.status,
+        importance: importance ?? this.importance,
+        urgency: urgency,
+        durationMinutes: durationMinutes,
+        startDate: startDate,
+        dueDate: dueDate,
+        prepLeadDays: prepLeadDays,
+      );
+
   /// Giống web: task "hôm nay" khi ngày bắt đầu HOẶC hạn chót đúng hôm nay.
   bool isOn(String isoDate) => startDate == isoDate || dueDate == isoDate;
 }

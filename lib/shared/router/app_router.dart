@@ -11,6 +11,7 @@ import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_screen.dart';
 import '../../features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
+import '../../features/nghi_su_duong/screens/project_detail_screen.dart';
 import '../../features/tang_kinh_cac/screens/ke_hoach_doc_screen.dart';
 import '../../features/tang_kinh_cac/screens/sach_screen.dart';
 import '../../features/tang_kinh_cac/screens/tai_lieu_screen.dart';
@@ -104,7 +105,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/nghi-su-duong', builder: (_, _) => const NghiSuDuongScreen()),
       // 3 mảng của Nghị Sự Đường nằm ở CẤP GỐC như web, không dưới /nghi-su-duong.
-      GoRoute(path: '/du-an', builder: (_, _) => const DuAnScreen()),
+      GoRoute(
+        path: '/du-an',
+        builder: (_, _) => const DuAnScreen(),
+        routes: [
+          GoRoute(
+            path: ':projectId',
+            builder: (_, state) => ProjectDetailScreen(projectId: state.pathParameters['projectId']!),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/finance',
         builder: (_, _) => const FinanceScreen(),

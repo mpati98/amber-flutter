@@ -78,6 +78,20 @@ class NghiSuDuongApi {
     );
     return Task.fromJson(res.data!);
   }
+
+  /// PATCH từng phần: chỉ gửi trường được truyền (backend báo 400 nếu rỗng).
+  /// Backend không tự đặt thêm trường nào khi chuyển sang DONE (chỉ ghi
+  /// activity_logs "task.completed").
+  Future<Task> updateTask(String id, {String? title, TaskStatus? status, int? importance}) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/api/tasks/$id',
+      data: {'title': ?title, 'status': ?status?.apiValue, 'importance': ?importance},
+    );
+    return Task.fromJson(res.data!);
+  }
+
+  /// Backend trả `{ok: true}`, 404 nếu không phải task của user.
+  Future<void> deleteTask(String id) => _dio.delete<void>('/api/tasks/$id');
 }
 
 final nghiSuDuongApiProvider = Provider<NghiSuDuongApi>((ref) => NghiSuDuongApi(ref.watch(apiClientProvider)));

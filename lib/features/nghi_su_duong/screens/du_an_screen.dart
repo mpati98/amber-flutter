@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
@@ -11,7 +12,7 @@ import '../models/task.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../widgets/new_project_modal.dart';
 import '../widgets/new_task_modal.dart';
-import '../widgets/task_badges.dart';
+import '../widgets/task_tile.dart';
 
 const _weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
 
@@ -113,7 +114,7 @@ class DuAnScreen extends ConsumerWidget {
                           ? Text('Đang tải...', style: _muted(12))
                           : todayTasks.isEmpty
                               ? Text('Không có task nào hôm nay.', style: _muted(12))
-                              : Column(children: [for (final t in todayTasks) _TaskTile(t)]),
+                              : Column(children: [for (final t in todayTasks) TaskTile(t, key: ValueKey(t.id))]),
                 ),
                 const SizedBox(height: 16), // gap-4
                 _Section(
@@ -127,7 +128,6 @@ class DuAnScreen extends ConsumerWidget {
                           : data.activeProjects.isEmpty
                               ? Text('Chưa có dự án nào.', style: _muted(12))
                               : Column(
-                                  spacing: 12,
                                   children: [for (final p in data.activeProjects) _ProjectProgress(p)],
                                 ),
                 ),
@@ -142,7 +142,6 @@ class DuAnScreen extends ConsumerWidget {
                           : data.upcomingProjects.isEmpty
                               ? Text('Chưa có dự án sắp tới.', style: _muted(12))
                               : Column(
-                                  spacing: 10,
                                   children: [for (final p in data.upcomingProjects) _UpcomingRow(p)],
                                 ),
                 ),
@@ -220,26 +219,6 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _TaskTile extends StatelessWidget {
-  const _TaskTile(this.task);
-
-  final Task task;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      title: Text(task.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Align(alignment: Alignment.centerLeft, child: TaskStatusBadge(task.status)),
-      ),
-      trailing: ImportanceTag(task.importance),
-    );
-  }
-}
-
 class _ProjectProgress extends StatelessWidget {
   const _ProjectProgress(this.project);
 
@@ -247,25 +226,51 @@ class _ProjectProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 4,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                project.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
+    return _ProjectLink(
+      projectId: project.id,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 4,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  project.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
+                ),
               ),
-            ),
-            Text('${project.progressPct}%', style: _muted(12)),
-          ],
+              Text('${project.progressPct}%', style: _muted(12)),
+            ],
+          ),
+          ProgressBar(value: project.doneTasks.toDouble(), max: project.totalTasks.toDouble()),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bấm 1 dự án (đang chạy / sắp tới) → màn chi tiết. Vùng chạm cao tối thiểu 44px.
+class _ProjectLink extends StatelessWidget {
+  const _ProjectLink({required this.projectId, required this.child});
+
+  final String projectId;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push('/du-an/$projectId'),
+      borderRadius: BorderRadius.circular(AppTheme.darkRadius),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Align(alignment: Alignment.centerLeft, child: child),
         ),
-        ProgressBar(value: project.doneTasks.toDouble(), max: project.totalTasks.toDouble()),
-      ],
+      ),
     );
   }
 }
@@ -277,24 +282,27 @@ class _UpcomingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      spacing: 8,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: _projectColor(project.color), shape: BoxShape.circle),
-        ),
-        Expanded(
-          child: Text(
-            project.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
+    return _ProjectLink(
+      projectId: project.id,
+      child: Row(
+        spacing: 8,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: _projectColor(project.color), shape: BoxShape.circle),
           ),
-        ),
-        Text(project.startDate, style: _muted(12)),
-      ],
+          Expanded(
+            child: Text(
+              project.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
+            ),
+          ),
+          Text(project.startDate, style: _muted(12)),
+        ],
+      ),
     );
   }
 }

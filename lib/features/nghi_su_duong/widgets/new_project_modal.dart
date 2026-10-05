@@ -2,18 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/form_bits.dart';
 import '../models/project.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/nghi_su_duong_api.dart';
 
 /// Port NewProjectModal (calendar/NewProjectModal.tsx): chỉ có tên, tạo project STANDARD.
-Future<void> showNewProjectModal(BuildContext context) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: const BoxConstraints(maxWidth: 560),
-      builder: (_) => const NewProjectModal(),
-    );
+Future<void> showNewProjectModal(BuildContext context) => showFinanceSheet<void>(context, const NewProjectModal());
 
 class NewProjectModal extends ConsumerStatefulWidget {
   const NewProjectModal({super.key});
@@ -63,30 +58,20 @@ class _NewProjectModalState extends ConsumerState<NewProjectModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 12,
-          children: [
-            Text('Thêm dự án', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20)),
-            TextField(
-              controller: _name,
-              autofocus: true,
-              decoration: const InputDecoration(hintText: 'VD: Sự kiện tháng 11'),
-              onSubmitted: (_) => _canSubmit ? _submit() : null,
-            ),
-            if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            FilledButton(
-              onPressed: _canSubmit ? _submit : null,
-              child: Text(_submitting ? 'Đang tạo...' : 'Tạo'),
-            ),
-          ],
+    return FinanceSheetBody(
+      title: 'Thêm dự án',
+      children: [
+        TextField(
+          controller: _name,
+          decoration: const InputDecoration(hintText: 'VD: Sự kiện tháng 11'),
+          onSubmitted: (_) => _canSubmit ? _submit() : null,
         ),
-      ),
+        if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        FilledButton(
+          onPressed: _canSubmit ? _submit : null,
+          child: Text(_submitting ? 'Đang tạo...' : 'Tạo'),
+        ),
+      ],
     );
   }
 }

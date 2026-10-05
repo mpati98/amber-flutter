@@ -41,6 +41,13 @@ class TaskStatusBadge extends StatelessWidget {
   }
 }
 
+/// Nhãn mức quan trọng (1–3), dùng chung cho tag và lựa chọn trong form.
+String importanceLabel(int importance) => switch (importance) {
+      3 => 'Cao',
+      2 => 'TB',
+      _ => 'Thấp',
+    };
+
 /// Port ImportanceTag: nền đặc, px-1.5, không tracking. 3 = Cao (shuiro/trắng),
 /// 2 = TB (kincha/ink-950), 1 = Thấp (yugen/trắng); giá trị lạ → như 1 (giống web).
 class ImportanceTag extends StatelessWidget {
@@ -50,13 +57,13 @@ class ImportanceTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, bg, fg) = switch (importance) {
-      3 => ('Cao', AppColors.shuiro500, Colors.white),
-      2 => ('TB', AppColors.kincha400, AppColors.ink950),
-      _ => ('Thấp', AppColors.yugen500, Colors.white),
+    final (bg, fg) = switch (importance) {
+      3 => (AppColors.shuiro500, Colors.white),
+      2 => (AppColors.kincha400, AppColors.ink950),
+      _ => (AppColors.yugen500, Colors.white),
     };
     return Tag(
-      label: label,
+      label: importanceLabel(importance),
       color: bg,
       foregroundColor: fg,
       variant: TagVariant.solid,
