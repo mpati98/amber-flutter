@@ -105,7 +105,6 @@ class _AddLessonModalState extends ConsumerState<AddLessonModal> {
       children: [
         TextField(
           controller: _title,
-          autofocus: true,
           decoration: const InputDecoration(hintText: 'Tên bài học'),
         ),
         Row(

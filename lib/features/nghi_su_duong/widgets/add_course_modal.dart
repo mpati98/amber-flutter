@@ -82,7 +82,6 @@ class _AddCourseModalState extends ConsumerState<AddCourseModal> {
       children: [
         TextField(
           controller: _name,
-          autofocus: true,
           decoration: const InputDecoration(hintText: 'Tên khóa (VD: CS50, React Advanced)'),
         ),
         TextField(

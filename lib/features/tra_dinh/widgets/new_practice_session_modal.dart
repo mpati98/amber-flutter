@@ -63,7 +63,6 @@ class _NewPracticeSessionModalState extends ConsumerState<NewPracticeSessionModa
         ),
         TextField(
           controller: _name,
-          autofocus: true,
           decoration: const InputDecoration(hintText: 'Tên buổi luyện (tuỳ chọn)'),
         ),
         sheetError(context, _error),

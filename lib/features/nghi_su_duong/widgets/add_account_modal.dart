@@ -73,7 +73,6 @@ class _AddAccountModalState extends ConsumerState<AddAccountModal> {
       children: [
         TextField(
           controller: _name,
-          autofocus: true,
           decoration: const InputDecoration(hintText: 'Tên ví (VD: Vietcombank, Momo)'),
         ),
         ChoiceRow<AccountType>(

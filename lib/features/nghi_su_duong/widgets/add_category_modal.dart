@@ -86,7 +86,6 @@ class _AddCategoryModalState extends ConsumerState<AddCategoryModal> {
             Expanded(
               child: TextField(
                 controller: _name,
-                autofocus: true,
                 decoration: const InputDecoration(hintText: 'Tên danh mục (VD: Ăn uống)'),
               ),
             ),

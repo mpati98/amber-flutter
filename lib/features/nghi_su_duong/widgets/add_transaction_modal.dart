@@ -113,7 +113,7 @@ class _AddTransactionModalState extends ConsumerState<AddTransactionModal> {
           selected: _kind,
           onSelected: _selectKind,
         ),
-        MoneyField(controller: _amount, hint: 'Số tiền (VND)', autofocus: true),
+        MoneyField(controller: _amount, hint: 'Số tiền (VND)'),
         if (accounts == null || allCategories == null)
           const Text('Đang tải ví và danh mục...')
         else ...[
