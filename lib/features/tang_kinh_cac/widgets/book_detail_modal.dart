@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/form_bits.dart';
 import '../../../shared/widgets/rating_stars.dart';
 import '../models/highlight.dart';
 import '../models/publication.dart';
@@ -12,15 +13,10 @@ import '../services/highlight_api.dart';
 import '../services/publication_api.dart';
 import 'status_badge.dart';
 
-/// Port BookDetailModal (web) — bottom sheet cao gần hết màn vì có cả form
-/// lẫn danh sách highlight.
-Future<void> showBookDetailModal(BuildContext context, Publication book) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: const BoxConstraints(maxWidth: 560),
-      builder: (_) => BookDetailModal(book: book),
-    );
+/// Port BookDetailModal (web) — form toàn màn hình chung ([showFinanceSheet]),
+/// gồm cả form lẫn danh sách highlight.
+Future<void> showBookDetailModal(BuildContext context, Publication book) =>
+    showFinanceSheet<void>(context, BookDetailModal(book: book));
 
 class BookDetailModal extends ConsumerStatefulWidget {
   const BookDetailModal({super.key, required this.book});
@@ -162,104 +158,81 @@ class _BookDetailModalState extends ConsumerState<BookDetailModal> {
   Widget build(BuildContext context) {
     final muted = Colors.white.withValues(alpha: 0.4);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 16, // space-y-4
+    return FinanceSheetBody(
+      title: widget.book.title,
+      children: [
+        Row(
+          spacing: 12,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.book.title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Đóng',
-                  icon: Icon(Icons.close, color: muted),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            Row(
-              spacing: 12,
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<PublicationStatus>(
-                    initialValue: _status,
-                    items: [
-                      for (final s in PublicationStatus.values.where((s) => s != PublicationStatus.unknown))
-                        DropdownMenuItem(value: s, child: Text(s.label)),
-                    ],
-                    onChanged: (v) => setState(() => _status = v!),
-                  ),
-                ),
-                Expanded(
-                  child: DropdownButtonFormField<PublicationFormat>(
-                    initialValue: _format,
-                    items: [
-                      for (final f in PublicationFormat.values.where((f) => f != PublicationFormat.unknown))
-                        DropdownMenuItem(value: f, child: Text(f.label)),
-                    ],
-                    onChanged: (v) => setState(() => _format = v!),
-                  ),
-                ),
-              ],
-            ),
-            if (_status == PublicationStatus.reading)
-              Row(
-                spacing: 12,
-                children: [
-                  Expanded(child: _NumberField(controller: _currentPage, hint: 'Trang hiện tại')),
-                  Expanded(child: _NumberField(controller: _totalPages, hint: 'Tổng số trang')),
+            Expanded(
+              child: DropdownButtonFormField<PublicationStatus>(
+                initialValue: _status,
+                items: [
+                  for (final s in PublicationStatus.values.where((s) => s != PublicationStatus.unknown))
+                    DropdownMenuItem(value: s, child: Text(s.label)),
                 ],
+                onChanged: (v) => setState(() => _status = v!),
               ),
-            if (_status == PublicationStatus.read)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 4,
-                children: [
-                  Text('Đánh giá', style: TextStyle(fontSize: 12, color: muted)),
-                  RatingStars(rating: _rating, size: 20, onChanged: (r) => setState(() => _rating = r)),
+            ),
+            Expanded(
+              child: DropdownButtonFormField<PublicationFormat>(
+                initialValue: _format,
+                items: [
+                  for (final f in PublicationFormat.values.where((f) => f != PublicationFormat.unknown))
+                    DropdownMenuItem(value: f, child: Text(f.label)),
                 ],
+                onChanged: (v) => setState(() => _format = v!),
               ),
-            TextField(
-              controller: _review,
-              minLines: 3,
-              maxLines: 8,
-              decoration: const InputDecoration(hintText: 'Review dài...'),
             ),
-            TextField(
-              controller: _notes,
-              minLines: 2,
-              maxLines: 6,
-              decoration: const InputDecoration(hintText: 'Ghi chú nhanh...'),
-            ),
-            if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            Row(
-              spacing: 8,
-              children: [
-                Expanded(child: FilledButton(onPressed: _busy ? null : _save, child: const Text('Lưu'))),
-                OutlinedButton(
-                  onPressed: _busy ? null : _delete,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.shuiro500,
-                    side: BorderSide(color: AppColors.shuiro500.withValues(alpha: 0.4)),
-                  ),
-                  child: const Text('Xóa'),
-                ),
-              ],
-            ),
-            Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
-            _buildHighlights(),
           ],
         ),
-      ),
+        if (_status == PublicationStatus.reading)
+          Row(
+            spacing: 12,
+            children: [
+              Expanded(child: _NumberField(controller: _currentPage, hint: 'Trang hiện tại')),
+              Expanded(child: _NumberField(controller: _totalPages, hint: 'Tổng số trang')),
+            ],
+          ),
+        if (_status == PublicationStatus.read)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              Text('Đánh giá', style: TextStyle(fontSize: 12, color: muted)),
+              RatingStars(rating: _rating, size: 20, onChanged: (r) => setState(() => _rating = r)),
+            ],
+          ),
+        TextField(
+          controller: _review,
+          minLines: 3,
+          maxLines: 8,
+          decoration: const InputDecoration(hintText: 'Review dài...'),
+        ),
+        TextField(
+          controller: _notes,
+          minLines: 2,
+          maxLines: 6,
+          decoration: const InputDecoration(hintText: 'Ghi chú nhanh...'),
+        ),
+        sheetError(context, _error),
+        Row(
+          spacing: 8,
+          children: [
+            Expanded(child: FilledButton(onPressed: _busy ? null : _save, child: const Text('Lưu'))),
+            OutlinedButton(
+              onPressed: _busy ? null : _delete,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.shuiro500,
+                side: BorderSide(color: AppColors.shuiro500.withValues(alpha: 0.4)),
+              ),
+              child: const Text('Xóa'),
+            ),
+          ],
+        ),
+        Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
+        _buildHighlights(),
+      ],
     );
   }
 

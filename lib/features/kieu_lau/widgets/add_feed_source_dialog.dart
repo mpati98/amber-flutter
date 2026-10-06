@@ -2,8 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/form_bits.dart';
 import '../models/feed_source.dart';
 import '../services/kieu_lau_api.dart';
+
+/// Mở form toàn màn hình chung; trả về nguồn vừa tạo, hoặc null nếu đóng.
+Future<FeedSource?> showAddFeedSourceDialog(BuildContext context) =>
+    showFinanceSheet<FeedSource>(context, const AddFeedSourceDialog());
 
 /// Port tối thiểu từ AddFeedSourceModal (web). Trả về [FeedSource] vừa tạo
 /// qua `Navigator.pop`, hoặc null nếu huỷ.
@@ -57,29 +62,20 @@ class _AddFeedSourceDialogState extends ConsumerState<AddFeedSourceDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Thêm nguồn tin'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 12,
-        children: [
-          TextField(
-            controller: _name,
-            autofocus: true,
-            decoration: const InputDecoration(hintText: 'Tên nguồn (VD: TechCrunch)'),
-          ),
-          TextField(
-            controller: _url,
-            keyboardType: TextInputType.url,
-            decoration: const InputDecoration(hintText: 'URL RSS (VD: https://example.com/feed)'),
-            onSubmitted: (_) => _canSubmit ? _submit() : null,
-          ),
-          if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        ],
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Huỷ')),
+    return FinanceSheetBody(
+      title: 'Thêm nguồn tin',
+      children: [
+        TextField(
+          controller: _name,
+          decoration: const InputDecoration(hintText: 'Tên nguồn (VD: TechCrunch)'),
+        ),
+        TextField(
+          controller: _url,
+          keyboardType: TextInputType.url,
+          decoration: const InputDecoration(hintText: 'URL RSS (VD: https://example.com/feed)'),
+          onSubmitted: (_) => _canSubmit ? _submit() : null,
+        ),
+        sheetError(context, _error),
         FilledButton(
           onPressed: _canSubmit ? _submit : null,
           child: Text(_submitting ? 'Đang thêm...' : 'Thêm'),

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/form_bits.dart';
 import '../models/document.dart';
 import '../providers/document_provider.dart';
 import '../services/document_api.dart';
@@ -20,14 +21,8 @@ const _placeholder = {
   DocumentType.mindmap: '# Chủ đề\n- ý 1\n  - ý con\n- ý 2',
 };
 
-/// Port AddDocumentModal (web), dạng bottom sheet như AddBookModal.
-Future<void> showAddDocumentModal(BuildContext context) => showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: const BoxConstraints(maxWidth: 560),
-      builder: (_) => const AddDocumentModal(),
-    );
+/// Port AddDocumentModal (web), form toàn màn hình chung ([showFinanceSheet]).
+Future<void> showAddDocumentModal(BuildContext context) => showFinanceSheet<void>(context, const AddDocumentModal());
 
 class AddDocumentModal extends ConsumerStatefulWidget {
   const AddDocumentModal({super.key});
@@ -149,56 +144,47 @@ class _AddDocumentModalState extends ConsumerState<AddDocumentModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 12, // space-y-3
+    return FinanceSheetBody(
+      title: 'Lưu tài liệu mới',
+      children: [
+        TextField(controller: _title, decoration: const InputDecoration(hintText: 'Tiêu đề')),
+        // Nhãn tiếng Việt thay cho mã thô TEXT/CHECKLIST... bên web.
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
           children: [
-            Text('Lưu tài liệu mới', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20)),
-            TextField(controller: _title, autofocus: true, decoration: const InputDecoration(hintText: 'Tiêu đề')),
-            // Nhãn tiếng Việt thay cho mã thô TEXT/CHECKLIST... bên web.
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final t in DocumentType.values.where((t) => t != DocumentType.unknown))
-                  ChoiceChip(
-                    label: Text('${t.icon} ${t.label}'),
-                    selected: _type == t,
-                    showCheckmark: false,
-                    selectedColor: AppColors.kincha400,
-                    labelStyle: TextStyle(fontSize: 13, color: _type == t ? AppColors.ink950 : null),
-                    onSelected: (_) => _selectType(t),
-                  ),
-              ],
-            ),
-            if (_type.hasTextContent)
-              TextField(
-                controller: _content,
-                minLines: 6,
-                maxLines: 14,
-                keyboardType: TextInputType.multiline,
-                style: GoogleFonts.robotoMono(fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: _placeholder[_type],
-                  hintMaxLines: 6,
-                  hintStyle: GoogleFonts.robotoMono(fontSize: 13, color: Colors.white.withValues(alpha: 0.3)),
-                ),
-              )
-            else
-              _buildAttachmentPicker(),
-            if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-            FilledButton(
-              onPressed: _canSubmit ? _submit : null,
-              child: Text(_submitting ? 'Đang lưu...' : 'Lưu vào Tàng Kinh Các'),
-            ),
+            for (final t in DocumentType.values.where((t) => t != DocumentType.unknown))
+              ChoiceChip(
+                label: Text('${t.icon} ${t.label}'),
+                selected: _type == t,
+                showCheckmark: false,
+                selectedColor: AppColors.kincha400,
+                labelStyle: TextStyle(fontSize: 13, color: _type == t ? AppColors.ink950 : null),
+                onSelected: (_) => _selectType(t),
+              ),
           ],
         ),
-      ),
+        if (_type.hasTextContent)
+          TextField(
+            controller: _content,
+            minLines: 6,
+            maxLines: 14,
+            keyboardType: TextInputType.multiline,
+            style: GoogleFonts.robotoMono(fontSize: 13),
+            decoration: InputDecoration(
+              hintText: _placeholder[_type],
+              hintMaxLines: 6,
+              hintStyle: GoogleFonts.robotoMono(fontSize: 13, color: Colors.white.withValues(alpha: 0.3)),
+            ),
+          )
+        else
+          _buildAttachmentPicker(),
+        sheetError(context, _error),
+        FilledButton(
+          onPressed: _canSubmit ? _submit : null,
+          child: Text(_submitting ? 'Đang lưu...' : 'Lưu vào Tàng Kinh Các'),
+        ),
+      ],
     );
   }
 

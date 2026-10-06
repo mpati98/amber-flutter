@@ -227,7 +227,7 @@ class _NewsCardState extends ConsumerState<_NewsCard> {
   }
 
   Future<void> _addSource() async {
-    final created = await showDialog<FeedSource>(context: context, builder: (_) => const AddFeedSourceDialog());
+    final created = await showAddFeedSourceDialog(context);
     if (created == null) return;
     ref.invalidate(feedSourcesProvider);
     ref.invalidate(notificationsProvider);
