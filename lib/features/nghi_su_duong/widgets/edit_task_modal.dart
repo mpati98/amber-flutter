@@ -8,7 +8,26 @@ import '../models/task.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/nghi_su_duong_api.dart';
 import 'task_badges.dart';
-import 'task_tile.dart';
+
+/// Hộp xác nhận xoá việc (ghi rõ tên). true = người dùng chọn Xoá.
+Future<bool> confirmDeleteTask(BuildContext context, Task task) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Xoá việc?'),
+      content: Text('"${task.title}" sẽ bị xoá hẳn, không khôi phục được.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: TextButton.styleFrom(foregroundColor: AppColors.shuiro500),
+          child: const Text('Xoá'),
+        ),
+      ],
+    ),
+  );
+  return confirmed == true;
+}
 
 /// Sửa tên / trạng thái / mức quan trọng, hoặc xoá việc. Chưa sửa ngày/hạn.
 Future<void> showEditTaskModal(BuildContext context, Task task) =>
@@ -66,7 +85,7 @@ class _EditTaskModalState extends ConsumerState<EditTaskModal> {
             status: _status != t.status ? _status : null,
             importance: _importance != t.importance ? _importance : null,
           );
-      ref.read(tasksProvider.notifier).refreshAfterWrite();
+      refreshProjectData(ref.invalidate, t.projectId);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
@@ -86,9 +105,7 @@ class _EditTaskModalState extends ConsumerState<EditTaskModal> {
     });
     try {
       await ref.read(nghiSuDuongApiProvider).deleteTask(widget.task.id);
-      final notifier = ref.read(tasksProvider.notifier);
-      notifier.removeLocal(widget.task.id);
-      notifier.refreshAfterWrite();
+      refreshProjectData(ref.invalidate, widget.task.projectId);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {

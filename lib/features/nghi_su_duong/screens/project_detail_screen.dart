@@ -1,101 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/progress_bar.dart';
-import '../../../shared/widgets/scroll_card.dart';
-import '../models/overview.dart';
+import '../models/project_detail.dart';
 import '../models/task.dart';
 import '../providers/nghi_su_duong_provider.dart';
+import '../widgets/key_results_block.dart';
 import '../widgets/new_task_modal.dart';
-import '../widgets/task_tile.dart';
+import '../widgets/project_header.dart';
+import '../widgets/task_board.dart';
 
-TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
-
-/// /du-an/:projectId — việc của 1 dự án, nhóm theo trạng thái. Không có route
-/// API riêng: tên dự án lấy từ du-an/overview, việc lọc từ tasksProvider (mọi
-/// việc của user) theo projectId ở client.
-class ProjectDetailScreen extends ConsumerStatefulWidget {
+/// /du-an/:projectId — chi tiết một dự án STANDARD: đầu trang, Kết quả then chốt, bảng việc.
+/// Dữ liệu: GET /api/projects/[id] (kèm KR) và GET /api/tasks?projectId=.
+class ProjectDetailScreen extends ConsumerWidget {
   const ProjectDetailScreen({super.key, required this.projectId});
 
   final String projectId;
 
   @override
-  ConsumerState<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detail = ref.watch(projectDetailProvider(projectId));
+    final tasksAsync = ref.watch(projectTasksProvider(projectId));
+    final project = detail.value;
+    final tasks = tasksAsync.value;
+    final muted = TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6));
 
-class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
-  bool _showDone = false; // nhóm "Đã xong" gập lại mặc định
-
-  @override
-  Widget build(BuildContext context) {
-    final tasksAsync = ref.watch(tasksProvider);
-    final overview = ref.watch(duAnOverviewProvider).value;
-    final projects = overview?.activeProjects ?? const <ActiveProject>[];
-    final project = projects.where((p) => p.id == widget.projectId).firstOrNull;
-
-    final tasks = tasksAsync.value?.where((t) => t.projectId == widget.projectId).toList();
-    List<Task> ofStatus(Set<TaskStatus> s) => tasks?.where((t) => s.contains(t.status)).toList() ?? const [];
-    // Trạng thái lạ (không có trong 4 giá trị) xếp cùng "Chờ" để không mất việc.
-    final groups = [
-      ('Đang làm', ofStatus({TaskStatus.inProgress})),
-      ('Thẩm định', ofStatus({TaskStatus.review})),
-      ('Chờ', ofStatus({TaskStatus.prep, TaskStatus.unknown})),
+    // Mỗi tab là một mục ở đây; thêm tab (Lịch, Thu-chi) = thêm một mục. Hiện chỉ có "Bảng" nên
+    // không dựng thanh tab.
+    final tabs = <({String label, Widget Function() build})>[
+      (
+        label: 'Bảng',
+        build: () => _BoardTab(projectId: projectId, project: project!, tasks: tasks, tasksAsync: tasksAsync),
+      ),
     ];
-    final done = ofStatus({TaskStatus.done});
-    final total = tasks?.length ?? 0;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(project?.name ?? 'Dự án', maxLines: 1, overflow: TextOverflow.ellipsis),
-        actions: [
-          TextButton(
-            // Dự án đã lưu trữ / chưa tải xong overview thì chưa thêm việc được.
-            onPressed: project == null
-                ? null
-                : () => showNewTaskModal(context, projects, projectId: widget.projectId),
-            child: const Text('+ Việc'),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: AppBar(title: Text(project?.name ?? 'Dự án', maxLines: 1, overflow: TextOverflow.ellipsis)),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
+          constraints: const BoxConstraints(maxWidth: 1200),
           child: RefreshIndicator(
-            onRefresh: () => Future.wait([ref.refresh(tasksProvider.future), ref.refresh(duAnOverviewProvider.future)]),
+            onRefresh: () => Future.wait([
+              ref.refresh(projectDetailProvider(projectId).future),
+              ref.refresh(projectTasksProvider(projectId).future),
+            ]),
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
-                ScrollCard(
-                  glow: ScrollCardGlow.yugen,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 8,
-                    children: [
-                      Text(
-                        project?.name ?? 'Dự án',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20),
-                      ),
-                      ProgressBar(value: done.length.toDouble(), max: total.toDouble()),
-                      Text(tasks == null ? 'Đang tải...' : '${done.length} / $total việc xong', style: _muted(12)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (tasksAsync.hasError && tasks == null)
-                  Text('Không tải được việc.', style: _muted(12))
-                else if (tasks == null)
-                  const SizedBox.shrink()
-                else if (tasks.isEmpty)
-                  Text('Chưa có việc nào — bấm "+ Việc" để thêm việc đầu tiên.', style: _muted(13))
+                if (project == null)
+                  Text(detail.hasError ? 'Không tải được dự án.' : 'Đang tải...', style: muted)
                 else ...[
-                  for (final (title, items) in groups)
-                    if (items.isNotEmpty) _Group(title: title, tasks: items),
-                  if (done.isNotEmpty)
-                    _DoneGroup(tasks: done, expanded: _showDone, onToggle: () => setState(() => _showDone = !_showDone)),
-                  const SizedBox(height: 8),
-                  Text('Chạm để sửa · vuốt sang trái để xoá', style: _muted(10)),
+                  ProjectHeader(project: project, tasks: tasks),
+                  const SizedBox(height: 16),
+                  KeyResultsBlock(projectId: projectId, keyResults: project.keyResults),
+                  const SizedBox(height: 24),
+                  tabs.first.build(),
                 ],
               ],
             ),
@@ -106,64 +66,43 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   }
 }
 
-Widget _groupTitle(String text) => Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.kincha400)),
-    );
+class _BoardTab extends StatelessWidget {
+  const _BoardTab({required this.projectId, required this.project, required this.tasks, required this.tasksAsync});
 
-class _Group extends StatelessWidget {
-  const _Group({required this.title, required this.tasks});
-
-  final String title;
-  final List<Task> tasks;
+  final String projectId;
+  final ProjectDetail project;
+  final List<Task>? tasks;
+  final AsyncValue<List<Task>> tasksAsync;
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final muted = TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6));
+    final total = tasks?.length ?? 0;
+    final done = tasks?.where((t) => t.status == TaskStatus.done).length ?? 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
       children: [
-        _groupTitle('$title (${tasks.length})'),
-        for (final t in tasks) TaskTile(t, key: ValueKey(t.id)),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-}
-
-class _DoneGroup extends StatelessWidget {
-  const _DoneGroup({required this.tasks, required this.expanded, required this.onToggle});
-
-  final List<Task> tasks;
-  final bool expanded;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          button: true,
-          expanded: expanded,
-          child: InkWell(
-            onTap: onToggle,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 44),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Đã xong (${tasks.length})',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.emerald300),
-                    ),
-                  ),
-                  Icon(expanded ? Icons.expand_less : Icons.expand_more, size: 20, color: Colors.white54),
-                ],
-              ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(tasks == null ? 'Đang tải...' : '$done / $total việc xong', style: muted),
             ),
-          ),
+            TextButton.icon(
+              // Việc luôn tạo trong dự án đang xem; dùng được cả khi dự án Tạm dừng / Đã xong.
+              onPressed: () => showNewTaskModal(context, projectId: projectId),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Thêm việc'),
+            ),
+          ],
         ),
-        if (expanded) for (final t in tasks) TaskTile(t, key: ValueKey(t.id)),
+        ProgressBar(value: done.toDouble(), max: total.toDouble()),
+        if (tasksAsync.hasError && tasks == null)
+          Text('Không tải được việc.', style: muted)
+        else if (tasks != null)
+          TaskBoard(projectId: projectId, tasks: tasks!, keyResults: project.keyResults),
       ],
     );
   }

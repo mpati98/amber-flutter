@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/services/api_client.dart';
+import '../models/key_result.dart';
 import '../models/overview.dart';
+import '../models/project_detail.dart';
 import '../models/project.dart';
 import '../models/project_summary.dart';
 import '../models/task.dart';
@@ -69,16 +71,55 @@ class NghiSuDuongApi {
     return Project.fromJson(res.data!);
   }
 
-  /// Mọi task của user (không lọc theo ngày — lọc "hôm nay" ở client như web).
-  Future<List<Task>> getTasks() async {
-    final res = await _dio.get<List<dynamic>>('/api/tasks');
+  /// Dự án STANDARD [id] kèm keyResults (404 nếu không phải của user hoặc khác loại).
+  Future<ProjectDetail> getProject(String id) async {
+    final res = await _dio.get<Map<String, dynamic>>('/api/projects/$id');
+    return ProjectDetail.fromJson(res.data!);
+  }
+
+  /// PATCH từng phần: [patch] chỉ chứa trường cần đổi (name, goal, startDate, endDate, status);
+  /// đặt `null` để xoá goal / startDate / endDate. 400 `end_before_start` khi hạn trước ngày bắt đầu.
+  Future<ProjectDetail> updateProject(String id, Map<String, Object?> patch) async {
+    final res = await _dio.patch<Map<String, dynamic>>('/api/projects/$id', data: patch);
+    return ProjectDetail.fromJson(res.data!);
+  }
+
+  /// Việc của một dự án (kèm checklistItems, attention).
+  Future<List<Task>> getProjectTasks(String projectId) async {
+    final res = await _dio.get<List<dynamic>>('/api/tasks', queryParameters: {'projectId': projectId});
     return res.data!.map((e) => Task.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// [projectId] phải là project của chính user (backend trả 404 nếu không).
+  /// [target] chỉ dùng cho MANUAL (≥ 1); AUTO server bỏ qua target/current.
+  Future<KeyResult> createKeyResult(
+    String projectId, {
+    required String name,
+    required KrMode mode,
+    String? unit,
+    int? target,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/projects/$projectId/key-results',
+      data: {'name': name, 'mode': mode.apiValue, 'unit': ?unit, if (mode == KrMode.manual) 'target': ?target},
+    );
+    return KeyResult.fromJson(res.data!);
+  }
+
+  /// [patch] chỉ chứa trường cần đổi (name, mode, unit, target, current). 400 `current_out_of_range`
+  /// khi current ngoài 0..target.
+  Future<KeyResult> updateKeyResult(String projectId, String krId, Map<String, Object?> patch) async {
+    final res = await _dio.patch<Map<String, dynamic>>('/api/projects/$projectId/key-results/$krId', data: patch);
+    return KeyResult.fromJson(res.data!);
+  }
+
+  /// Việc đang gắn vào KR tự thành không gắn (server xử lý).
+  Future<void> deleteKeyResult(String projectId, String krId) =>
+      _dio.delete<void>('/api/projects/$projectId/key-results/$krId');
+
+  /// Việc luôn thuộc một dự án: [projectId] phải là project của chính user (backend trả 404 nếu không).
   /// [startDate]/[dueDate] dạng "YYYY-MM-DD".
   Future<Task> createTask({
-    String? projectId,
+    required String projectId,
     required String title,
     required int importance,
     required int urgency,
@@ -89,7 +130,7 @@ class NghiSuDuongApi {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/tasks',
       data: {
-        'projectId': ?projectId,
+        'projectId': projectId,
         'title': title,
         'importance': importance,
         'urgency': urgency,

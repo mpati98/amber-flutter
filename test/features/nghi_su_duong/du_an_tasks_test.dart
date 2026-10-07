@@ -5,6 +5,7 @@ import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
 import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/project_detail.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
@@ -19,28 +20,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-// Hoàn thành / sửa / xoá việc + màn chi tiết dự án. API giả, không request
+// Sửa / xoá việc (form) + form Thêm dự án. API giả, không request
 // thật: mọi request còn sót tới Dio bị chặn và đếm.
 
-var _blocked = 0;
 Dio _offlineDio() => Dio()
   ..interceptors.add(
     InterceptorsWrapper(
       onRequest: (o, h) {
-        _blocked++;
         h.reject(DioException(requestOptions: o, error: 'network blocked in test'));
       },
     ),
   );
-
-DioException _serverError(int status, [Object? data]) {
-  final req = RequestOptions(path: '/api/tasks/x');
-  return DioException(
-    requestOptions: req,
-    type: DioExceptionType.badResponse,
-    response: Response(requestOptions: req, statusCode: status, data: data),
-  );
-}
 
 final _today = vnToday();
 
@@ -73,6 +63,7 @@ class _FakeApi extends NghiSuDuongApi {
   int projectCreates = 0;
   int taskFetches = 0;
   int overviewFetches = 0;
+  int projectFetches = 0;
   int summaryFetches = 0;
   final projectCreateArgs = <Map<String, Object?>>[];
 
@@ -123,9 +114,15 @@ class _FakeApi extends NghiSuDuongApi {
   }
 
   @override
-  Future<List<Task>> getTasks() async {
+  Future<ProjectDetail> getProject(String id) async {
+    projectFetches++;
+    return ProjectDetail(id: id, name: id == 'p1' ? 'Sự kiện tháng 11' : 'Hội thảo 2027', status: ProjectStatus.active);
+  }
+
+  @override
+  Future<List<Task>> getProjectTasks(String projectId) async {
     taskFetches++;
-    return List.of(tasks);
+    return tasks.where((t) => t.projectId == projectId).toList();
   }
 
   @override
@@ -147,7 +144,7 @@ class _FakeApi extends NghiSuDuongApi {
 
   @override
   Future<Task> createTask({
-    String? projectId,
+    required String projectId,
     required String title,
     required int importance,
     required int urgency,
@@ -156,7 +153,7 @@ class _FakeApi extends NghiSuDuongApi {
     String? dueDate,
   }) async {
     creates.add({'projectId': projectId, 'title': title, 'importance': importance});
-    final t = _task('t${tasks.length + 10}', title, TaskStatus.prep, project: projectId!, importance: importance);
+    final t = _task('t${tasks.length + 10}', title, TaskStatus.prep, project: projectId, importance: importance);
     tasks.add(t);
     return t;
   }
@@ -186,7 +183,6 @@ class _Harness {
   int notificationFetches = 0;
 
   Future<void> pump(WidgetTester tester, {String location = '/du-an'}) async {
-    _blocked = 0;
     tester.view.physicalSize = const Size(430, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -231,84 +227,8 @@ class _Harness {
   }
 }
 
-Finder _tile(String id) => find.byKey(ValueKey('task-$id'));
-Finder _checkbox(String id) => find.descendant(of: _tile(id), matching: find.byType(Checkbox));
-bool _checked(WidgetTester tester, String id) => tester.widget<Checkbox>(_checkbox(id)).value!;
-TextStyle? _titleStyle(WidgetTester tester, String title) => tester.widget<Text>(find.text(title)).style;
 
 void main() {
-  group('tick hoàn thành', () {
-    testWidgets('chưa xong → DONE ngay (optimistic, trước khi PATCH xong), tick lại → IN_PROGRESS', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      h.api.gate = Completer();
-
-      await tester.tap(_checkbox('t2'));
-      await tester.pump();
-      // Đổi ngay khi PATCH chưa trả lời: rời nhóm "Thẩm định", vào nhóm "Đã xong" (đang gập).
-      expect(find.text('Thẩm định (1)'), findsNothing);
-      expect(find.text('Đã xong (2)'), findsOneWidget);
-      expect(h.api.patches.single, {'id': 't2', 'status': TaskStatus.done});
-
-      h.api.gate!.complete();
-      await tester.pumpAndSettle();
-      expect(h.api.tasks.firstWhere((t) => t.id == 't2').status, TaskStatus.done);
-
-      h.api.gate = null;
-      await tester.tap(find.text('Đã xong (2)'));
-      await tester.pumpAndSettle();
-      expect(_checked(tester, 't2'), isTrue);
-      expect(_titleStyle(tester, 'Chờ báo giá in ấn')?.decoration, TextDecoration.lineThrough);
-      await tester.tap(_checkbox('t2'));
-      await tester.pumpAndSettle();
-      expect(h.api.patches.last, {'id': 't2', 'status': TaskStatus.inProgress});
-      expect(find.text('Đang làm (2)'), findsOneWidget);
-      expect(_checked(tester, 't2'), isFalse);
-      expect(_titleStyle(tester, 'Chờ báo giá in ấn')?.decoration, isNull);
-      expect(_blocked, 0);
-    });
-
-    testWidgets('lỗi → hoàn lại trạng thái cũ + SnackBar (message của server nếu có)', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      h.api.gate = Completer();
-      h.api.failWith = _serverError(500, {'message': 'Máy chủ đang bảo trì.'});
-
-      await tester.tap(_checkbox('t3'));
-      await tester.pump();
-      expect(find.text('Chờ (1)'), findsNothing, reason: 'optimistic: đã sang nhóm Đã xong');
-      h.api.gate!.complete();
-      await tester.pumpAndSettle();
-
-      expect(_checked(tester, 't3'), isFalse, reason: 'hoàn lại');
-      expect(find.text('Chờ (1)'), findsOneWidget);
-      expect(find.text('Máy chủ đang bảo trì.'), findsOneWidget);
-    });
-
-    testWidgets('lỗi không có message (vd 400 {error: {...}}) → câu chung', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      h.api.failWith = _serverError(400, {'error': {'fieldErrors': {}}});
-      await tester.tap(_checkbox('t3'));
-      await tester.pumpAndSettle();
-      expect(find.text('Không cập nhật được việc, thử lại nhé.'), findsOneWidget);
-    });
-
-    testWidgets('sau khi xong: tải lại việc, overview và thông báo; tiến độ đổi', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      expect(find.text('1 / 4 việc xong'), findsOneWidget);
-      final (tasks, overview, notif) = (h.api.taskFetches, h.api.overviewFetches, h.notificationFetches);
-
-      await tester.tap(_checkbox('t1'));
-      await tester.pumpAndSettle();
-      expect(find.text('2 / 4 việc xong'), findsOneWidget);
-      expect(h.api.taskFetches, greaterThan(tasks));
-      expect(h.api.overviewFetches, greaterThan(overview));
-      expect(h.notificationFetches, greaterThan(notif));
-    });
-  });
-
   group('sửa việc', () {
     testWidgets('form toàn màn hình; Lưu khoá khi không đổi / tên rỗng; chỉ gửi trường thay đổi', (tester) async {
       final h = _Harness();
@@ -349,7 +269,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Lưu'));
       await tester.pumpAndSettle();
       expect(h.api.patches.single, {'id': 't2', 'title': 'Chờ báo giá', 'status': TaskStatus.inProgress});
-      expect(find.text('Đang làm (2)'), findsOneWidget);
+      expect(find.text('2 / 2'), findsOneWidget, reason: 'cột Đang làm có 2 việc');
     });
 
     testWidgets('"Xóa việc" trong form: hỏi lại (ghi tên); Huỷ không gọi API, Xoá thì xoá và đóng form', (tester) async {
@@ -373,104 +293,6 @@ void main() {
       expect(find.byType(Dialog), findsNothing);
       expect(find.text('Soạn kế hoạch'), findsNothing);
       expect(find.text('1 / 3 việc xong'), findsOneWidget);
-    });
-  });
-
-  group('vuốt để xoá', () {
-    testWidgets('vuốt trái → hỏi lại; Huỷ thì không gọi API và dòng trượt về', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      await tester.drag(_tile('t2'), const Offset(-500, 0));
-      await tester.pumpAndSettle();
-      expect(find.text('Xoá việc?'), findsOneWidget);
-      expect(find.textContaining('"Chờ báo giá in ấn"'), findsOneWidget);
-      await tester.tap(find.text('Huỷ'));
-      await tester.pumpAndSettle();
-      expect(h.api.deletes, isEmpty);
-      expect(_tile('t2'), findsOneWidget);
-      expect(tester.getTopLeft(_tile('t2')).dx, tester.getTopLeft(_tile('t1')).dx, reason: 'trượt về chỗ cũ');
-    });
-
-    testWidgets('vuốt trái → Xoá → gọi deleteTask, dòng biến mất, tiến độ đổi', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      await tester.drag(_tile('t2'), const Offset(-500, 0));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Xoá'));
-      await tester.pumpAndSettle();
-      expect(h.api.deletes, ['t2']);
-      expect(_tile('t2'), findsNothing);
-      expect(find.text('1 / 3 việc xong'), findsOneWidget);
-    });
-
-    testWidgets('xoá lỗi → SnackBar, dòng vẫn còn', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      h.api.failWith = _serverError(404, {'error': 'task not found'});
-      await tester.drag(_tile('t2'), const Offset(-500, 0));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Xoá'));
-      await tester.pumpAndSettle();
-      expect(find.text('Không xoá được việc, thử lại nhé.'), findsOneWidget);
-      expect(_tile('t2'), findsOneWidget);
-    });
-  });
-
-  group('màn chi tiết dự án', () {
-    testWidgets('bấm thẻ dự án → push /du-an/p1: tên, tiến độ, nhóm theo trạng thái, "Đã xong" gập', (tester) async {
-      final h = _Harness();
-      await h.pump(tester);
-      await tester.tap(find.text('Sự kiện tháng 11'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ProjectDetailScreen), findsOneWidget);
-      expect(find.text('1 / 4 việc xong'), findsOneWidget);
-      final ys = [for (final t in ['Đang làm (1)', 'Thẩm định (1)', 'Chờ (1)', 'Đã xong (1)']) tester.getTopLeft(find.text(t)).dy];
-      expect(ys, orderedEquals([...ys]..sort()));
-      expect(find.text('Lập ngân sách'), findsNothing, reason: 'nhóm Đã xong gập mặc định');
-
-      await tester.tap(find.text('Đã xong (1)'));
-      await tester.pumpAndSettle();
-      expect(find.text('Lập ngân sách'), findsOneWidget);
-      await tester.tap(find.text('Đã xong (1)'));
-      await tester.pumpAndSettle();
-      expect(find.text('Lập ngân sách'), findsNothing);
-
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      expect(find.byType(DuAnScreen), findsOneWidget);
-    });
-
-    testWidgets('bấm thẻ dự án chưa có việc → chi tiết; dòng hướng dẫn; nhóm rỗng ẩn', (tester) async {
-      final h = _Harness();
-      await h.pump(tester);
-      await tester.tap(find.text('Hội thảo 2027'));
-      await tester.pumpAndSettle();
-      expect(find.byType(ProjectDetailScreen), findsOneWidget);
-      expect(find.textContaining('Chưa có việc nào'), findsOneWidget);
-      expect(find.text('0 / 0 việc xong'), findsOneWidget);
-      expect(find.textContaining('Đang làm ('), findsNothing);
-    });
-
-    testWidgets('"+ Việc" tạo việc cho chính dự án này (chọn sẵn), danh sách cập nhật', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p2');
-      await tester.tap(find.widgetWithText(TextButton, '+ Việc'));
-      await tester.pumpAndSettle();
-      expect(find.byType(Dialog), findsOneWidget, reason: 'form toàn màn hình');
-      expect(find.byType(BottomSheet), findsNothing);
-      expect(find.widgetWithText(AppBar, 'Thêm việc'), findsOneWidget);
-      expect(FocusManager.instance.primaryFocus?.context?.widget, isNot(isA<EditableText>()), reason: 'không autofocus');
-      expect(find.text('Hội thảo 2027'), findsWidgets); // dropdown đã chọn sẵn
-      await tester.enterText(find.widgetWithText(TextField, 'Tên việc'), '  Gửi thư mời  ');
-      await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Tạo việc'));
-      await tester.pumpAndSettle();
-
-      expect(h.api.creates.single, {'projectId': 'p2', 'title': 'Gửi thư mời', 'importance': 2});
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.text('Gửi thư mời'), findsOneWidget);
-      expect(find.text('Chờ (1)'), findsOneWidget);
     });
   });
 

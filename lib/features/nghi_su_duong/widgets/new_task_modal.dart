@@ -5,25 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/vn_time.dart';
 import '../../../shared/widgets/form_bits.dart';
-import '../models/overview.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/nghi_su_duong_api.dart';
 import 'task_badges.dart';
 
-/// Port NewTaskModal (calendar/NewTaskModal.tsx). Giống web: task luôn thuộc 1
-/// dự án (web bắt chọn dự án trước khi mở modal — ở đây chọn ngay trong
-/// modal), urgency luôn 2, ngày bắt đầu và hạn luôn là hôm nay theo giờ VN.
-/// [projects] không được rỗng — nơi gọi chặn trước (web ẩn nút khi chưa có dự án).
-/// [projectId]: dự án chọn sẵn (màn chi tiết dự án); null / không có trong
-/// [projects] → dự án đầu tiên.
-Future<void> showNewTaskModal(BuildContext context, List<ActiveProject> projects, {String? projectId}) =>
-    showFinanceSheet<void>(context, NewTaskModal(projects: projects, initialProjectId: projectId));
+/// Form "Thêm việc" cho đúng một dự án ([projectId] cố định, không có ô chọn dự án và không
+/// phụ thuộc danh sách dự án đang chạy — dùng được cả khi dự án đang Tạm dừng hoặc Đã xong).
+/// Giống web: urgency luôn 2, ngày bắt đầu và hạn mặc định là hôm nay theo giờ VN.
+Future<void> showNewTaskModal(BuildContext context, {required String projectId}) =>
+    showFinanceSheet<void>(context, NewTaskModal(projectId: projectId));
 
 class NewTaskModal extends ConsumerStatefulWidget {
-  const NewTaskModal({super.key, required this.projects, this.initialProjectId});
+  const NewTaskModal({super.key, required this.projectId});
 
-  final List<ActiveProject> projects;
-  final String? initialProjectId;
+  final String projectId;
 
   @override
   ConsumerState<NewTaskModal> createState() => _NewTaskModalState();
@@ -31,8 +26,6 @@ class NewTaskModal extends ConsumerStatefulWidget {
 
 class _NewTaskModalState extends ConsumerState<NewTaskModal> {
   final _title = TextEditingController();
-  late String _projectId =
-      widget.projects.any((p) => p.id == widget.initialProjectId) ? widget.initialProjectId! : widget.projects.first.id;
   int _importance = 2; // mặc định TB, như web
   bool _submitting = false;
   String? _error;
@@ -59,15 +52,15 @@ class _NewTaskModalState extends ConsumerState<NewTaskModal> {
     final today = vnToday();
     try {
       await ref.read(nghiSuDuongApiProvider).createTask(
-            projectId: _projectId,
+            projectId: widget.projectId,
             title: _title.text.trim(),
             importance: _importance,
             urgency: 2,
             startDate: today,
             dueDate: today,
           );
-      // Danh sách việc, tiến độ dự án (tổng số task đổi), cảnh báo hạn việc.
-      ref.read(tasksProvider.notifier).refreshAfterWrite();
+      // Bảng việc, tiến độ dự án (tổng số việc đổi), summary, cảnh báo hạn việc.
+      refreshProjectData(ref.invalidate, widget.projectId);
       if (mounted) Navigator.of(context).pop();
     } on DioException {
       if (mounted) {
@@ -85,16 +78,6 @@ class _NewTaskModalState extends ConsumerState<NewTaskModal> {
     return FinanceSheetBody(
       title: 'Thêm việc',
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: _projectId,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Dự án'),
-          items: [
-            for (final p in widget.projects)
-              DropdownMenuItem(value: p.id, child: Text(p.name, overflow: TextOverflow.ellipsis)),
-          ],
-          onChanged: (v) => setState(() => _projectId = v!),
-        ),
         TextField(
           controller: _title,
           decoration: const InputDecoration(hintText: 'Tên việc'),

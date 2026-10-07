@@ -4,7 +4,6 @@ import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
-import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/project_card.dart';
@@ -18,9 +17,17 @@ import 'package:go_router/go_router.dart';
 
 // Khu "Dự án" của màn Dự án: bộ lọc, thẻ, form thêm. API giả, không request thật.
 
+final _requests = <String>[];
+
+/// Mọi request lọt tới Dio (không qua api giả) bị chặn và ghi lại.
 Dio _offlineDio() => Dio()
   ..interceptors.add(
-    InterceptorsWrapper(onRequest: (o, h) => h.reject(DioException(requestOptions: o, error: 'network blocked in test'))),
+    InterceptorsWrapper(
+      onRequest: (o, h) {
+        _requests.add(o.path);
+        h.reject(DioException(requestOptions: o, error: 'network blocked in test'));
+      },
+    ),
   );
 
 ProjectSummary _p(
@@ -61,7 +68,6 @@ class _FakeApi extends NghiSuDuongApi {
   Object? createError;
   final creates = <Map<String, Object?>>[];
   int summaryFetches = 0;
-  int taskFetches = 0;
 
   @override
   Future<DuAnSummary> getDuAnSummary() async {
@@ -72,12 +78,6 @@ class _FakeApi extends NghiSuDuongApi {
   @override
   Future<DuAnOverview> getDuAnOverview({int? year}) async =>
       const DuAnOverview(year: 2026, activeProjects: [], completedThisYear: 0, upcomingProjects: []);
-
-  @override
-  Future<List<Task>> getTasks() async {
-    taskFetches++;
-    return const [];
-  }
 
   @override
   Future<Project> createProject({
@@ -100,6 +100,7 @@ class _FakeAuth extends AuthController {
 }
 
 Future<_FakeApi> _pump(WidgetTester tester, List<ProjectSummary> projects, {double width = 390}) async {
+  _requests.clear();
   final api = _FakeApi(projects);
   tester.view.physicalSize = Size(width, 1600);
   tester.view.devicePixelRatio = 1;
@@ -159,7 +160,7 @@ void main() {
   group('màn Dự án không còn danh sách việc', () {
     testWidgets('không gọi GET /api/tasks, không có "Task hôm nay" và "+ Việc"; làm mới chỉ tải summary', (tester) async {
       final api = await _pump(tester, _mixed);
-      expect(api.taskFetches, 0);
+      expect(_requests, isEmpty, reason: 'không có request lọt qua api giả (không GET /api/tasks)');
       expect(find.text('Task hôm nay'), findsNothing);
       expect(find.text('+ Việc'), findsNothing);
 
@@ -167,7 +168,7 @@ void main() {
       await tester.widget<RefreshIndicator>(find.byType(RefreshIndicator)).onRefresh();
       await tester.pumpAndSettle();
       expect(api.summaryFetches, greaterThan(fetches));
-      expect(api.taskFetches, 0);
+      expect(_requests, isEmpty);
     });
   });
 

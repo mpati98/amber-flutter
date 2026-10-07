@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 
 import '../../kieu_lau/providers/kieu_lau_provider.dart';
 
 import '../models/overview.dart';
+import '../models/project_detail.dart';
 import '../models/project_summary.dart';
 import '../models/task.dart';
 import '../services/nghi_su_duong_api.dart';
@@ -36,51 +38,75 @@ final learnOverviewProvider = FutureProvider.autoDispose<LearnOverview>(
   (ref) => ref.watch(nghiSuDuongApiProvider).getLearnOverview(),
 );
 
-/// Mọi task của user (cả việc đã xong, mọi ngày) — màn Dự án lọc "hôm nay" /
-/// "đang làm", màn chi tiết dự án lọc theo projectId ở client.
-/// Notifier để sửa state ngay (tick hoàn thành optimistic, ẩn việc vừa xoá).
-class TasksNotifier extends AsyncNotifier<List<Task>> {
-  @override
-  Future<List<Task>> build() => ref.watch(nghiSuDuongApiProvider).getTasks();
+/// Dự án STANDARD [id] kèm keyResults — màn Chi tiết dự án.
+final projectDetailProvider = FutureProvider.autoDispose.family<ProjectDetail, String>(
+  (ref, id) => ref.watch(nghiSuDuongApiProvider).getProject(id),
+);
 
-  void _update(String id, Task Function(Task) change) {
+/// Việc của một dự án. Notifier để chuyển cột ngay (optimistic) rồi mới PATCH.
+class ProjectTasksNotifier extends AsyncNotifier<List<Task>> {
+  ProjectTasksNotifier(this.projectId);
+
+  final String projectId;
+
+  @override
+  Future<List<Task>> build() => ref.watch(nghiSuDuongApiProvider).getProjectTasks(projectId);
+
+  void _setStatus(String id, TaskStatus status) {
     final current = state.value;
     if (current == null) return;
-    state = AsyncData([for (final t in current) t.id == id ? change(t) : t]);
+    state = AsyncData([for (final t in current) t.id == id ? t.copyWith(status: status) : t]);
   }
 
-  /// Tick: chưa xong → DONE, đã xong → IN_PROGRESS. Đổi state NGAY rồi mới
-  /// PATCH; lỗi thì hoàn lại trạng thái cũ và ném lại để màn hình báo.
-  /// Chống bấm đúp nằm ở [TaskTile] (khoá ô tick trong lúc gửi).
-  Future<void> toggleDone(Task task) async {
-    final next = task.status == TaskStatus.done ? TaskStatus.inProgress : TaskStatus.done;
-    _update(task.id, (t) => t.copyWith(status: next));
+  /// Chuyển việc sang [next]: đổi state NGAY rồi PATCH; lỗi thì hoàn lại và ném lại để màn hình báo.
+  /// Khoá theo id ([movingTasksProvider]) nên bấm liên tiếp chỉ gửi 1 PATCH — kể cả khi thẻ đã
+  /// sang cột khác. Trả false nếu việc đang được gửi.
+  Future<bool> move(Task task, TaskStatus next) async {
+    final moving = ref.read(movingTasksProvider.notifier);
+    if (!moving.start(task.id)) return false;
+    _setStatus(task.id, next);
     try {
       await ref.read(nghiSuDuongApiProvider).updateTask(task.id, status: next);
     } catch (_) {
-      _update(task.id, (t) => t.copyWith(status: task.status));
+      _setStatus(task.id, task.status);
+      moving.finish(task.id);
       rethrow;
     }
-    refreshAfterWrite();
-  }
-
-  /// Bỏ việc vừa xoá khỏi state ngay (Dismissible đã dismiss mà còn trong cây
-  /// widget sẽ báo lỗi) — server đã xoá, lần tải lại sau cũng không còn.
-  void removeLocal(String id) {
-    final current = state.value;
-    if (current == null) return;
-    state = AsyncData([for (final t in current) if (t.id != id) t]);
-  }
-
-  /// Sau mọi thao tác ghi lên việc: danh sách việc, tiến độ dự án / "TB hoàn
-  /// thành" và cảnh báo hạn việc + badge ở Dư Đồ (Kiều Lâu) đều phụ thuộc.
-  /// Trong lúc tải lại vẫn giữ state hiện tại (đã cập nhật optimistic).
-  void refreshAfterWrite() {
-    ref.invalidateSelf();
-    ref.invalidate(duAnOverviewProvider);
-    ref.invalidate(duAnSummaryProvider);
-    ref.invalidate(notificationsProvider);
+    moving.finish(task.id);
+    refreshProjectData(ref.invalidate, projectId);
+    return true;
   }
 }
 
-final tasksProvider = AsyncNotifierProvider.autoDispose<TasksNotifier, List<Task>>(TasksNotifier.new);
+final projectTasksProvider = AsyncNotifierProvider.autoDispose.family<ProjectTasksNotifier, List<Task>, String>(
+  ProjectTasksNotifier.new,
+);
+
+/// Id các việc đang gửi PATCH chuyển cột — thẻ khoá nút theo đây.
+class MovingTasksNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  /// false nếu [id] đang được gửi (đồng bộ, nên chống bấm đúp).
+  bool start(String id) {
+    if (state.contains(id)) return false;
+    state = {...state, id};
+    return true;
+  }
+
+  void finish(String id) => state = {...state}..remove(id);
+}
+
+final movingTasksProvider = NotifierProvider<MovingTasksNotifier, Set<String>>(MovingTasksNotifier.new);
+
+/// Làm mới dữ liệu sau mọi thay đổi ở màn Chi tiết dự án (KR, việc, thông tin dự án): chính màn đó,
+/// summary + overview của màn Dự án, cảnh báo hạn việc (Kiều Lâu). [invalidate] = `ref.invalidate`.
+void refreshProjectData(void Function(ProviderOrFamily) invalidate, String? projectId) {
+  if (projectId != null) {
+    invalidate(projectDetailProvider(projectId));
+    invalidate(projectTasksProvider(projectId));
+  }
+  invalidate(duAnSummaryProvider);
+  invalidate(duAnOverviewProvider);
+  invalidate(notificationsProvider);
+}
