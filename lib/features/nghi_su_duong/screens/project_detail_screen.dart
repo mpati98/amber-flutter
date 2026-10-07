@@ -36,11 +36,11 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
 
     final tasks = tasksAsync.value?.where((t) => t.projectId == widget.projectId).toList();
     List<Task> ofStatus(Set<TaskStatus> s) => tasks?.where((t) => s.contains(t.status)).toList() ?? const [];
-    // Trạng thái lạ (không có trong 4 giá trị) xếp cùng "Chuẩn bị" để không mất việc.
+    // Trạng thái lạ (không có trong 4 giá trị) xếp cùng "Chờ" để không mất việc.
     final groups = [
       ('Đang làm', ofStatus({TaskStatus.inProgress})),
-      ('Chờ', ofStatus({TaskStatus.waiting})),
-      ('Chuẩn bị', ofStatus({TaskStatus.prep, TaskStatus.unknown})),
+      ('Thẩm định', ofStatus({TaskStatus.review})),
+      ('Chờ', ofStatus({TaskStatus.prep, TaskStatus.unknown})),
     ];
     final done = ofStatus({TaskStatus.done});
     final total = tasks?.length ?? 0;

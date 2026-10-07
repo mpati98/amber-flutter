@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../kieu_lau/providers/kieu_lau_provider.dart';
 
 import '../models/overview.dart';
+import '../models/project_summary.dart';
 import '../models/task.dart';
 import '../services/nghi_su_duong_api.dart';
 
@@ -11,6 +12,21 @@ import '../services/nghi_su_duong_api.dart';
 final duAnOverviewProvider = FutureProvider.autoDispose<DuAnOverview>(
   (ref) => ref.watch(nghiSuDuongApiProvider).getDuAnOverview(),
 );
+
+/// Dữ liệu màn Dự án (danh sách dự án + việc cần chú ý). Làm mới: ref.invalidate / refresh.
+final duAnSummaryProvider = FutureProvider.autoDispose<DuAnSummary>(
+  (ref) => ref.watch(nghiSuDuongApiProvider).getDuAnSummary(),
+);
+
+/// Bộ lọc trạng thái ở khu "Dự án" của màn Dự án (mặc định Đang triển khai).
+class DuAnFilterNotifier extends Notifier<ProjectStatus> {
+  @override
+  ProjectStatus build() => ProjectStatus.active;
+
+  void select(ProjectStatus status) => state = status;
+}
+
+final duAnFilterProvider = NotifierProvider.autoDispose<DuAnFilterNotifier, ProjectStatus>(DuAnFilterNotifier.new);
 
 final financeOverviewProvider = FutureProvider.autoDispose<FinanceOverview>(
   (ref) => ref.watch(nghiSuDuongApiProvider).getFinanceOverview(),
@@ -62,6 +78,7 @@ class TasksNotifier extends AsyncNotifier<List<Task>> {
   void refreshAfterWrite() {
     ref.invalidateSelf();
     ref.invalidate(duAnOverviewProvider);
+    ref.invalidate(duAnSummaryProvider);
     ref.invalidate(notificationsProvider);
   }
 }

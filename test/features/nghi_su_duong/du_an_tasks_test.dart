@@ -5,6 +5,7 @@ import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
 import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/project_detail_screen.dart';
@@ -62,7 +63,7 @@ class _FakeApi extends NghiSuDuongApi {
 
   final tasks = <Task>[
     _task('t1', 'Đặt phòng hội trường', TaskStatus.inProgress, today: true, importance: 3),
-    _task('t2', 'Chờ báo giá in ấn', TaskStatus.waiting),
+    _task('t2', 'Chờ báo giá in ấn', TaskStatus.review),
     _task('t3', 'Soạn kế hoạch', TaskStatus.prep, importance: 1),
     _task('t4', 'Lập ngân sách', TaskStatus.done),
   ];
@@ -72,6 +73,8 @@ class _FakeApi extends NghiSuDuongApi {
   int projectCreates = 0;
   int taskFetches = 0;
   int overviewFetches = 0;
+  int summaryFetches = 0;
+  final projectCreateArgs = <Map<String, Object?>>[];
 
   /// Giữ PATCH lại tới khi complete (để kiểm tra optimistic / bấm đúp).
   Completer<void>? gate;
@@ -98,6 +101,25 @@ class _FakeApi extends NghiSuDuongApi {
       completedThisYear: 0,
       upcomingProjects: const [UpcomingProject(id: 'p2', name: 'Hội thảo 2027', startDate: '2027-01-10')],
     );
+  }
+
+  @override
+  Future<DuAnSummary> getDuAnSummary() async {
+    summaryFetches++;
+    ProjectSummary p(String id, String name) {
+      final mine = tasks.where((t) => t.projectId == id).toList();
+      return ProjectSummary(
+        id: id,
+        name: name,
+        status: ProjectStatus.active,
+        taskTotal: mine.length,
+        taskDone: mine.where((t) => t.status == TaskStatus.done).length,
+        taskDoing: mine.where((t) => t.status == TaskStatus.inProgress).length,
+        attentionCount: 0,
+      );
+    }
+
+    return DuAnSummary(projects: [p('p1', 'Sự kiện tháng 11'), p('p2', 'Hội thảo 2027')], attention: const []);
   }
 
   @override
@@ -140,8 +162,16 @@ class _FakeApi extends NghiSuDuongApi {
   }
 
   @override
-  Future<Project> createProject({required String name, String? color, ProjectType? type}) async {
+  Future<Project> createProject({
+    required String name,
+    String? color,
+    ProjectType? type,
+    String? goal,
+    String? startDate,
+    String? endDate,
+  }) async {
     projectCreates++;
+    projectCreateArgs.add({'name': name, 'goal': goal, 'startDate': startDate, 'endDate': endDate, 'type': type});
     return Project(id: 'p-new', name: name, type: ProjectType.standard);
   }
 }
@@ -215,8 +245,8 @@ void main() {
 
       await tester.tap(_checkbox('t2'));
       await tester.pump();
-      // Đổi ngay khi PATCH chưa trả lời: rời nhóm "Chờ", vào nhóm "Đã xong" (đang gập).
-      expect(find.text('Chờ (1)'), findsNothing);
+      // Đổi ngay khi PATCH chưa trả lời: rời nhóm "Thẩm định", vào nhóm "Đã xong" (đang gập).
+      expect(find.text('Thẩm định (1)'), findsNothing);
       expect(find.text('Đã xong (2)'), findsOneWidget);
       expect(h.api.patches.single, {'id': 't2', 'status': TaskStatus.done});
 
@@ -246,12 +276,12 @@ void main() {
 
       await tester.tap(_checkbox('t3'));
       await tester.pump();
-      expect(find.text('Chuẩn bị (1)'), findsNothing, reason: 'optimistic: đã sang nhóm Đã xong');
+      expect(find.text('Chờ (1)'), findsNothing, reason: 'optimistic: đã sang nhóm Đã xong');
       h.api.gate!.complete();
       await tester.pumpAndSettle();
 
       expect(_checked(tester, 't3'), isFalse, reason: 'hoàn lại');
-      expect(find.text('Chuẩn bị (1)'), findsOneWidget);
+      expect(find.text('Chờ (1)'), findsOneWidget);
       expect(find.text('Máy chủ đang bảo trì.'), findsOneWidget);
     });
 
@@ -294,15 +324,15 @@ void main() {
       expect(h.notificationFetches, greaterThan(notif));
     });
 
-    testWidgets('màn Dự án: "Task hôm nay" dùng cùng dòng việc; tick → "TB hoàn thành" đổi', (tester) async {
+    testWidgets('màn Dự án: "Task hôm nay" dùng cùng dòng việc; tick → tải lại summary, thẻ dự án đổi', (tester) async {
       final h = _Harness();
       await h.pump(tester);
-      // p1: 1/4 = 25%, p2: 0% → TB 13%.
-      expect(find.text('13%'), findsOneWidget);
+      expect(find.text('Xong 1 / 4'), findsOneWidget);
+      final summary = h.api.summaryFetches;
       await tester.tap(_checkbox('t1'));
       await tester.pumpAndSettle();
-      expect(find.text('25%'), findsWidgets); // p1 2/4 = 50%, TB (50+0)/2 = 25%
-      expect(find.text('50%'), findsOneWidget);
+      expect(h.api.summaryFetches, greaterThan(summary));
+      expect(find.text('Xong 2 / 4'), findsOneWidget);
     });
   });
 
@@ -414,7 +444,7 @@ void main() {
   });
 
   group('màn chi tiết dự án', () {
-    testWidgets('bấm dự án đang chạy → push /du-an/p1: tên, tiến độ, nhóm theo trạng thái, "Đã xong" gập', (tester) async {
+    testWidgets('bấm thẻ dự án → push /du-an/p1: tên, tiến độ, nhóm theo trạng thái, "Đã xong" gập', (tester) async {
       final h = _Harness();
       await h.pump(tester);
       await tester.tap(find.text('Sự kiện tháng 11'));
@@ -422,7 +452,7 @@ void main() {
 
       expect(find.byType(ProjectDetailScreen), findsOneWidget);
       expect(find.text('1 / 4 việc xong'), findsOneWidget);
-      final ys = [for (final t in ['Đang làm (1)', 'Chờ (1)', 'Chuẩn bị (1)', 'Đã xong (1)']) tester.getTopLeft(find.text(t)).dy];
+      final ys = [for (final t in ['Đang làm (1)', 'Thẩm định (1)', 'Chờ (1)', 'Đã xong (1)']) tester.getTopLeft(find.text(t)).dy];
       expect(ys, orderedEquals([...ys]..sort()));
       expect(find.text('Lập ngân sách'), findsNothing, reason: 'nhóm Đã xong gập mặc định');
 
@@ -438,10 +468,10 @@ void main() {
       expect(find.byType(DuAnScreen), findsOneWidget);
     });
 
-    testWidgets('bấm dự án ở "Sắp tới" → chi tiết; chưa có việc → dòng hướng dẫn; nhóm rỗng ẩn', (tester) async {
+    testWidgets('bấm thẻ dự án chưa có việc → chi tiết; dòng hướng dẫn; nhóm rỗng ẩn', (tester) async {
       final h = _Harness();
       await h.pump(tester);
-      await tester.tap(find.text('2027-01-10'));
+      await tester.tap(find.text('Hội thảo 2027'));
       await tester.pumpAndSettle();
       expect(find.byType(ProjectDetailScreen), findsOneWidget);
       expect(find.textContaining('Chưa có việc nào'), findsOneWidget);
@@ -465,7 +495,7 @@ void main() {
       expect(h.api.creates.single, {'projectId': 'p2', 'title': 'Gửi thư mời', 'importance': 2});
       expect(find.byType(Dialog), findsNothing);
       expect(find.text('Gửi thư mời'), findsOneWidget);
-      expect(find.text('Chuẩn bị (1)'), findsOneWidget);
+      expect(find.text('Chờ (1)'), findsOneWidget);
     });
   });
 
@@ -489,10 +519,10 @@ void main() {
       expect(find.byType(Dialog), findsNothing);
     });
 
-    testWidgets('Thêm dự án: Dialog toàn màn hình; X đóng không tạo; Tạo thì tạo và tải lại overview', (tester) async {
+    testWidgets('Thêm dự án: Dialog toàn màn hình; X đóng không tạo; Tạo thì tạo và tải lại summary', (tester) async {
       final h = _Harness();
       await h.pump(tester);
-      await tester.tap(find.widgetWithText(TextButton, '+ Dự án'));
+      await tester.tap(find.text('Thêm dự án'));
       await tester.pumpAndSettle();
       expect(find.byType(Dialog), findsOneWidget);
       expect(find.widgetWithText(AppBar, 'Thêm dự án'), findsOneWidget);
@@ -500,15 +530,24 @@ void main() {
       await tester.pumpAndSettle();
       expect(h.api.projectCreates, 0);
 
-      final overview = h.api.overviewFetches;
-      await tester.tap(find.widgetWithText(TextButton, '+ Dự án'));
+      final (overview, summary) = (h.api.overviewFetches, h.api.summaryFetches);
+      await tester.tap(find.text('Thêm dự án'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'Dự án mới');
+      await tester.enterText(find.widgetWithText(TextField, 'Tên dự án'), '  Dự án mới ');
+      await tester.enterText(find.widgetWithText(TextField, 'Mục tiêu'), 'Ra mắt sản phẩm');
       await tester.pump();
       await tester.tap(find.widgetWithText(FilledButton, 'Tạo'));
       await tester.pumpAndSettle();
       expect(h.api.projectCreates, 1);
+      expect(h.api.projectCreateArgs.single, {
+        'name': 'Dự án mới',
+        'goal': 'Ra mắt sản phẩm',
+        'startDate': _today,
+        'endDate': null,
+        'type': ProjectType.standard,
+      });
       expect(h.api.overviewFetches, greaterThan(overview));
+      expect(h.api.summaryFetches, greaterThan(summary));
       expect(find.byType(Dialog), findsNothing);
     });
   });

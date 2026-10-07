@@ -6,9 +6,9 @@ import '../models/task.dart';
 
 extension TaskStatusLabel on TaskStatus {
   String get label => switch (this) {
-        TaskStatus.prep => 'Chuẩn bị',
-        TaskStatus.waiting => 'Chờ',
+        TaskStatus.prep => 'Chờ',
         TaskStatus.inProgress => 'Đang làm',
+        TaskStatus.review => 'Thẩm định',
         TaskStatus.done => 'Xong',
         TaskStatus.unknown => 'Không rõ',
       };
@@ -34,8 +34,8 @@ class TaskStatusBadge extends StatelessWidget {
     return switch (status) {
       // bg-white/10 text-white/60 — dùng luôn cho giá trị lạ, giống fallback web.
       TaskStatus.prep || TaskStatus.unknown => tonal(Colors.white, Colors.white.withValues(alpha: 0.6), alpha: 0.1),
-      TaskStatus.waiting => tonal(AppColors.yugen500, AppColors.yugen300),
       TaskStatus.inProgress => tonal(AppColors.kincha400, AppColors.kincha400),
+      TaskStatus.review => tonal(AppColors.yugen500, AppColors.yugen300),
       TaskStatus.done => tonal(AppColors.emerald400, AppColors.emerald300),
     };
   }

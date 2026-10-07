@@ -1,7 +1,7 @@
 enum TaskStatus {
   prep('PREP'),
-  waiting('WAITING'),
   inProgress('IN_PROGRESS'),
+  review('REVIEW'),
   done('DONE'),
   unknown('');
 

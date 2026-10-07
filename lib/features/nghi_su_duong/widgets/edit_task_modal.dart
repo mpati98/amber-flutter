@@ -31,7 +31,7 @@ class _EditTaskModalState extends ConsumerState<EditTaskModal> {
   bool _busy = false;
   String? _error;
 
-  static const _statuses = [TaskStatus.prep, TaskStatus.waiting, TaskStatus.inProgress, TaskStatus.done];
+  static const _statuses = [TaskStatus.prep, TaskStatus.inProgress, TaskStatus.review, TaskStatus.done];
 
   @override
   void initState() {

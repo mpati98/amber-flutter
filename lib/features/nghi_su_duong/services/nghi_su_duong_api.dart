@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/services/api_client.dart';
 import '../models/overview.dart';
 import '../models/project.dart';
+import '../models/project_summary.dart';
 import '../models/task.dart';
 
 /// Trang chính Nghị Sự Đường + mảng Dự án (projects, tasks, 3 overview).
@@ -17,6 +18,12 @@ class NghiSuDuongApi {
   Future<DuAnOverview> getDuAnOverview({int? year}) async {
     final res = await _dio.get<Map<String, dynamic>>('/api/du-an/overview', queryParameters: {'year': ?year});
     return DuAnOverview.fromJson(res.data!);
+  }
+
+  /// Dữ liệu màn Dự án: mọi dự án STANDARD (mọi trạng thái) kèm số liệu + việc cần chú ý.
+  Future<DuAnSummary> getDuAnSummary() async {
+    final res = await _dio.get<Map<String, dynamic>>('/api/du-an/summary');
+    return DuAnSummary.fromJson(res.data!);
   }
 
   Future<FinanceOverview> getFinanceOverview({int? year}) async {
@@ -38,11 +45,26 @@ class NghiSuDuongApi {
     return res.data!.map((e) => Project.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// [type] mặc định STANDARD ở backend.
-  Future<Project> createProject({required String name, String? color, ProjectType? type}) async {
+  /// [type] mặc định STANDARD ở backend. [startDate]/[endDate] dạng "YYYY-MM-DD";
+  /// hạn trước ngày bắt đầu thì backend trả 400 `end_before_start`.
+  Future<Project> createProject({
+    required String name,
+    String? color,
+    ProjectType? type,
+    String? goal,
+    String? startDate,
+    String? endDate,
+  }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/projects',
-      data: {'name': name, 'color': ?color, if (type != null) 'type': type.apiValue},
+      data: {
+        'name': name,
+        'color': ?color,
+        if (type != null) 'type': type.apiValue,
+        'goal': ?goal,
+        'startDate': ?startDate,
+        'endDate': ?endDate,
+      },
     );
     return Project.fromJson(res.data!);
   }
