@@ -9,7 +9,7 @@ import '../../../shared/widgets/tag.dart';
 import '../models/key_result.dart';
 import '../models/task.dart';
 import '../providers/nghi_su_duong_provider.dart';
-import 'edit_task_modal.dart';
+import 'task_detail_sheet.dart';
 
 /// Giới hạn việc "Đang làm" cùng lúc (chỉ cảnh báo, không chặn thao tác).
 const wipLimit = 2;
@@ -46,8 +46,9 @@ int compareBoardTasks(Task a, Task b) {
 List<Task> tasksOfColumn(List<Task> tasks, TaskStatus column) =>
     tasks.where((t) => _columnOf(t.status) == column).toList()..sort(compareBoardTasks);
 
-/// Bảng Kanban 4 nhóm. Hẹp: xếp dọc; rộng (≥ [boardWideBreakpoint]): 4 cột cạnh nhau.
-class TaskBoard extends StatelessWidget {
+/// Bảng Kanban 4 nhóm. Hẹp: xếp dọc, nhóm "Xong" gập mặc định; rộng (≥ [boardWideBreakpoint]):
+/// 4 cột cạnh nhau, không gập.
+class TaskBoard extends StatefulWidget {
   const TaskBoard({super.key, required this.projectId, required this.tasks, required this.keyResults});
 
   final String projectId;
@@ -55,9 +56,22 @@ class TaskBoard extends StatelessWidget {
   final List<KeyResult> keyResults;
 
   @override
+  State<TaskBoard> createState() => _TaskBoardState();
+}
+
+class _TaskBoardState extends State<TaskBoard> {
+  bool _showDone = false;
+
+  @override
   Widget build(BuildContext context) {
-    Widget column(TaskStatus s) =>
-        _BoardColumn(status: s, tasks: tasksOfColumn(tasks, s), projectId: projectId, keyResults: keyResults);
+    Widget column(TaskStatus s, {bool collapsible = false}) => _BoardColumn(
+          status: s,
+          tasks: tasksOfColumn(widget.tasks, s),
+          projectId: widget.projectId,
+          keyResults: widget.keyResults,
+          collapsed: collapsible && !_showDone,
+          onToggle: collapsible ? () => setState(() => _showDone = !_showDone) : null,
+        );
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= boardWideBreakpoint) {
@@ -70,7 +84,7 @@ class TaskBoard extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 16,
-          children: [for (final s in boardStatuses) column(s)],
+          children: [for (final s in boardStatuses) column(s, collapsible: s == TaskStatus.done)],
         );
       },
     );
@@ -78,12 +92,23 @@ class TaskBoard extends StatelessWidget {
 }
 
 class _BoardColumn extends StatelessWidget {
-  const _BoardColumn({required this.status, required this.tasks, required this.projectId, required this.keyResults});
+  const _BoardColumn({
+    required this.status,
+    required this.tasks,
+    required this.projectId,
+    required this.keyResults,
+    this.collapsed = false,
+    this.onToggle,
+  });
 
   final TaskStatus status;
   final List<Task> tasks;
   final String projectId;
   final List<KeyResult> keyResults;
+
+  /// Chỉ ở bố cục hẹp, nhóm "Xong": [onToggle] != null thì chạm tiêu đề để gập / mở.
+  final bool collapsed;
+  final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -97,22 +122,31 @@ class _BoardColumn extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 8,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                boardColumnLabel(status),
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary),
-              ),
+        InkWell(
+          onTap: onToggle,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: onToggle == null ? 0 : 44),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    boardColumnLabel(status),
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary),
+                  ),
+                ),
+                Text(
+                  count,
+                  style: overWip ? TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.error) : muted,
+                ),
+                if (onToggle != null) Icon(collapsed ? Icons.expand_more : Icons.expand_less, color: muted.color),
+              ],
             ),
-            Text(
-              count,
-              style: overWip ? TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.error) : muted,
-            ),
-          ],
+          ),
         ),
         if (tasks.isEmpty)
           Text('Trống', style: muted)
+        else if (collapsed)
+          const SizedBox.shrink()
         else
           for (final t in tasks)
             TaskCard(key: ValueKey('task-${t.id}'), task: t, projectId: projectId, keyResults: keyResults),
@@ -162,7 +196,7 @@ class TaskCard extends ConsumerWidget {
             : 'Chưa có ngày';
 
     return InkWell(
-      onTap: () => showEditTaskModal(context, task),
+      onTap: () => showTaskDetail(context, projectId: projectId, taskId: task.id),
       borderRadius: BorderRadius.circular(6),
       child: ScrollCard(
         glow: attention != null ? ScrollCardGlow.shuiro : ScrollCardGlow.yugen,

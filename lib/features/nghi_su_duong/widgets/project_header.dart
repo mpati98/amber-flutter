@@ -48,11 +48,15 @@ class ProjectHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 8,
         children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // Nút "Sửa dự án" luôn nằm bên phải, có nhãn trạng thái hay không.
+          Row(
             children: [
-              if (badge != null) Tag(label: badge.label, color: badge.warning ? cs.error : cs.secondary),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: badge == null ? const SizedBox.shrink() : Tag(label: badge.label, color: badge.warning ? cs.error : cs.secondary),
+                ),
+              ),
               TextButton.icon(
                 onPressed: () => showEditProjectModal(context, project),
                 icon: const Icon(Icons.edit_outlined, size: 18),

@@ -20,7 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-// Sửa / xoá việc (form) + form Thêm dự án. API giả, không request
+// Form Thêm dự án + body các lệnh gọi việc. API giả, không request
 // thật: mọi request còn sót tới Dio bị chặn và đếm.
 
 Dio _offlineDio() => Dio()
@@ -126,39 +126,6 @@ class _FakeApi extends NghiSuDuongApi {
   }
 
   @override
-  Future<Task> updateTask(String id, {String? title, TaskStatus? status, int? importance}) async {
-    patches.add({'id': id, 'title': ?title, 'status': ?status, 'importance': ?importance});
-    await gate?.future;
-    if (failWith case final e?) throw e;
-    final i = tasks.indexWhere((t) => t.id == id);
-    tasks[i] = tasks[i].copyWith(title: title, status: status, importance: importance);
-    return tasks[i];
-  }
-
-  @override
-  Future<void> deleteTask(String id) async {
-    deletes.add(id);
-    if (failWith case final e?) throw e;
-    tasks.removeWhere((t) => t.id == id);
-  }
-
-  @override
-  Future<Task> createTask({
-    required String projectId,
-    required String title,
-    required int importance,
-    required int urgency,
-    int durationMinutes = 15,
-    String? startDate,
-    String? dueDate,
-  }) async {
-    creates.add({'projectId': projectId, 'title': title, 'importance': importance});
-    final t = _task('t${tasks.length + 10}', title, TaskStatus.prep, project: projectId, importance: importance);
-    tasks.add(t);
-    return t;
-  }
-
-  @override
   Future<Project> createProject({
     required String name,
     String? color,
@@ -229,73 +196,6 @@ class _Harness {
 
 
 void main() {
-  group('sửa việc', () {
-    testWidgets('form toàn màn hình; Lưu khoá khi không đổi / tên rỗng; chỉ gửi trường thay đổi', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      await tester.tap(find.text('Soạn kế hoạch'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.widgetWithText(AppBar, 'Sửa việc'), findsOneWidget);
-      FilledButton save() => tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Lưu'));
-      expect(save().onPressed, isNull, reason: 'chưa đổi gì');
-
-      final field = find.widgetWithText(TextField, 'Tên việc');
-      await tester.enterText(field, '   ');
-      await tester.pump();
-      expect(save().onPressed, isNull, reason: 'tên rỗng');
-      await tester.enterText(field, '  Soạn kế hoạch  ');
-      await tester.pump();
-      expect(save().onPressed, isNull, reason: 'cắt khoảng trắng → như cũ');
-
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Cao'));
-      await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Lưu'));
-      await tester.pumpAndSettle();
-
-      expect(h.api.patches.single, {'id': 't3', 'importance': 3});
-      expect(find.byType(Dialog), findsNothing);
-    });
-
-    testWidgets('đổi tên (cắt khoảng trắng) + trạng thái → gửi đúng 2 trường', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      await tester.tap(find.text('Chờ báo giá in ấn'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.widgetWithText(TextField, 'Tên việc'), '  Chờ báo giá  ');
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Đang làm'));
-      await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Lưu'));
-      await tester.pumpAndSettle();
-      expect(h.api.patches.single, {'id': 't2', 'title': 'Chờ báo giá', 'status': TaskStatus.inProgress});
-      expect(find.text('2 / 2'), findsOneWidget, reason: 'cột Đang làm có 2 việc');
-    });
-
-    testWidgets('"Xóa việc" trong form: hỏi lại (ghi tên); Huỷ không gọi API, Xoá thì xoá và đóng form', (tester) async {
-      final h = _Harness();
-      await h.pump(tester, location: '/du-an/p1');
-      await tester.tap(find.text('Soạn kế hoạch'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Xóa việc'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('"Soạn kế hoạch"'), findsOneWidget);
-      await tester.tap(find.text('Huỷ'));
-      await tester.pumpAndSettle();
-      expect(h.api.deletes, isEmpty);
-      expect(find.byType(Dialog), findsOneWidget, reason: 'form vẫn mở');
-
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Xóa việc'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Xoá'));
-      await tester.pumpAndSettle();
-      expect(h.api.deletes, ['t3']);
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.text('Soạn kế hoạch'), findsNothing);
-      expect(find.text('1 / 3 việc xong'), findsOneWidget);
-    });
-  });
-
   group('form Thêm dự án toàn màn hình', () {
     testWidgets('Thêm dự án: Dialog toàn màn hình; X đóng không tạo; Tạo thì tạo và tải lại summary', (tester) async {
       final h = _Harness();
@@ -329,8 +229,11 @@ void main() {
     });
   });
 
-  test('NghiSuDuongApi.updateTask chỉ gửi trường được truyền; deleteTask gọi DELETE', () async {
+  test('NghiSuDuongApi: body các lệnh gọi việc / checklist', () async {
     final sent = <List<Object?>>[];
+    const taskJson = {
+      'id': 'x', 'projectId': 'p1', 'title': 'T', 'status': 'DONE', 'importance': 2, 'urgency': 2, 'durationMinutes': 15,
+    };
     final dio = Dio(BaseOptions(baseUrl: 'https://api.test'))
       ..interceptors.add(
         InterceptorsWrapper(
@@ -339,24 +242,40 @@ void main() {
             h.resolve(Response(
               requestOptions: o,
               statusCode: 200,
-              data: o.method == 'DELETE'
-                  ? {'ok': true}
-                  : {
-                      'id': 'x', 'projectId': null, 'title': 'T', 'status': 'DONE', 'importance': 3,
-                      'urgency': 2, 'durationMinutes': 15,
-                    },
+              data: switch ((o.method, o.path)) {
+                ('DELETE', _) => {'ok': true},
+                ('PUT', _) => [
+                    {'id': 'c1', 'text': 'a', 'done': false, 'position': 0},
+                  ],
+                (_, final path) when path.contains('/checklist/') => {'id': 'c1', 'text': 'a', 'done': true, 'position': 0},
+                _ => taskJson,
+              },
             ));
           },
         ),
       );
     final api = NghiSuDuongApi(dio);
-    final t = await api.updateTask('x', importance: 3);
-    await api.updateTask('x', status: TaskStatus.done);
+    await api.updateTask('x', {'dueDate': null, 'status': 'DONE'});
+    await api.createTask(projectId: 'p1', title: 'T', dueDate: '2026-11-01', isMilestone: true);
+    final saved = await api.putChecklist('x', const [ChecklistDraft(id: 'c1', text: 'a', done: false), ChecklistDraft(text: 'b', done: true)]);
+    final item = await api.patchChecklistItem('x', 'c1', done: true);
     await api.deleteTask('x');
-    expect(t.importance, 3);
+    expect(saved.single.id, 'c1');
+    expect(item.done, isTrue);
     expect(sent, [
-      ['PATCH', '/api/tasks/x', {'importance': 3}],
-      ['PATCH', '/api/tasks/x', {'status': 'DONE'}],
+      ['PATCH', '/api/tasks/x', {'dueDate': null, 'status': 'DONE'}],
+      ['POST', '/api/tasks', {'projectId': 'p1', 'title': 'T', 'dueDate': '2026-11-01', 'isMilestone': true}],
+      [
+        'PUT',
+        '/api/tasks/x/checklist',
+        {
+          'items': [
+            {'id': 'c1', 'text': 'a', 'done': false},
+            {'text': 'b', 'done': true},
+          ],
+        },
+      ],
+      ['PATCH', '/api/tasks/x/checklist/c1', {'done': true}],
       ['DELETE', '/api/tasks/x', null],
     ]);
   });

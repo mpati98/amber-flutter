@@ -6,7 +6,7 @@ import '../models/project_detail.dart';
 import '../models/task.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../widgets/key_results_block.dart';
-import '../widgets/new_task_modal.dart';
+import '../widgets/task_form.dart';
 import '../widgets/project_header.dart';
 import '../widgets/task_board.dart';
 
@@ -92,7 +92,7 @@ class _BoardTab extends StatelessWidget {
             ),
             TextButton.icon(
               // Việc luôn tạo trong dự án đang xem; dùng được cả khi dự án Tạm dừng / Đã xong.
-              onPressed: () => showNewTaskModal(context, projectId: projectId),
+              onPressed: () => showTaskForm(context, projectId: projectId, keyResults: project.keyResults),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('Thêm việc'),
             ),

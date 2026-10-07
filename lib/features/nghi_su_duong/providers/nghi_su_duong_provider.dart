@@ -58,6 +58,23 @@ class ProjectTasksNotifier extends AsyncNotifier<List<Task>> {
     state = AsyncData([for (final t in current) t.id == id ? t.copyWith(status: status) : t]);
   }
 
+  /// Tick một mục checklist ngay (lạc quan) — chỉ đổi state, việc gọi API do nơi gọi làm.
+  void setChecklistDone(String taskId, String itemId, bool done) {
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncData([
+      for (final t in current)
+        t.id == taskId
+            ? t.copyWith(
+                checklistItems: [
+                  for (final i in t.checklistItems)
+                    i.id == itemId ? ChecklistItem(id: i.id, text: i.text, done: done, position: i.position) : i,
+                ],
+              )
+            : t,
+    ]);
+  }
+
   /// Chuyển việc sang [next]: đổi state NGAY rồi PATCH; lỗi thì hoàn lại và ném lại để màn hình báo.
   /// Khoá theo id ([movingTasksProvider]) nên bấm liên tiếp chỉ gửi 1 PATCH — kể cả khi thẻ đã
   /// sang cột khác. Trả false nếu việc đang được gửi.
@@ -66,7 +83,7 @@ class ProjectTasksNotifier extends AsyncNotifier<List<Task>> {
     if (!moving.start(task.id)) return false;
     _setStatus(task.id, next);
     try {
-      await ref.read(nghiSuDuongApiProvider).updateTask(task.id, status: next);
+      await ref.read(nghiSuDuongApiProvider).updateTask(task.id, {'status': next.apiValue});
     } catch (_) {
       _setStatus(task.id, task.status);
       moving.finish(task.id);

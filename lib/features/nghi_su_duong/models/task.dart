@@ -10,6 +10,15 @@ enum TaskStatus {
   final String apiValue;
 
   static TaskStatus fromApi(String value) => values.firstWhere((s) => s.apiValue == value, orElse: () => unknown);
+
+  /// Nhãn hiển thị: PREP "Chờ", IN_PROGRESS "Đang làm", REVIEW "Thẩm định", DONE "Xong".
+  String get label => switch (this) {
+        prep => 'Chờ',
+        inProgress => 'Đang làm',
+        review => 'Thẩm định',
+        done => 'Xong',
+        unknown => 'Không rõ',
+      };
 }
 
 /// Mục checklist của một việc.
@@ -120,7 +129,7 @@ class Task {
   final List<ChecklistItem> checklistItems;
   final TaskAttention? attention;
 
-  Task copyWith({String? title, TaskStatus? status, int? importance}) => Task(
+  Task copyWith({String? title, TaskStatus? status, int? importance, List<ChecklistItem>? checklistItems}) => Task(
         id: id,
         projectId: projectId,
         krId: krId,
@@ -137,7 +146,7 @@ class Task {
         notifyDeadline: notifyDeadline,
         statusChangedAt: statusChangedAt,
         createdAt: createdAt,
-        checklistItems: checklistItems,
+        checklistItems: checklistItems ?? this.checklistItems,
         attention: attention,
       );
 }

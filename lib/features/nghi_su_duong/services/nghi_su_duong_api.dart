@@ -117,44 +117,81 @@ class NghiSuDuongApi {
       _dio.delete<void>('/api/projects/$projectId/key-results/$krId');
 
   /// Việc luôn thuộc một dự án: [projectId] phải là project của chính user (backend trả 404 nếu không).
-  /// [startDate]/[dueDate] dạng "YYYY-MM-DD".
+  /// [startDate]/[dueDate] dạng "YYYY-MM-DD". importance và urgency không gửi (server mặc định 2).
+  /// POST không nhận null: trường không có thì bỏ hẳn. 400: `end_before_start`,
+  /// `notify_requires_due_date`, `kr_not_in_project`.
   Future<Task> createTask({
     required String projectId,
     required String title,
-    required int importance,
-    required int urgency,
-    int durationMinutes = 15,
+    TaskStatus? status,
     String? startDate,
     String? dueDate,
+    bool? isMilestone,
+    String? krId,
+    bool? notifyDeadline,
+    int? prepLeadDays,
+    String? description,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/tasks',
       data: {
         'projectId': projectId,
         'title': title,
-        'importance': importance,
-        'urgency': urgency,
-        'durationMinutes': durationMinutes,
+        'status': ?status?.apiValue,
         'startDate': ?startDate,
         'dueDate': ?dueDate,
+        'isMilestone': ?isMilestone,
+        'krId': ?krId,
+        'notifyDeadline': ?notifyDeadline,
+        'prepLeadDays': ?prepLeadDays,
+        'description': ?description,
       },
     );
     return Task.fromJson(res.data!);
   }
 
-  /// PATCH từng phần: chỉ gửi trường được truyền (backend báo 400 nếu rỗng).
-  /// Backend không tự đặt thêm trường nào khi chuyển sang DONE (chỉ ghi
-  /// activity_logs "task.completed").
-  Future<Task> updateTask(String id, {String? title, TaskStatus? status, int? importance}) async {
-    final res = await _dio.patch<Map<String, dynamic>>(
-      '/api/tasks/$id',
-      data: {'title': ?title, 'status': ?status?.apiValue, 'importance': ?importance},
-    );
+  /// PATCH từng phần: [patch] chỉ chứa trường cần đổi (title, status, startDate, dueDate, isMilestone,
+  /// krId, notifyDeadline, prepLeadDays, description). Backend nhận `null` cho description, krId,
+  /// startDate, dueDate, prepLeadDays (để xoá). Backend không tự đặt thêm trường nào khi sang DONE.
+  Future<Task> updateTask(String id, Map<String, Object?> patch) async {
+    final res = await _dio.patch<Map<String, dynamic>>('/api/tasks/$id', data: patch);
     return Task.fromJson(res.data!);
+  }
+
+  /// Thay cả checklist của việc (có id → giữ, không id → tạo, thiếu → xoá; thứ tự = thứ tự mảng).
+  /// Tối đa 50 mục, text 1–500. Trả danh sách mới.
+  Future<List<ChecklistItem>> putChecklist(String taskId, List<ChecklistDraft> items) async {
+    final res = await _dio.put<List<dynamic>>(
+      '/api/tasks/$taskId/checklist',
+      data: {
+        'items': [
+          for (final i in items) {'id': ?i.id, 'text': i.text, 'done': i.done},
+        ],
+      },
+    );
+    return res.data!.map((e) => ChecklistItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Sửa một mục: [done] và/hoặc [text].
+  Future<ChecklistItem> patchChecklistItem(String taskId, String itemId, {bool? done, String? text}) async {
+    final res = await _dio.patch<Map<String, dynamic>>(
+      '/api/tasks/$taskId/checklist/$itemId',
+      data: {'done': ?done, 'text': ?text},
+    );
+    return ChecklistItem.fromJson(res.data!);
   }
 
   /// Backend trả `{ok: true}`, 404 nếu không phải task của user.
   Future<void> deleteTask(String id) => _dio.delete<void>('/api/tasks/$id');
+}
+
+/// Một mục trong body PUT checklist ([id] null = mục mới).
+class ChecklistDraft {
+  const ChecklistDraft({this.id, required this.text, required this.done});
+
+  final String? id;
+  final String text;
+  final bool done;
 }
 
 final nghiSuDuongApiProvider = Provider<NghiSuDuongApi>((ref) => NghiSuDuongApi(ref.watch(apiClientProvider)));
