@@ -61,6 +61,7 @@ class _FakeApi extends NghiSuDuongApi {
   Object? createError;
   final creates = <Map<String, Object?>>[];
   int summaryFetches = 0;
+  int taskFetches = 0;
 
   @override
   Future<DuAnSummary> getDuAnSummary() async {
@@ -73,7 +74,10 @@ class _FakeApi extends NghiSuDuongApi {
       const DuAnOverview(year: 2026, activeProjects: [], completedThisYear: 0, upcomingProjects: []);
 
   @override
-  Future<List<Task>> getTasks() async => const [];
+  Future<List<Task>> getTasks() async {
+    taskFetches++;
+    return const [];
+  }
 
   @override
   Future<Project> createProject({
@@ -149,6 +153,21 @@ void main() {
     });
     test('ACTIVE còn lại → "Đúng nhịp"', () {
       expect(projectBadge(_p('x', 'x', total: 4, done: 1)).label, 'Đúng nhịp');
+    });
+  });
+
+  group('màn Dự án không còn danh sách việc', () {
+    testWidgets('không gọi GET /api/tasks, không có "Task hôm nay" và "+ Việc"; làm mới chỉ tải summary', (tester) async {
+      final api = await _pump(tester, _mixed);
+      expect(api.taskFetches, 0);
+      expect(find.text('Task hôm nay'), findsNothing);
+      expect(find.text('+ Việc'), findsNothing);
+
+      final fetches = api.summaryFetches;
+      await tester.widget<RefreshIndicator>(find.byType(RefreshIndicator)).onRefresh();
+      await tester.pumpAndSettle();
+      expect(api.summaryFetches, greaterThan(fetches));
+      expect(api.taskFetches, 0);
     });
   });
 

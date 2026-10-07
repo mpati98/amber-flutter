@@ -5,14 +5,10 @@ import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/vn_time.dart';
 import '../../../shared/widgets/form_bits.dart';
-import '../../../shared/widgets/scroll_card.dart';
-import '../models/overview.dart';
 import '../models/project_summary.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../widgets/new_project_modal.dart';
-import '../widgets/new_task_modal.dart';
 import '../widgets/project_card.dart';
-import '../widgets/task_tile.dart';
 
 const _weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
 
@@ -32,36 +28,17 @@ String _dateLabel() {
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
-/// Màn Dự án: lời chào, "Task hôm nay", khu "Dự án" (bộ lọc trạng thái + lưới thẻ từ
-/// GET /api/du-an/summary).
+/// Màn Dự án: lời chào + khu "Dự án" (bộ lọc trạng thái + lưới thẻ từ GET /api/du-an/summary).
+/// Việc chỉ được tạo / xem bên trong một dự án (màn chi tiết), không có danh sách việc ở đây.
 class DuAnScreen extends ConsumerWidget {
   const DuAnScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tasks = ref.watch(tasksProvider);
-    final overview = ref.watch(duAnOverviewProvider);
     final summary = ref.watch(duAnSummaryProvider);
     final filter = ref.watch(duAnFilterProvider);
     final auth = ref.watch(authControllerProvider).value;
     final userName = auth is Authenticated ? auth.user['name'] as String? : null;
-
-    final today = vnToday();
-    final allTasks = tasks.value;
-    final todayTasks = allTasks?.where((t) => t.isOn(today)).toList();
-    final data = overview.value;
-
-    // Web ẩn nút thêm task khi chưa có dự án (task luôn thuộc 1 dự án).
-    void addTask() {
-      final projects = data?.activeProjects ?? const <ActiveProject>[];
-      if (projects.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tạo một dự án trước rồi mới thêm việc.')),
-        );
-        return;
-      }
-      showNewTaskModal(context, projects);
-    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Dự án')),
@@ -69,12 +46,10 @@ class DuAnScreen extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
           child: RefreshIndicator(
-            onRefresh: () => Future.wait([
-              ref.refresh(tasksProvider.future),
-              ref.refresh(duAnOverviewProvider.future),
-              ref.refresh(duAnSummaryProvider.future),
-            ]),
+            onRefresh: () => ref.refresh(duAnSummaryProvider.future),
             child: ListView(
+              // Luôn kéo-để-làm-mới được kể cả khi nội dung ngắn (danh sách rỗng).
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
@@ -88,25 +63,6 @@ class DuAnScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(_dateLabel(), style: _muted(12)),
                 const SizedBox(height: 24), // gap-6
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 640),
-                    child: _Section(
-                      title: 'Task hôm nay',
-                      glow: ScrollCardGlow.kincha,
-                      action: TextButton(onPressed: addTask, child: const Text('+ Việc')),
-                      child: tasks.hasError
-                          ? Text('Không tải được task.', style: _muted(12))
-                          : todayTasks == null
-                              ? Text('Đang tải...', style: _muted(12))
-                              : todayTasks.isEmpty
-                                  ? Text('Không có task nào hôm nay.', style: _muted(12))
-                                  : Column(children: [for (final t in todayTasks) TaskTile(t, key: ValueKey(t.id))]),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
                 _ProjectsArea(summary: summary, filter: filter),
               ],
             ),
@@ -168,40 +124,6 @@ class _ProjectsArea extends ConsumerWidget {
         else
           ProjectGrid(projects: shown),
       ],
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.glow, this.action, required this.child});
-
-  final String title;
-  final ScrollCardGlow glow;
-  final Widget? action;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ScrollCard(
-      glow: glow,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.kincha400),
-                ),
-              ),
-              ?action,
-            ],
-          ),
-          const SizedBox(height: 12), // mb-3
-          child,
-        ],
-      ),
     );
   }
 }

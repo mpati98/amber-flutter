@@ -74,7 +74,4 @@ class Task {
         dueDate: dueDate,
         prepLeadDays: prepLeadDays,
       );
-
-  /// Giống web: task "hôm nay" khi ngày bắt đầu HOẶC hạn chót đúng hôm nay.
-  bool isOn(String isoDate) => startDate == isoDate || dueDate == isoDate;
 }

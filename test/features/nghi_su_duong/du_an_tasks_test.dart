@@ -44,7 +44,7 @@ DioException _serverError(int status, [Object? data]) {
 
 final _today = vnToday();
 
-Task _task(String id, String title, TaskStatus status, {String project = 'p1', int importance = 2, bool today = false}) =>
+Task _task(String id, String title, TaskStatus status, {String project = 'p1', int importance = 2}) =>
     Task(
       id: id,
       projectId: project,
@@ -53,8 +53,8 @@ Task _task(String id, String title, TaskStatus status, {String project = 'p1', i
       importance: importance,
       urgency: 2,
       durationMinutes: 15,
-      startDate: today ? _today : '2026-11-01',
-      dueDate: today ? _today : '2026-11-02',
+      startDate: '2026-11-01',
+      dueDate: '2026-11-02',
     );
 
 /// "Server" trong bộ nhớ: tasks + 2 dự án; overview tính lại từ tasks như backend.
@@ -62,7 +62,7 @@ class _FakeApi extends NghiSuDuongApi {
   _FakeApi() : super(_offlineDio());
 
   final tasks = <Task>[
-    _task('t1', 'Đặt phòng hội trường', TaskStatus.inProgress, today: true, importance: 3),
+    _task('t1', 'Đặt phòng hội trường', TaskStatus.inProgress, importance: 3),
     _task('t2', 'Chờ báo giá in ấn', TaskStatus.review),
     _task('t3', 'Soạn kế hoạch', TaskStatus.prep, importance: 1),
     _task('t4', 'Lập ngân sách', TaskStatus.done),
@@ -294,22 +294,6 @@ void main() {
       expect(find.text('Không cập nhật được việc, thử lại nhé.'), findsOneWidget);
     });
 
-    testWidgets('bấm đúp trong lúc đang gửi → chỉ 1 PATCH ("Task hôm nay": dòng đứng yên khi tick)', (tester) async {
-      final h = _Harness();
-      await h.pump(tester);
-      h.api.gate = Completer();
-      await tester.tap(_checkbox('t1'));
-      await tester.pump();
-      await tester.tap(_checkbox('t1'), warnIfMissed: false);
-      await tester.pump();
-      await tester.tap(_checkbox('t1'), warnIfMissed: false);
-      await tester.pump();
-      expect(h.api.patches, hasLength(1));
-      h.api.gate!.complete();
-      await tester.pumpAndSettle();
-      expect(h.api.patches, hasLength(1));
-    });
-
     testWidgets('sau khi xong: tải lại việc, overview và thông báo; tiến độ đổi', (tester) async {
       final h = _Harness();
       await h.pump(tester, location: '/du-an/p1');
@@ -322,17 +306,6 @@ void main() {
       expect(h.api.taskFetches, greaterThan(tasks));
       expect(h.api.overviewFetches, greaterThan(overview));
       expect(h.notificationFetches, greaterThan(notif));
-    });
-
-    testWidgets('màn Dự án: "Task hôm nay" dùng cùng dòng việc; tick → tải lại summary, thẻ dự án đổi', (tester) async {
-      final h = _Harness();
-      await h.pump(tester);
-      expect(find.text('Xong 1 / 4'), findsOneWidget);
-      final summary = h.api.summaryFetches;
-      await tester.tap(_checkbox('t1'));
-      await tester.pumpAndSettle();
-      expect(h.api.summaryFetches, greaterThan(summary));
-      expect(find.text('Xong 2 / 4'), findsOneWidget);
     });
   });
 
@@ -486,6 +459,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(Dialog), findsOneWidget, reason: 'form toàn màn hình');
       expect(find.byType(BottomSheet), findsNothing);
+      expect(find.widgetWithText(AppBar, 'Thêm việc'), findsOneWidget);
+      expect(FocusManager.instance.primaryFocus?.context?.widget, isNot(isA<EditableText>()), reason: 'không autofocus');
       expect(find.text('Hội thảo 2027'), findsWidgets); // dropdown đã chọn sẵn
       await tester.enterText(find.widgetWithText(TextField, 'Tên việc'), '  Gửi thư mời  ');
       await tester.pump();
@@ -499,26 +474,7 @@ void main() {
     });
   });
 
-  group('hai form cũ giờ toàn màn hình', () {
-    testWidgets('Thêm việc (màn Dự án): Dialog toàn màn hình, không autofocus, tạo xong tải lại', (tester) async {
-      final h = _Harness();
-      await h.pump(tester);
-      final fetches = h.api.taskFetches;
-      await tester.tap(find.widgetWithText(TextButton, '+ Việc'));
-      await tester.pumpAndSettle();
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.byType(BottomSheet), findsNothing);
-      expect(find.widgetWithText(AppBar, 'Thêm việc'), findsOneWidget);
-      expect(FocusManager.instance.primaryFocus?.context?.widget, isNot(isA<EditableText>()));
-      await tester.enterText(find.widgetWithText(TextField, 'Tên việc'), 'Việc mới');
-      await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Tạo việc'));
-      await tester.pumpAndSettle();
-      expect(h.api.creates.single['projectId'], 'p1'); // dự án đầu tiên, như trước
-      expect(h.api.taskFetches, greaterThan(fetches));
-      expect(find.byType(Dialog), findsNothing);
-    });
-
+  group('form Thêm dự án toàn màn hình', () {
     testWidgets('Thêm dự án: Dialog toàn màn hình; X đóng không tạo; Tạo thì tạo và tải lại summary', (tester) async {
       final h = _Harness();
       await h.pump(tester);
@@ -530,7 +486,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(h.api.projectCreates, 0);
 
-      final (overview, summary) = (h.api.overviewFetches, h.api.summaryFetches);
+      final summary = h.api.summaryFetches;
       await tester.tap(find.text('Thêm dự án'));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextField, 'Tên dự án'), '  Dự án mới ');
@@ -546,7 +502,6 @@ void main() {
         'endDate': null,
         'type': ProjectType.standard,
       });
-      expect(h.api.overviewFetches, greaterThan(overview));
       expect(h.api.summaryFetches, greaterThan(summary));
       expect(find.byType(Dialog), findsNothing);
     });
