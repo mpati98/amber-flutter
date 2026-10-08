@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 
 import '../../../shared/utils/vn_time.dart';
 import '../../kieu_lau/providers/kieu_lau_provider.dart';
+import '../../tang_kinh_cac/providers/document_provider.dart';
 
 import '../models/overview.dart';
 import '../models/project_detail.dart';
@@ -10,6 +11,7 @@ import '../models/project_summary.dart';
 import '../models/routine.dart';
 import '../models/task.dart';
 import '../services/nghi_su_duong_api.dart';
+import 'finance_provider.dart';
 
 // autoDispose như các tòa khác: rời màn là bỏ cache, quay lại tải mới.
 
@@ -145,6 +147,24 @@ class MovingTasksNotifier extends Notifier<Set<String>> {
 }
 
 final movingTasksProvider = NotifierProvider<MovingTasksNotifier, Set<String>>(MovingTasksNotifier.new);
+
+/// Sau khi ĐÓNG hoặc MỞ LẠI dự án: như [refreshProjectData] và danh sách tài liệu của Tàng Kinh Các
+/// (đóng dự án tạo một tài liệu tổng kết).
+void refreshAfterLifecycle(void Function(ProviderOrFamily) invalidate, String projectId) {
+  refreshProjectData(invalidate, projectId);
+  invalidate(documentsProvider);
+}
+
+/// Sau khi XOÁ dự án: không làm mới chi tiết / việc / thu-chi của chính dự án đó (đã không còn, sẽ báo 404),
+/// chỉ các nơi khác: summary, overview, cảnh báo, giao dịch và tháng tài chính (giao dịch bị bỏ liên kết).
+void refreshAfterProjectDeleted(void Function(ProviderOrFamily) invalidate) {
+  invalidate(duAnSummaryProvider);
+  invalidate(duAnOverviewProvider);
+  invalidate(notificationsProvider);
+  invalidate(financeTransactionsProvider);
+  invalidate(financeSummaryProvider);
+  invalidate(documentsProvider);
+}
 
 /// Làm mới dữ liệu sau mọi thay đổi ở màn Chi tiết dự án (KR, việc, thông tin dự án): chính màn đó,
 /// summary + overview của màn Dự án, cảnh báo hạn việc (Kiều Lâu). [invalidate] = `ref.invalidate`.

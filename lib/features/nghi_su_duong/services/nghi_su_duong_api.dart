@@ -122,6 +122,19 @@ class NghiSuDuongApi {
     return ProjectDetail.fromJson(res.data!);
   }
 
+  /// Đóng dự án: status DONE + closedAt, đồng thời server lưu một tài liệu tổng kết vào Tàng Kinh Các.
+  /// [note] tối đa 5000 ký tự. 400 `project_already_done`. Trả dự án (không kèm KR) và id tài liệu.
+  Future<({ProjectDetail project, String documentId})> closeProject(String id, {String? note}) async {
+    final res = await _dio.post<Map<String, dynamic>>('/api/projects/$id/close', data: {'note': ?note});
+    return (
+      project: ProjectDetail.fromJson(res.data!['project'] as Map<String, dynamic>),
+      documentId: res.data!['documentId'] as String,
+    );
+  }
+
+  /// Xoá hẳn dự án: KR, việc, checklist xoá theo; giao dịch đã gắn được giữ (bỏ liên kết); tài liệu tổng kết giữ.
+  Future<void> deleteProject(String id) => _dio.delete<void>('/api/projects/$id');
+
   /// Việc của một dự án (kèm checklistItems, attention).
   Future<List<Task>> getProjectTasks(String projectId) async {
     final res = await _dio.get<List<dynamic>>('/api/tasks', queryParameters: {'projectId': projectId});

@@ -1,4 +1,6 @@
 import 'package:amber_flutter/features/nghi_su_duong/models/finance_category.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/models/document.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/services/document_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/key_result.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
@@ -307,6 +309,97 @@ void main() {
         }
       }
       expect((await api.getRoutines()).map((r) => r.id).toList(), initial, reason: 'danh sách về như lúc đầu');
+    },
+    skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
+    'Đóng dự án: tài liệu tổng kết vào Tàng Kinh Các → đóng lần nữa bị từ chối → mở lại → xoá dự án, tài liệu còn (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = NghiSuDuongApi(dio);
+      final docs = DocumentApi(dio);
+      String? projectId;
+      String? documentId;
+      var projectDeleted = false;
+
+      final docsBefore = (await docs.getDocuments()).length;
+      try {
+        // 1. dự án có KR và việc (1 xong, 1 chưa)
+        final name = 'TEST contract đóng ${DateTime.now().millisecondsSinceEpoch}';
+        projectId = (await api.createProject(name: name, type: ProjectType.standard, goal: 'Mục tiêu đóng')).id;
+        await api.createKeyResult(projectId, name: 'KR đóng', mode: KrMode.manual, unit: 'bài', target: 4);
+        await api.createTask(projectId: projectId, title: 'Việc đã xong', status: TaskStatus.done);
+        await api.createTask(projectId: projectId, title: 'Việc chưa xong');
+
+        // 2. PATCH sang DONE bị từ chối → phải dùng closeProject
+        Object? patchError;
+        try {
+          await api.updateProject(projectId, {'status': 'DONE'});
+        } catch (e) {
+          patchError = e;
+        }
+        expect(apiErrorCode(patchError!), 'use_close_endpoint');
+
+        // 3. đóng với ghi chú → nhận documentId
+        final closed = await api.closeProject(projectId, note: 'Ghi chú tổng kết thử hợp đồng');
+        documentId = closed.documentId;
+        expect(documentId, isNotEmpty);
+        expect(closed.project.status, ProjectStatus.done);
+        expect(closed.project.closedAt, isNotNull);
+        expect((await api.getProject(projectId)).status, ProjectStatus.done);
+
+        // 4. đọc tài liệu qua api Tàng Kinh Các của app
+        final doc = (await docs.getDocuments()).firstWhere((d) => d.id == documentId);
+        expect(doc.type, DocumentType.text);
+        expect(doc.title, startsWith('Tổng kết dự án: $name — '));
+        expect(doc.tags, containsAll(['du-an', 'tong-ket']));
+        expect(doc.pinned, isFalse);
+        expect(doc.topicId, isNull);
+        final content = doc.content!;
+        expect(content, contains('Dự án: $name'));
+        expect(content, contains('Mục tiêu: Mục tiêu đóng'));
+        expect(content, contains('- KR đóng: 0/4 bài (0%)'));
+        expect(content, contains('Việc đã xong (1/2)'));
+        expect(content, contains('- Việc đã xong'));
+        expect(content, contains('Còn 1 việc chưa xong.'));
+        expect(content, contains('Thu-chi: Thu 0₫ · Chi 0₫ · Ròng 0₫'));
+        expect(content, contains('Ghi chú tổng kết\nGhi chú tổng kết thử hợp đồng'));
+
+        // 5. đóng lần nữa → project_already_done
+        Object? again;
+        try {
+          await api.closeProject(projectId);
+        } catch (e) {
+          again = e;
+        }
+        expect(apiErrorCode(again!), 'project_already_done');
+        expect((await docs.getDocuments()).where((d) => d.title.startsWith('Tổng kết dự án: $name')), hasLength(1), reason: 'không tạo tài liệu thứ hai');
+
+        // 6. mở lại: closedAt null, tài liệu giữ nguyên
+        final reopened = await api.updateProject(projectId, {'status': 'ACTIVE'});
+        expect(reopened.status, ProjectStatus.active);
+        expect(reopened.closedAt, isNull);
+        expect((await docs.getDocuments()).any((d) => d.id == documentId), isTrue);
+
+        // 7. xoá dự án: tài liệu vẫn còn
+        await api.deleteProject(projectId);
+        projectDeleted = true;
+        Object? gone;
+        try {
+          await api.getProject(projectId);
+        } catch (e) {
+          gone = e;
+        }
+        expect((gone as DioException).response?.statusCode, 404);
+        expect((await docs.getDocuments()).any((d) => d.id == documentId), isTrue, reason: 'tài liệu tổng kết vẫn giữ sau khi xoá dự án');
+      } finally {
+        // 8. dọn
+        if (projectId != null && !projectDeleted) await api.deleteProject(projectId);
+        if (documentId != null) await docs.deleteDocument(documentId);
+      }
+      expect((await docs.getDocuments()).length, docsBefore, reason: 'số tài liệu về như lúc đầu');
     },
     skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
     timeout: const Timeout(Duration(minutes: 2)),

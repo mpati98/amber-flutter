@@ -7,6 +7,7 @@ import '../models/project_detail.dart';
 import '../models/project_summary.dart';
 import '../models/task.dart';
 import 'edit_project_modal.dart';
+import 'project_actions.dart';
 
 /// Nhãn trạng thái ở đầu trang: PAUSED "Tạm dừng"; DONE "Đã xong"; còn lại "{n} việc cần xử lý"
 /// (n = số việc có attention) hoặc "Đúng nhịp" khi n = 0. [attentionCount] null (chưa tải việc) → không có nhãn.
@@ -62,6 +63,7 @@ class ProjectHeader extends StatelessWidget {
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: const Text('Sửa dự án'),
               ),
+              ProjectActionsButton(project: project),
             ],
           ),
           Text(project.name, style: theme.textTheme.headlineSmall?.copyWith(fontSize: 20, color: cs.onSurface)),

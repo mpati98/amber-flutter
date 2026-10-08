@@ -39,6 +39,8 @@ class _EditProjectModalState extends ConsumerState<EditProjectModal> {
   bool _busy = false;
   String? _error;
 
+  bool get _isDone => widget.project.status == ProjectStatus.done;
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +63,7 @@ class _EditProjectModalState extends ConsumerState<EditProjectModal> {
       if (goal != (p.goal ?? '')) 'goal': goal.isEmpty ? null : goal,
       if (_startDate != p.startDate) 'startDate': _startDate,
       if (_endDate != p.endDate) 'endDate': _endDate,
-      if (_status != p.status) 'status': _status.apiValue,
+      if (!_isDone && _status != p.status) 'status': _status.apiValue,
     };
   }
 
@@ -153,16 +155,16 @@ class _EditProjectModalState extends ConsumerState<EditProjectModal> {
               ),
           ],
         ),
-        Text('Trạng thái', style: label),
-        ChoiceRow<ProjectStatus>(
-          options: const {
-            ProjectStatus.active: 'Đang triển khai',
-            ProjectStatus.paused: 'Tạm dừng',
-            ProjectStatus.done: 'Đã xong',
-          },
-          selected: _status,
-          onSelected: (s) => setState(() => _status = s),
-        ),
+        // Chuyển sang "Đã xong" phải qua "Đóng dự án" (lưu tài liệu tổng kết); dự án đã xong thì ẩn ô này
+        // (mở lại bằng menu "Mở lại dự án").
+        if (!_isDone) ...[
+          Text('Trạng thái', style: label),
+          ChoiceRow<ProjectStatus>(
+            options: const {ProjectStatus.active: 'Đang triển khai', ProjectStatus.paused: 'Tạm dừng'},
+            selected: _status,
+            onSelected: (s) => setState(() => _status = s),
+          ),
+        ],
         sheetError(context, _error),
         FilledButton(
           onPressed: _canSave ? _save : null,

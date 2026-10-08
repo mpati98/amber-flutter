@@ -266,7 +266,27 @@ class FakeApi extends NghiSuDuongApi {
   Future<ProjectDetail> updateProject(String id, Map<String, Object?> patch) async {
     projectPatches.add(patch);
     if (projectPatchError case final e?) throw e;
+    if (patch['status'] is String) project = _with(status: ProjectStatus.fromApi(patch['status'] as String));
     return project;
+  }
+
+  final closes = <String?>[]; // ghi chú mỗi lần đóng
+  final projectDeletes = <String>[];
+  Object? closeError;
+  Completer<void>? closeGate;
+
+  @override
+  Future<({ProjectDetail project, String documentId})> closeProject(String id, {String? note}) async {
+    closes.add(note);
+    await closeGate?.future;
+    if (closeError case final e?) throw e;
+    project = _with(status: ProjectStatus.done);
+    return (project: project, documentId: 'doc-1');
+  }
+
+  @override
+  Future<void> deleteProject(String id) async {
+    projectDeletes.add(id);
   }
 
   @override
@@ -310,11 +330,11 @@ class FakeApi extends NghiSuDuongApi {
   @override
   Future<DuAnSummary> getDuAnSummary() async => DuAnSummary(projects: summaryProjects, attention: summaryAttention);
 
-  ProjectDetail _with({List<KeyResult>? keyResults}) => ProjectDetail(
+  ProjectDetail _with({List<KeyResult>? keyResults, ProjectStatus? status}) => ProjectDetail(
         id: project.id,
         name: project.name,
         goal: project.goal,
-        status: project.status,
+        status: status ?? project.status,
         startDate: project.startDate,
         endDate: project.endDate,
         keyResults: keyResults ?? project.keyResults,
