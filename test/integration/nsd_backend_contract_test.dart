@@ -1,7 +1,9 @@
+import 'package:amber_flutter/features/nghi_su_duong/models/finance_category.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/key_result.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
+import 'package:amber_flutter/features/nghi_su_duong/services/finance_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
@@ -144,6 +146,94 @@ void main() {
       final end = await api.getDuAnSummary();
       expect(end.projects.length, initialCount, reason: 'summary về đúng số dự án ban đầu sau khi dọn');
       expect(end.projects.any((p) => p.id == projectId), isFalse);
+    },
+    skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
+    'Thu-chi gắn dự án: POST không projectId → PATCH → bỏ gắn / gắn lại → xoá, số dư ví hoàn lại (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = NghiSuDuongApi(dio);
+      final fin = FinanceApi(dio);
+      String? projectId;
+      String? txId;
+
+      Future<Map<String, double>> balances() async => {for (final a in await fin.getAccounts()) a.id: a.currentBalance};
+
+      // 1. số dư các ví trước
+      final before = await balances();
+      expect(before, isNotEmpty, reason: 'cần ít nhất một ví trên DB dev');
+      final account = (await fin.getAccounts()).first;
+      final category = (await fin.getCategories()).firstWhere((c) => c.kind == MoneyKind.expense);
+
+      try {
+        // 2. dự án + giao dịch Chi 100000 gắn dự án, KHÔNG gửi projectId
+        projectId = (await api.createProject(name: 'TEST contract thu-chi ${DateTime.now().millisecondsSinceEpoch}', type: ProjectType.standard)).id;
+        final created = await fin.createTransaction(
+          linkedProjectId: projectId,
+          accountId: account.id,
+          categoryId: category.id,
+          kind: MoneyKind.expense,
+          amount: 100000,
+          note: 'Chi thử hợp đồng',
+          occurredAt: DateTime.now(),
+        );
+        txId = created.id;
+        expect(created.linkedProjectId, projectId);
+        expect(created.kind, MoneyKind.expense);
+        expect(created.amount, 100000);
+        expect(created.note, 'Chi thử hợp đồng');
+        expect(created.projectId, isNot(projectId), reason: 'projectId là tháng tài chính, không phải dự án');
+        // projectId do server chọn = tháng tài chính hiện tại (đang mở, chứa hôm nay)
+        final month = (await fin.getFinanceProjects()).firstWhere((p) => p.id == created.projectId);
+        expect(month.type, ProjectType.finance);
+        expect(month.archivedAt, isNull);
+        final today = vnToday();
+        expect(month.startDate!.compareTo(today) <= 0 && month.endDate!.compareTo(today) >= 0, isTrue);
+        expect((await balances())[account.id], before[account.id]! - 100000);
+
+        // 3. lấy theo linkedProjectId: parse category, account, amount
+        var list = await fin.getTransactionsByLinkedProject(projectId);
+        expect(list, hasLength(1));
+        expect(list.single.id, txId);
+        expect(list.single.amount, 100000);
+        expect(list.single.kind, MoneyKind.expense);
+        expect(list.single.categoryName, category.name);
+        expect(list.single.accountName, account.name);
+        expect(list.single.linkedProjectId, projectId);
+        expect(list.single.occurredAt.difference(DateTime.now()).inMinutes.abs(), lessThan(10));
+
+        // 4. PATCH amount + note → số dư đúng
+        final patched = await fin.updateTransaction(txId, {'amount': 150000, 'note': 'Đã sửa'});
+        expect(patched.amount, 150000);
+        expect(patched.note, 'Đã sửa');
+        expect((await balances())[account.id], before[account.id]! - 150000);
+        final mid = await api.getDuAnSummary();
+        final s = mid.projects.firstWhere((p) => p.id == projectId);
+        expect((s.finance.income, s.finance.expense, s.finance.net), (0, 150000, -150000));
+
+        // 5. bỏ gắn → danh sách theo dự án rỗng; gắn lại
+        await fin.updateTransaction(txId, {'linkedProjectId': null});
+        expect(await fin.getTransactionsByLinkedProject(projectId), isEmpty);
+        expect((await balances())[account.id], before[account.id]! - 150000, reason: 'bỏ gắn không đổi số dư');
+        await fin.updateTransaction(txId, {'linkedProjectId': projectId});
+        list = await fin.getTransactionsByLinkedProject(projectId);
+        expect(list.map((t) => t.id), [txId]);
+
+        // 6. xoá giao dịch → số dư hoàn lại
+        await fin.deleteTransaction(txId);
+        txId = null;
+        expect(await fin.getTransactionsByLinkedProject(projectId), isEmpty);
+        expect(await balances(), before);
+      } finally {
+        if (txId != null) await fin.deleteTransaction(txId);
+        if (projectId != null) await dio.delete<void>('/api/projects/$projectId');
+      }
+
+      // 7. sau khi xoá dự án: số dư mọi ví bằng đúng lúc đầu
+      expect(await balances(), before, reason: 'số dư mọi ví bằng đúng lúc đầu');
     },
     skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
     timeout: const Timeout(Duration(minutes: 2)),

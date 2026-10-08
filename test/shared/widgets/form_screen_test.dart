@@ -82,7 +82,8 @@ class _FakeFinanceApi extends FinanceApi {
 
   @override
   Future<FinanceTransaction> createTransaction({
-    required String projectId,
+    String? projectId,
+    String? linkedProjectId,
     required String accountId,
     String? categoryId,
     required MoneyKind kind,

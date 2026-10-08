@@ -9,11 +9,14 @@ import '../providers/nghi_su_duong_provider.dart';
 import '../widgets/key_results_block.dart';
 import '../widgets/task_form.dart';
 import '../widgets/project_header.dart';
+import '../widgets/project_finance_card.dart';
+import '../widgets/project_finance_tab.dart';
+import '../widgets/project_transaction_form.dart';
 import '../widgets/task_board.dart';
 import '../widgets/task_timeline.dart';
 
 /// Các tab của màn: thêm tab (Thu-chi...) = thêm một giá trị ở đây và một nhánh ở [_TabContent].
-enum _DetailTab { board, calendar }
+enum _DetailTab { board, calendar, finance }
 
 /// /du-an/:projectId — chi tiết một dự án STANDARD: đầu trang, Kết quả then chốt, rồi tab "Bảng" |
 /// "Lịch" cho cùng một danh sách việc. Dữ liệu: GET /api/projects/[id] (kèm KR) và GET /api/tasks?projectId=.
@@ -57,7 +60,21 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
                 else ...[
                   ProjectHeader(project: project, tasks: tasks),
                   const SizedBox(height: 16),
-                  KeyResultsBlock(projectId: projectId, keyResults: project.keyResults),
+                  // Rộng: KR và thẻ Thu-chi cạnh nhau; hẹp: thẻ Thu-chi dưới khối KR.
+                  LayoutBuilder(
+                    builder: (context, c) {
+                      final kr = KeyResultsBlock(projectId: projectId, keyResults: project.keyResults);
+                      final fin = ProjectFinanceCard(projectId: projectId, onOpen: () => setState(() => _tab = _DetailTab.finance));
+                      if (c.maxWidth >= 900) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          spacing: 16,
+                          children: [Expanded(flex: 2, child: kr), Expanded(child: fin)],
+                        );
+                      }
+                      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 16, children: [kr, fin]);
+                    },
+                  ),
                   const SizedBox(height: 24),
                   _WorkArea(
                     project: project,
@@ -93,6 +110,8 @@ class _WorkArea extends StatelessWidget {
     final total = tasks?.length ?? 0;
     final done = tasks?.where((t) => t.status == TaskStatus.done).length ?? 0;
 
+    final isFinance = tab == _DetailTab.finance;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 12,
@@ -100,23 +119,33 @@ class _WorkArea extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(tasks == null ? 'Đang tải...' : '$done / $total việc xong', style: muted),
+              // Tab Thu-chi không đếm việc.
+              child: isFinance ? const SizedBox.shrink() : Text(tasks == null ? 'Đang tải...' : '$done / $total việc xong', style: muted),
             ),
-            TextButton.icon(
-              // Việc luôn tạo trong dự án đang xem; dùng được cả khi dự án Tạm dừng / Đã xong.
-              onPressed: () => showTaskForm(context, projectId: project.id, keyResults: project.keyResults),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Thêm việc'),
-            ),
+            if (isFinance)
+              TextButton.icon(
+                onPressed: () => showProjectTransactionForm(context, projectId: project.id),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Thêm giao dịch'),
+              )
+            else
+              TextButton.icon(
+                // Việc luôn tạo trong dự án đang xem; dùng được cả khi dự án Tạm dừng / Đã xong.
+                onPressed: () => showTaskForm(context, projectId: project.id, keyResults: project.keyResults),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Thêm việc'),
+              ),
           ],
         ),
-        ProgressBar(value: done.toDouble(), max: total.toDouble()),
+        if (!isFinance) ProgressBar(value: done.toDouble(), max: total.toDouble()),
         ChoiceRow<_DetailTab>(
-          options: const {_DetailTab.board: 'Bảng', _DetailTab.calendar: 'Lịch'},
+          options: const {_DetailTab.board: 'Bảng', _DetailTab.calendar: 'Lịch', _DetailTab.finance: 'Thu-chi'},
           selected: tab,
           onSelected: onTab,
         ),
-        if (tasksAsync.hasError && tasks == null)
+        if (isFinance)
+          ProjectFinanceTab(projectId: project.id)
+        else if (tasksAsync.hasError && tasks == null)
           Text('Không tải được việc.', style: muted)
         else if (tasks != null)
           switch (tab) {
@@ -127,6 +156,7 @@ class _WorkArea extends StatelessWidget {
                 projectStart: project.startDate,
                 projectEnd: project.endDate,
               ),
+            _DetailTab.finance => const SizedBox.shrink(),
           },
       ],
     );

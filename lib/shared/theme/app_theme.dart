@@ -40,6 +40,27 @@ abstract final class AppColors {
   static const textSecondary = Color(0xFF8A7B6C);
 }
 
+/// Màu ngữ nghĩa ngoài ColorScheme (ColorScheme của Material không có màu "thành công").
+@immutable
+class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
+  const AppSemanticColors({required this.success});
+
+  /// Số tiền thu, trạng thái hoàn tất...
+  final Color success;
+
+  @override
+  AppSemanticColors copyWith({Color? success}) => AppSemanticColors(success: success ?? this.success);
+
+  @override
+  AppSemanticColors lerp(ThemeExtension<AppSemanticColors>? other, double t) =>
+      other is AppSemanticColors ? AppSemanticColors(success: Color.lerp(success, other.success, t)!) : this;
+}
+
+extension AppThemeColors on ThemeData {
+  /// Màu thành công của theme; theme không khai báo (vd ThemeData.dark() trong test) thì dùng primary.
+  Color get success => extension<AppSemanticColors>()?.success ?? colorScheme.primary;
+}
+
 abstract final class AppTheme {
   /// --radius: 0.625rem ≈ 10px (globals.css).
   static const double radius = 10;
@@ -83,6 +104,7 @@ abstract final class AppTheme {
         surfaceContainerHighest: AppColors.ink800,
       ),
       textTheme: textTheme,
+      extensions: const [AppSemanticColors(success: AppColors.emerald400)],
       cardTheme: CardThemeData(shape: _darkShape),
       elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(shape: _darkShape)),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(shape: _darkShape)),
@@ -120,6 +142,8 @@ abstract final class AppTheme {
         surfaceContainerHighest: AppColors.primary50,
       ),
       textTheme: textTheme,
+      // emerald-700: đủ tương phản trên nền sáng.
+      extensions: const [AppSemanticColors(success: Color(0xFF047857))],
       cardTheme: CardThemeData(color: Colors.white, elevation: 0, shape: _shape),
       elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(shape: _shape)),
       filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(shape: _shape)),

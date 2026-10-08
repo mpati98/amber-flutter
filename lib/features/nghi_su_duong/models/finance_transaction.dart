@@ -7,6 +7,7 @@ class FinanceTransaction {
   const FinanceTransaction({
     required this.id,
     required this.projectId,
+    this.linkedProjectId,
     required this.accountId,
     this.categoryId,
     required this.kind,
@@ -24,6 +25,7 @@ class FinanceTransaction {
     return FinanceTransaction(
       id: json['id'] as String,
       projectId: json['projectId'] as String,
+      linkedProjectId: json['linkedProjectId'] as String?,
       accountId: json['accountId'] as String,
       categoryId: json['categoryId'] as String?,
       kind: MoneyKind.fromApi(json['kind'] as String),
@@ -37,7 +39,11 @@ class FinanceTransaction {
   }
 
   final String id;
+  /// Tháng tài chính (project FINANCE) mà giao dịch thuộc về.
   final String projectId;
+
+  /// Dự án STANDARD mà giao dịch được gắn vào (null = không gắn).
+  final String? linkedProjectId;
   final String accountId;
   final String? categoryId;
   final MoneyKind kind;

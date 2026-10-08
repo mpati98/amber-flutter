@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
 import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
 import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/finance_account.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/finance_category.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/finance_transaction.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/key_result.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_detail.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/project_detail_screen.dart';
+import 'package:amber_flutter/features/nghi_su_duong/services/finance_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/shared/services/api_client.dart';
 import 'package:dio/dio.dart';
@@ -253,6 +257,130 @@ class FakeApi extends NghiSuDuongApi {
       );
 }
 
+/// Api tài chính giả: giao dịch gắn với dự án + ví + danh mục. Ghi lại các lệnh gọi.
+class FakeFinanceApi extends FinanceApi {
+  FakeFinanceApi({List<FinanceTransaction>? transactions, List<FinanceAccount>? accounts, List<FinanceCategory>? categories})
+      : transactions = [...?transactions],
+        accounts = accounts ?? [...defaultAccounts],
+        categories = categories ?? [...defaultCategories],
+        super(offlineDio());
+
+  static const defaultAccounts = [
+    FinanceAccount(id: 'w1', name: 'Tiền mặt', type: AccountType.cash, currentBalance: 1000000),
+    FinanceAccount(id: 'w2', name: 'Momo', type: AccountType.eWallet, currentBalance: 500000),
+  ];
+  static const defaultCategories = [
+    FinanceCategory(id: 'c-food', name: 'Ăn uống', icon: '🍜', kind: MoneyKind.expense),
+    FinanceCategory(id: 'c-rent', name: 'Thuê địa điểm', kind: MoneyKind.expense),
+    FinanceCategory(id: 'c-sal', name: 'Lương', icon: '💰', kind: MoneyKind.income),
+  ];
+
+  List<FinanceTransaction> transactions;
+  List<FinanceAccount> accounts;
+  List<FinanceCategory> categories;
+  final creates = <Map<String, Object?>>[];
+  final updates = <Map<String, Object?>>[];
+  final deletes = <String>[];
+  Object? createError;
+  Object? updateError;
+  Completer<void>? gate;
+
+  @override
+  Future<List<FinanceTransaction>> getTransactionsByLinkedProject(String linkedProjectId) async =>
+      transactions.where((t) => t.linkedProjectId == linkedProjectId).toList();
+
+  @override
+  Future<List<FinanceAccount>> getAccounts() async => accounts;
+
+  @override
+  Future<List<FinanceCategory>> getCategories({MoneyKind? kind}) async => categories;
+
+  @override
+  Future<FinanceTransaction> createTransaction({
+    String? projectId,
+    String? linkedProjectId,
+    required String accountId,
+    String? categoryId,
+    required MoneyKind kind,
+    required double amount,
+    String? note,
+    DateTime? occurredAt,
+  }) async {
+    creates.add({
+      'projectId': projectId,
+      'linkedProjectId': linkedProjectId,
+      'accountId': accountId,
+      'categoryId': categoryId,
+      'kind': kind,
+      'amount': amount,
+      'note': note,
+      'occurredAt': occurredAt,
+    });
+    await gate?.future;
+    if (createError case final e?) throw e;
+    final t = mkTx('new-${creates.length}', kind: kind, amount: amount, note: note, linked: linkedProjectId, accountId: accountId, categoryId: categoryId);
+    transactions = [t, ...transactions];
+    return t;
+  }
+
+  @override
+  Future<FinanceTransaction> updateTransaction(String id, Map<String, Object?> patch) async {
+    updates.add({'id': id, ...patch});
+    await gate?.future;
+    if (updateError case final e?) throw e;
+    final i = transactions.indexWhere((t) => t.id == id);
+    final old = transactions[i];
+    final next = mkTx(
+      id,
+      kind: patch['kind'] is String ? MoneyKind.fromApi(patch['kind'] as String) : old.kind,
+      amount: patch.containsKey('amount') ? (patch['amount'] as num).toDouble() : old.amount,
+      note: patch.containsKey('note') ? patch['note'] as String? : old.note,
+      linked: patch.containsKey('linkedProjectId') ? patch['linkedProjectId'] as String? : old.linkedProjectId,
+      accountId: (patch['accountId'] as String?) ?? old.accountId,
+      categoryId: patch.containsKey('categoryId') ? patch['categoryId'] as String? : old.categoryId,
+      occurredAt: old.occurredAt,
+    );
+    transactions = [...transactions]..[i] = next;
+    if (next.linkedProjectId == null) transactions.removeAt(i);
+    return next;
+  }
+
+  @override
+  Future<void> deleteTransaction(String id) async {
+    deletes.add(id);
+    transactions = transactions.where((t) => t.id != id).toList();
+  }
+}
+
+/// Giao dịch giả gắn với dự án p1 (mặc định).
+FinanceTransaction mkTx(
+  String id, {
+  MoneyKind kind = MoneyKind.expense,
+  double amount = 100000,
+  String? note,
+  String? linked = 'p1',
+  String accountId = 'w1',
+  String? categoryId,
+  DateTime? occurredAt,
+}) {
+  final cat = FakeFinanceApi.defaultCategories.where((c) => c.id == categoryId).firstOrNull;
+  final acc = FakeFinanceApi.defaultAccounts.where((a) => a.id == accountId).firstOrNull;
+  return FinanceTransaction(
+    id: id,
+    projectId: 'month1',
+    linkedProjectId: linked,
+    accountId: accountId,
+    categoryId: categoryId,
+    kind: kind,
+    amount: amount,
+    note: note,
+    occurredAt: occurredAt ?? DateTime.now(),
+    categoryName: cat?.name,
+    categoryIcon: cat?.icon,
+    accountName: acc?.name,
+  );
+}
+
 ProjectDetail mkProject({
   ProjectStatus status = ProjectStatus.active,
   String? goal,
@@ -267,6 +395,7 @@ Future<FakeApi> pumpDetail(
   ProjectDetail? project,
   List<Task> tasks = const [],
   double width = 390,
+  FakeFinanceApi? finance,
 }) async {
   requests.clear();
   final api = FakeApi(project: project ?? mkProject(), tasks: [...tasks]);
@@ -283,6 +412,7 @@ Future<FakeApi> pumpDetail(
       overrides: [
         apiClientProvider.overrideWithValue(offlineDio()),
         nghiSuDuongApiProvider.overrideWithValue(api),
+        financeApiProvider.overrideWithValue(finance ?? FakeFinanceApi()),
         notificationsProvider.overrideWith((ref) async => (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[])),
       ],
       child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),

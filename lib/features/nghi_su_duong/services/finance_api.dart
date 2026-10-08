@@ -94,11 +94,26 @@ class FinanceApi {
     return res.data!.map((e) => FinanceTransaction.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// Mọi giao dịch gắn với dự án STANDARD [linkedProjectId], qua mọi tháng, mới nhất trước.
+  /// 404 nếu không phải dự án STANDARD của user.
+  Future<List<FinanceTransaction>> getTransactionsByLinkedProject(String linkedProjectId) async {
+    final res = await _dio.get<List<dynamic>>(
+      '/api/finance/transactions',
+      queryParameters: {'linkedProjectId': linkedProjectId},
+    );
+    return res.data!.map((e) => FinanceTransaction.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   /// Backend cộng/trừ số dư ví ngay trong cùng DB transaction. 404 nếu
   /// tháng/ví/danh mục không phải của user; 400 nếu tháng đã kết thúc.
-  /// [occurredAt] null = lúc gọi (web chưa có ô chọn ngày).
+  /// [occurredAt] null = lúc gọi.
+  ///
+  /// Cần [projectId] (tháng) hoặc [linkedProjectId] (dự án STANDARD): chỉ có [linkedProjectId] thì
+  /// server tự chọn tháng theo [occurredAt] (tháng hiện tại chưa mở thì tự mở). 400:
+  /// `finance_month_not_found`, `project_archived`, `linked_project_invalid`.
   Future<FinanceTransaction> createTransaction({
-    required String projectId,
+    String? projectId,
+    String? linkedProjectId,
     required String accountId,
     String? categoryId,
     required MoneyKind kind,
@@ -109,7 +124,8 @@ class FinanceApi {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/finance/transactions',
       data: {
-        'projectId': projectId,
+        'projectId': ?projectId,
+        'linkedProjectId': ?linkedProjectId,
         'accountId': accountId,
         'categoryId': ?categoryId,
         'kind': kind.apiValue,
@@ -118,6 +134,14 @@ class FinanceApi {
         if (occurredAt != null) 'occurredAt': occurredAt.toUtc().toIso8601String(),
       },
     );
+    return FinanceTransaction.fromJson(res.data!);
+  }
+
+  /// PATCH từng phần: [patch] chỉ chứa trường cần đổi (amount, kind, accountId, categoryId, note,
+  /// linkedProjectId; `null` để bỏ danh mục / ghi chú / bỏ gắn dự án). Server đảo số dư ví cũ và áp ví
+  /// mới. occurredAt và projectId không sửa được (400).
+  Future<FinanceTransaction> updateTransaction(String id, Map<String, Object?> patch) async {
+    final res = await _dio.patch<Map<String, dynamic>>('/api/finance/transactions/$id', data: patch);
     return FinanceTransaction.fromJson(res.data!);
   }
 
