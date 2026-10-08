@@ -4,6 +4,7 @@ import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/project_card.dart';
@@ -74,6 +75,9 @@ class _FakeApi extends NghiSuDuongApi {
     summaryFetches++;
     return DuAnSummary(projects: projects, attention: const []);
   }
+
+  @override
+  Future<List<Routine>> getRoutines({String? date}) async => const [];
 
   @override
   Future<DuAnOverview> getDuAnOverview({int? year}) async =>

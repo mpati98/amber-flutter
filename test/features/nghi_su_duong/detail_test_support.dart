@@ -10,6 +10,7 @@ import 'package:amber_flutter/features/nghi_su_duong/models/key_result.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_detail.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/project_detail_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/finance_api.dart';
@@ -111,6 +112,69 @@ class FakeApi extends NghiSuDuongApi {
   int overviewFetches = 0;
   Completer<void>? gate;
   Object? projectPatchError;
+
+  // ---- việc hằng ngày ----
+  List<Routine> routines = [];
+  List<ProjectSummary> summaryProjects = [];
+  List<AttentionItem> summaryAttention = [];
+  final routineMarks = <String>[]; // 'PUT id' / 'DELETE id'
+  final routineCreates = <Map<String, Object?>>[];
+  final routineUpdates = <Map<String, Object?>>[];
+  final routineDeletes = <String>[];
+  Completer<void>? routineGate;
+  Object? routineError;
+
+  Routine _setToday(String id, bool done) {
+    final r = routines.firstWhere((x) => x.id == id).withDoneToday(done);
+    routines = [for (final x in routines) x.id == id ? r : x];
+    return r;
+  }
+
+  @override
+  Future<List<Routine>> getRoutines({String? date}) async => List.of(routines);
+
+  @override
+  Future<Routine> markRoutineDone(String id, String date) async {
+    routineMarks.add('PUT $id');
+    await routineGate?.future;
+    if (routineError case final e?) throw e;
+    return _setToday(id, true);
+  }
+
+  @override
+  Future<Routine> unmarkRoutineDone(String id, String date) async {
+    routineMarks.add('DELETE $id');
+    await routineGate?.future;
+    if (routineError case final e?) throw e;
+    return _setToday(id, false);
+  }
+
+  @override
+  Future<Routine> createRoutine({required String name, List<int>? weekdays}) async {
+    routineCreates.add({'name': name, 'weekdays': weekdays});
+    await routineGate?.future;
+    if (routineError case final e?) throw e;
+    final r = mkRoutine('new-${routineCreates.length}', name, weekdays: weekdays ?? const [1, 2, 3, 4, 5, 6, 7]);
+    routines = [...routines, r];
+    return r;
+  }
+
+  @override
+  Future<Routine> updateRoutine(String id, Map<String, Object?> patch) async {
+    routineUpdates.add({'id': id, ...patch});
+    await routineGate?.future;
+    if (routineError case final e?) throw e;
+    final old = routines.firstWhere((x) => x.id == id);
+    final r = mkRoutine(id, (patch['name'] as String?) ?? old.name, weekdays: (patch['weekdays'] as List?)?.cast<int>() ?? old.weekdays);
+    routines = [for (final x in routines) x.id == id ? r : x];
+    return r;
+  }
+
+  @override
+  Future<void> deleteRoutine(String id) async {
+    routineDeletes.add(id);
+    routines = routines.where((x) => x.id != id).toList();
+  }
 
   @override
   Future<ProjectDetail> getProject(String id) async {
@@ -244,7 +308,7 @@ class FakeApi extends NghiSuDuongApi {
   }
 
   @override
-  Future<DuAnSummary> getDuAnSummary() async => const DuAnSummary(projects: [], attention: []);
+  Future<DuAnSummary> getDuAnSummary() async => DuAnSummary(projects: summaryProjects, attention: summaryAttention);
 
   ProjectDetail _with({List<KeyResult>? keyResults}) => ProjectDetail(
         id: project.id,
@@ -351,6 +415,30 @@ class FakeFinanceApi extends FinanceApi {
     transactions = transactions.where((t) => t.id != id).toList();
   }
 }
+
+/// Việc hằng ngày giả: [done] là các chỉ số 0–6 trong last7 đã làm (6 = hôm nay), [dueDays] các chỉ số
+/// đến hạn (mặc định cả 7).
+Routine mkRoutine(
+  String id,
+  String name, {
+  List<int> weekdays = const [1, 2, 3, 4, 5, 6, 7],
+  bool dueToday = true,
+  Set<int> done = const {},
+  Set<int>? dueDays,
+  int streak = 0,
+}) =>
+    Routine(
+      id: id,
+      name: name,
+      weekdays: weekdays,
+      dueToday: dueToday,
+      doneToday: done.contains(6),
+      streak: streak,
+      last7: [
+        for (var i = 0; i < 7; i++)
+          RoutineDay(date: '2026-10-0${i + 2}', due: dueDays == null ? (i == 6 ? dueToday : true) : dueDays.contains(i), done: done.contains(i)),
+      ],
+    );
 
 /// Giao dịch giả gắn với dự án p1 (mặc định).
 FinanceTransaction mkTx(

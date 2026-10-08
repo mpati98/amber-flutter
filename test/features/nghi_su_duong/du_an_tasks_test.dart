@@ -7,6 +7,7 @@ import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_detail.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/project_detail_screen.dart';
@@ -70,6 +71,9 @@ class _FakeApi extends NghiSuDuongApi {
   /// Giữ PATCH lại tới khi complete (để kiểm tra optimistic / bấm đúp).
   Completer<void>? gate;
   Object? failWith;
+
+  @override
+  Future<List<Routine>> getRoutines({String? date}) async => const [];
 
   @override
   Future<DuAnOverview> getDuAnOverview({int? year}) async {

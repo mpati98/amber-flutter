@@ -5,6 +5,7 @@ import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/finance_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
+import 'package:amber_flutter/shared/utils/api_error.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -234,6 +235,78 @@ void main() {
 
       // 7. sau khi xoá dự án: số dư mọi ví bằng đúng lúc đầu
       expect(await balances(), before, reason: 'số dư mọi ví bằng đúng lúc đầu');
+    },
+    skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
+    'Việc hằng ngày: tạo → tick / bỏ tick → ngày không đến hạn (not_scheduled) → sửa → xoá (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = NghiSuDuongApi(dio);
+      final today = vnToday();
+      final todayWeekday = vnNow().weekday; // 1 = thứ Hai … 7 = Chủ nhật, cùng quy ước với backend
+      final created = <String>[];
+
+      final initial = (await api.getRoutines()).map((r) => r.id).toList();
+      try {
+        // 1. routine đủ 7 ngày
+        final r1 = await api.createRoutine(name: 'TEST contract hằng ngày');
+        created.add(r1.id);
+        expect(r1.name, 'TEST contract hằng ngày');
+        expect(r1.weekdays, [1, 2, 3, 4, 5, 6, 7]);
+        expect(r1.dueToday, isTrue);
+        expect(r1.doneToday, isFalse);
+        expect(r1.streak, 0);
+        expect(r1.last7, hasLength(7));
+        expect(r1.last7.last.date, today, reason: 'phần tử cuối là hôm nay');
+        expect(r1.last7.last.due, isTrue);
+        expect(r1.last7.every((d) => !d.done), isTrue);
+        expect([for (var i = 1; i < 7; i++) r1.last7[i].date.compareTo(r1.last7[i - 1].date) > 0].every((b) => b), isTrue, reason: 'cũ trước mới sau');
+
+        // 2. tick hôm nay → doneToday true, streak 1; bỏ tick → doneToday false
+        final ticked = await api.markRoutineDone(r1.id, today);
+        expect(ticked.doneToday, isTrue);
+        expect(ticked.streak, 1);
+        expect(ticked.last7.last.done, isTrue);
+        final listed = (await api.getRoutines()).firstWhere((r) => r.id == r1.id);
+        expect((listed.doneToday, listed.streak), (true, 1));
+        final unticked = await api.unmarkRoutineDone(r1.id, today);
+        expect(unticked.doneToday, isFalse);
+        expect(unticked.streak, 0);
+        expect(unticked.last7.last.done, isFalse);
+
+        // 3. routine không chứa thứ của hôm nay → tick bị not_scheduled
+        final others = [for (var d = 1; d <= 7; d++) if (d != todayWeekday) d].take(2).toList();
+        final r2 = await api.createRoutine(name: 'TEST contract nghỉ hôm nay', weekdays: others);
+        created.add(r2.id);
+        expect(r2.weekdays, others);
+        expect(r2.dueToday, isFalse);
+        Object? error;
+        try {
+          await api.markRoutineDone(r2.id, today);
+        } catch (e) {
+          error = e;
+        }
+        expect(error, isA<DioException>());
+        expect((error as DioException).response?.statusCode, 400);
+        expect(apiErrorCode(error), 'not_scheduled');
+        expect((await api.getRoutines()).firstWhere((r) => r.id == r2.id).doneToday, isFalse);
+
+        // 4. sửa tên và weekdays
+        final patched = await api.updateRoutine(r1.id, {'name': 'TEST contract đã sửa', 'weekdays': [1, 2, 3]});
+        expect(patched.name, 'TEST contract đã sửa');
+        expect(patched.weekdays, [1, 2, 3]);
+        expect(patched.dueToday, [1, 2, 3].contains(todayWeekday));
+        expect(patched.last7, hasLength(7));
+      } finally {
+        // 5. xoá cả hai (lịch sử xoá theo)
+        for (final id in created) {
+          await api.deleteRoutine(id);
+        }
+      }
+      expect((await api.getRoutines()).map((r) => r.id).toList(), initial, reason: 'danh sách về như lúc đầu');
     },
     skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
     timeout: const Timeout(Duration(minutes: 2)),

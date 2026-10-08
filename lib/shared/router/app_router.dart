@@ -111,7 +111,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: ':projectId',
-            builder: (_, state) => ProjectDetailScreen(projectId: state.pathParameters['projectId']!),
+            builder: (_, state) => ProjectDetailScreen(
+              projectId: state.pathParameters['projectId']!,
+              // ?task=<id>: tự mở trang chi tiết của việc đó (từ thẻ "Cần chú ý").
+              initialTaskId: state.uri.queryParameters['task'],
+            ),
           ),
         ],
       ),

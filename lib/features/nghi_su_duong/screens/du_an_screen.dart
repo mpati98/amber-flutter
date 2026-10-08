@@ -7,8 +7,10 @@ import '../../../shared/utils/vn_time.dart';
 import '../../../shared/widgets/form_bits.dart';
 import '../models/project_summary.dart';
 import '../providers/nghi_su_duong_provider.dart';
+import '../widgets/attention_card.dart';
 import '../widgets/new_project_modal.dart';
 import '../widgets/project_card.dart';
+import '../widgets/routines_card.dart';
 
 const _weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
 
@@ -46,7 +48,7 @@ class DuAnScreen extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
           child: RefreshIndicator(
-            onRefresh: () => ref.refresh(duAnSummaryProvider.future),
+            onRefresh: () => Future.wait([ref.refresh(duAnSummaryProvider.future), ref.refresh(routinesProvider.future)]),
             child: ListView(
               // Luôn kéo-để-làm-mới được kể cả khi nội dung ngắn (danh sách rỗng).
               physics: const AlwaysScrollableScrollPhysics(),
@@ -63,12 +65,44 @@ class DuAnScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(_dateLabel(), style: _muted(12)),
                 const SizedBox(height: 24), // gap-6
+                _TodayArea(summary: summary),
+                const SizedBox(height: 24),
                 _ProjectsArea(summary: summary, filter: filter),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Khu "Hôm nay": thẻ "Việc hằng ngày" và thẻ "Cần chú ý" — cạnh nhau từ ~900, hẹp hơn thì xếp dọc.
+class _TodayArea extends StatelessWidget {
+  const _TodayArea({required this.summary});
+
+  final AsyncValue<DuAnSummary> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    const routines = RoutinesCard();
+    final attention = AttentionCard(
+      items: summary.value?.attention,
+      loading: summary.isLoading,
+      failed: summary.hasError,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        Text('Hôm nay', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 18, color: cs.onSurface)),
+        LayoutBuilder(
+          builder: (context, c) => c.maxWidth >= 900
+              ? Row(crossAxisAlignment: CrossAxisAlignment.start, spacing: 16, children: [const Expanded(child: routines), Expanded(child: attention)])
+              : Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 16, children: [routines, attention]),
+        ),
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import '../models/overview.dart';
 import '../models/project_detail.dart';
 import '../models/project.dart';
 import '../models/project_summary.dart';
+import '../models/routine.dart';
 import '../models/task.dart';
 
 /// Trang chính Nghị Sự Đường + mảng Dự án (projects, tasks, 3 overview).
@@ -26,6 +27,43 @@ class NghiSuDuongApi {
   Future<DuAnSummary> getDuAnSummary() async {
     final res = await _dio.get<Map<String, dynamic>>('/api/du-an/summary');
     return DuAnSummary.fromJson(res.data!);
+  }
+
+  /// Việc hằng ngày chưa lưu trữ, tính quanh [date] ("YYYY-MM-DD"; null = hôm nay giờ VN ở server).
+  Future<List<Routine>> getRoutines({String? date}) async {
+    final res = await _dio.get<List<dynamic>>('/api/du-an/routines', queryParameters: {'date': ?date});
+    return res.data!.map((e) => Routine.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// [weekdays] 1–7 (1 = thứ Hai), không trùng; null = cả 7 ngày.
+  Future<Routine> createRoutine({required String name, List<int>? weekdays}) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/api/du-an/routines',
+      data: {'name': name, 'weekdays': ?weekdays},
+    );
+    return Routine.fromJson(res.data!);
+  }
+
+  /// [patch] chỉ chứa trường cần đổi (name, weekdays).
+  Future<Routine> updateRoutine(String id, Map<String, Object?> patch) async {
+    final res = await _dio.patch<Map<String, dynamic>>('/api/du-an/routines/$id', data: patch);
+    return Routine.fromJson(res.data!);
+  }
+
+  /// Xoá hẳn, cả lịch sử đã làm.
+  Future<void> deleteRoutine(String id) => _dio.delete<void>('/api/du-an/routines/$id');
+
+  /// Đánh dấu đã làm ngày [date] ("YYYY-MM-DD"; idempotent). 400 `not_scheduled` (ngày không đến hạn),
+  /// `future_date`. Trả routine đã cập nhật (tính quanh hôm nay).
+  Future<Routine> markRoutineDone(String id, String date) async {
+    final res = await _dio.put<Map<String, dynamic>>('/api/du-an/routines/$id/logs/$date');
+    return Routine.fromJson(res.data!);
+  }
+
+  /// Bỏ đánh dấu ngày [date]. Trả routine đã cập nhật.
+  Future<Routine> unmarkRoutineDone(String id, String date) async {
+    final res = await _dio.delete<Map<String, dynamic>>('/api/du-an/routines/$id/logs/$date');
+    return Routine.fromJson(res.data!);
   }
 
   Future<FinanceOverview> getFinanceOverview({int? year}) async {

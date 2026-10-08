@@ -13,3 +13,15 @@ String apiErrorMessage(Object error, String fallback) {
   }
   return fallback;
 }
+
+/// Mã lỗi máy đọc được của backend: trường `error` khi nó là chuỗi (vd `not_scheduled`,
+/// `end_before_start`); null nếu không có (lỗi mạng, hoặc `error` là object validate của zod).
+String? apiErrorCode(Object error) {
+  if (error is DioException) {
+    return switch (error.response?.data) {
+      {'error': final String code} => code,
+      _ => null,
+    };
+  }
+  return null;
+}

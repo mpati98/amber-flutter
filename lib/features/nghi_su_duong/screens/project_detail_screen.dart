@@ -13,6 +13,7 @@ import '../widgets/project_finance_card.dart';
 import '../widgets/project_finance_tab.dart';
 import '../widgets/project_transaction_form.dart';
 import '../widgets/task_board.dart';
+import '../widgets/task_detail_sheet.dart';
 import '../widgets/task_timeline.dart';
 
 /// Các tab của màn: thêm tab (Thu-chi...) = thêm một giá trị ở đây và một nhánh ở [_TabContent].
@@ -21,9 +22,12 @@ enum _DetailTab { board, calendar, finance }
 /// /du-an/:projectId — chi tiết một dự án STANDARD: đầu trang, Kết quả then chốt, rồi tab "Bảng" |
 /// "Lịch" cho cùng một danh sách việc. Dữ liệu: GET /api/projects/[id] (kèm KR) và GET /api/tasks?projectId=.
 class ProjectDetailScreen extends ConsumerStatefulWidget {
-  const ProjectDetailScreen({super.key, required this.projectId});
+  const ProjectDetailScreen({super.key, required this.projectId, this.initialTaskId});
 
   final String projectId;
+
+  /// Việc cần tự mở trang chi tiết khi dữ liệu dự án đã tải xong (không còn tồn tại thì bỏ qua).
+  final String? initialTaskId;
 
   @override
   ConsumerState<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
@@ -31,6 +35,7 @@ class ProjectDetailScreen extends ConsumerStatefulWidget {
 
 class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
   _DetailTab _tab = _DetailTab.board;
+  bool _initialTaskHandled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +45,17 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     final project = detail.value;
     final tasks = tasksAsync.value;
     final muted = TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6));
+
+    // Mở sẵn trang chi tiết việc (một lần) khi cả dự án lẫn danh sách việc đã tải xong.
+    final wantedTask = widget.initialTaskId;
+    if (!_initialTaskHandled && wantedTask != null && project != null && tasks != null) {
+      _initialTaskHandled = true;
+      if (tasks.any((t) => t.id == wantedTask)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showTaskDetail(context, projectId: projectId, taskId: wantedTask);
+        });
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(project?.name ?? 'Dự án', maxLines: 1, overflow: TextOverflow.ellipsis)),

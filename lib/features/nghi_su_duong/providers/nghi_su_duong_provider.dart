@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
 
+import '../../../shared/utils/vn_time.dart';
 import '../../kieu_lau/providers/kieu_lau_provider.dart';
 
 import '../models/overview.dart';
 import '../models/project_detail.dart';
 import '../models/project_summary.dart';
+import '../models/routine.dart';
 import '../models/task.dart';
 import '../services/nghi_su_duong_api.dart';
 
@@ -19,6 +21,34 @@ final duAnOverviewProvider = FutureProvider.autoDispose<DuAnOverview>(
 final duAnSummaryProvider = FutureProvider.autoDispose<DuAnSummary>(
   (ref) => ref.watch(nghiSuDuongApiProvider).getDuAnSummary(),
 );
+
+/// Việc hằng ngày (hôm nay). Notifier để tick ngay (lạc quan) rồi mới gọi API.
+class RoutinesNotifier extends AsyncNotifier<List<Routine>> {
+  @override
+  Future<List<Routine>> build() => ref.watch(nghiSuDuongApiProvider).getRoutines();
+
+  void _replace(Routine r) {
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncData([for (final x in current) x.id == r.id ? r : x]);
+  }
+
+  /// Tick (`done` true → PUT log hôm nay) hoặc bỏ tick (DELETE). Đổi state NGAY; thành công thì thay bằng
+  /// routine server trả về; lỗi thì trả lại bản cũ và ném lại để nơi gọi báo lỗi.
+  Future<void> setDoneToday(Routine routine, bool done) async {
+    _replace(routine.withDoneToday(done));
+    try {
+      final api = ref.read(nghiSuDuongApiProvider);
+      final today = vnToday();
+      _replace(done ? await api.markRoutineDone(routine.id, today) : await api.unmarkRoutineDone(routine.id, today));
+    } catch (_) {
+      _replace(routine);
+      rethrow;
+    }
+  }
+}
+
+final routinesProvider = AsyncNotifierProvider.autoDispose<RoutinesNotifier, List<Routine>>(RoutinesNotifier.new);
 
 /// Bộ lọc trạng thái ở khu "Dự án" của màn Dự án (mặc định Đang triển khai).
 class DuAnFilterNotifier extends Notifier<ProjectStatus> {
