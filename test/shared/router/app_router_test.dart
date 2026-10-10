@@ -1,3 +1,4 @@
+import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:amber_flutter/features/auth/screens/login_screen.dart';
 import 'package:amber_flutter/features/du_do/screens/du_do_screen.dart';
 import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
@@ -10,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../features/amber_brain/fake_brain.dart';
 
 const _loading = AsyncLoading<AuthState>();
 const _signedOut = AsyncData<AuthState>(Unauthenticated());
@@ -75,6 +78,8 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           tokenStorageProvider.overrideWithValue(_MemStorage(token)),
+          // Nút Amber ở Dư Đồ — không tạo Timer/Dio thật trong test.
+          brainStatusProvider.overrideWith(FixedBrainStatus.new),
           // Dư Đồ đọc số cảnh báo cho badge — không gọi mạng trong test.
           notificationsProvider.overrideWith(
             (ref) async => (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[]),

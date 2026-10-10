@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/amber_brain/screens/amber_brain_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
 import '../../features/nghi_su_duong/screens/course_detail_screen.dart';
@@ -93,6 +94,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: _splash, builder: (_, _) => const _SplashScreen()),
       GoRoute(path: _login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/', builder: (_, _) => const DuDoScreen()),
+      GoRoute(path: '/amber', builder: (_, _) => const AmberBrainScreen()),
       GoRoute(path: '/kieu-lau', builder: (_, _) => const KieuLauScreen()),
       GoRoute(
         path: '/tang-kinh-cac',

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/scroll_card.dart';
+import '../../amber_brain/providers/brain_status_provider.dart';
 import '../../kieu_lau/providers/kieu_lau_provider.dart';
 
 /// 4 tòa, đúng thứ tự + tên + mô tả + màu glow của amber-v3/src/lib/buildings.ts.
@@ -47,6 +48,7 @@ class DuDoScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.end,
                       spacing: 8,
                       children: [
+                        _AmberButton(connection: ref.watch(brainStatusProvider)),
                         _KieuLauButton(alertCount: alertCount),
                         _SceneButton(
                           label: 'Cài đặt',
@@ -175,10 +177,11 @@ class _BuildingCard extends StatelessWidget {
 
 /// Nút viền mờ góc trên phải như web (border white/15, chữ white/70).
 class _SceneButton extends StatelessWidget {
-  const _SceneButton({required this.label, required this.onPressed});
+  const _SceneButton({required this.label, required this.onPressed, this.leading});
 
   final String label;
   final VoidCallback onPressed;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +194,40 @@ class _SceneButton extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.darkRadius)),
         textStyle: const TextStyle(fontSize: 14),
       ),
-      child: Text(label),
+      child: leading == null
+          ? Text(label)
+          : Row(mainAxisSize: MainAxisSize.min, spacing: 8, children: [leading!, Text(label)]),
+    );
+  }
+}
+
+/// Nút Amber (trợ lý tài chính) kèm chấm trạng thái: xanh = sẵn sàng, đỏ = ngoại
+/// tuyến, vàng = lệch môi trường, xám = đang kiểm tra.
+class _AmberButton extends StatelessWidget {
+  const _AmberButton({required this.connection});
+
+  final BrainConnection connection;
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, label) = switch (connection) {
+      BrainConnection(offline: true) => (AppColors.shuiro500, 'ngoại tuyến'),
+      BrainConnection(mismatch: true) => (AppColors.kincha400, 'lệch môi trường'),
+      BrainConnection(online: true) => (AppColors.emerald400, 'trực tuyến'),
+      _ => (Colors.grey, 'đang kiểm tra'),
+    };
+    return Semantics(
+      label: 'Amber, $label',
+      child: _SceneButton(
+        label: 'Amber',
+        onPressed: () => context.push('/amber'),
+        leading: Container(
+          key: const Key('amber-status-dot'),
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+      ),
     );
   }
 }
@@ -251,11 +287,25 @@ class _NightScenePainter extends CustomPainter {
 
   // clip-path polygon (% của khối núi), lấy nguyên từ web.
   static const _farRange = [
-    (0, 100), (0, 62), (7, 48), (13, 55), (21, 33), (28, 46), (34, 30), (42, 52), //
+    (0, 100),
+    (0, 62),
+    (7, 48),
+    (13, 55),
+    (21, 33),
+    (28, 46),
+    (34, 30),
+    (42, 52), //
     (50, 40), (58, 58), (68, 46), (79, 64), (90, 54), (100, 70), (100, 100),
   ];
   static const _nearRange = [
-    (0, 100), (0, 74), (10, 58), (19, 68), (27, 44), (36, 60), (45, 38), (54, 56), //
+    (0, 100),
+    (0, 74),
+    (10, 58),
+    (19, 68),
+    (27, 44),
+    (36, 60),
+    (45, 38),
+    (54, 56), //
     (64, 42), (74, 62), (85, 50), (100, 66), (100, 100),
   ];
 
