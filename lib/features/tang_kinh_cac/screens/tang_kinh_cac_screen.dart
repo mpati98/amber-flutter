@@ -9,6 +9,7 @@ import '../models/publication.dart';
 import '../providers/document_provider.dart';
 import '../providers/publication_provider.dart';
 import '../providers/tang_kinh_cac_provider.dart';
+import '../../du_lieu_huan_luyen/providers/training_log_provider.dart';
 import '../widgets/section_card.dart';
 
 /// Port /tang-kinh-cac (trang chính của tòa): thẻ "Ôn lại" + 3 lối vào.
@@ -41,6 +42,13 @@ class TangKinhCacScreen extends ConsumerWidget {
           data: (g) => g.targetBooks != null && g.targetBooks! > 0
               ? '${g.booksRead}/${g.targetBooks} sách năm ${g.year}'
               : 'Chưa đặt mục tiêu',
+          loading: () => 'Đang tải...',
+          error: (_, _) => 'Không tải được số liệu',
+        );
+
+    // Mục riêng, dùng provider/API riêng (không lẫn với sách, tài liệu): số mẫu đủ điều kiện train.
+    final trainStat = ref.watch(trainingStatsProvider).when(
+          data: (s) => '${s.eligible} mẫu đủ điều kiện · ${s.total} dòng',
           loading: () => 'Đang tải...',
           error: (_, _) => 'Không tải được số liệu',
         );
@@ -85,6 +93,15 @@ class TangKinhCacScreen extends ConsumerWidget {
                 stat: goalStat,
                 glow: ScrollCardGlow.shuiro,
                 onTap: () => push('ke-hoach-doc'),
+              ),
+              const SizedBox(height: 20),
+              SectionCard(
+                icon: '🧪',
+                title: 'Dữ liệu huấn luyện',
+                description: 'Nhật ký các lượt amber-brain trả lời: xem, đánh giá đúng/sai, loại mẫu khỏi dataset fine-tune.',
+                stat: trainStat,
+                glow: ScrollCardGlow.kincha,
+                onTap: () => push('du-lieu-huan-luyen'),
               ),
             ],
           ),

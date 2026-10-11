@@ -1,6 +1,9 @@
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:amber_flutter/features/auth/screens/login_screen.dart';
 import 'package:amber_flutter/features/du_do/screens/du_do_screen.dart';
+import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
+import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
+import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
 import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
 import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
 import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
@@ -9,10 +12,12 @@ import 'package:amber_flutter/shared/router/app_router.dart';
 import 'package:amber_flutter/shared/services/token_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/amber_brain/fake_brain.dart';
+import '../../features/du_lieu_huan_luyen/screens_test.dart' show FakeApi;
 
 const _loading = AsyncLoading<AuthState>();
 const _signedOut = AsyncData<AuthState>(Unauthenticated());
@@ -74,10 +79,11 @@ void main() {
   });
 
   group('routerProvider (router thật)', () {
-    Future<ProviderContainer> pumpApp(WidgetTester tester, {String? token}) async {
+    Future<ProviderContainer> pumpApp(WidgetTester tester, {String? token, List<Override> extra = const []}) async {
       final container = ProviderContainer(
         overrides: [
           tokenStorageProvider.overrideWithValue(_MemStorage(token)),
+          ...extra,
           // Nút Amber ở Dư Đồ — không tạo Timer/Dio thật trong test.
           brainStatusProvider.overrideWith(FixedBrainStatus.new),
           // Dư Đồ đọc số cảnh báo cho badge — không gọi mạng trong test.
@@ -101,6 +107,17 @@ void main() {
     }
 
     String location(ProviderContainer c) => c.read(routerProvider).routeInformationProvider.value.uri.toString();
+
+    testWidgets('Tàng Kinh Các: /du-lieu-huan-luyen và /:logId là route thật (không rơi vào trang 404)', (tester) async {
+      final c = await pumpApp(tester, token: 'saved-access', extra: [trainingLogApiProvider.overrideWithValue(FakeApi())]);
+      c.read(routerProvider).go('/tang-kinh-cac/du-lieu-huan-luyen');
+      await tester.pumpAndSettle();
+      expect(find.byType(TrainingLogsScreen), findsOneWidget);
+      c.read(routerProvider).go('/tang-kinh-cac/du-lieu-huan-luyen/l1');
+      await tester.pumpAndSettle();
+      expect(find.byType(TrainingLogDetailScreen), findsOneWidget);
+      expect(find.text('chi 45k ăn trưa Momo'), findsOneWidget);
+    });
 
     testWidgets('mở app còn token → vào thẳng Dư Đồ', (tester) async {
       final c = await pumpApp(tester, token: 'saved-access');

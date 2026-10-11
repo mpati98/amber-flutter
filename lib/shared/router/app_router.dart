@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/amber_brain/screens/amber_brain_screen.dart';
+import '../../features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
+import '../../features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
 import '../../features/nghi_su_duong/screens/course_detail_screen.dart';
@@ -103,6 +105,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'sach', builder: (_, _) => const SachScreen()),
           GoRoute(path: 'tai-lieu', builder: (_, _) => const TaiLieuScreen()),
           GoRoute(path: 'ke-hoach-doc', builder: (_, _) => const KeHoachDocScreen()),
+          // Nhật ký lượt gọi mô hình của amber-brain (dataset fine-tune): tách riêng khỏi sách/tài liệu.
+          GoRoute(
+            path: 'du-lieu-huan-luyen',
+            builder: (_, _) => const TrainingLogsScreen(),
+            routes: [
+              GoRoute(
+                path: ':logId',
+                builder: (_, state) => TrainingLogDetailScreen(logId: state.pathParameters['logId']!),
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(path: '/nghi-su-duong', builder: (_, _) => const NghiSuDuongScreen()),
