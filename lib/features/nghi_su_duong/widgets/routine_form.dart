@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/utils/api_error.dart';
 import '../../../shared/widgets/form_bits.dart';
 import '../models/routine.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/nghi_su_duong_api.dart';
+import '../utils/workout_form.dart';
 
 /// Form việc hằng ngày: thêm ([routine] null) hoặc sửa / xoá [routine]. Mở bằng showFinanceSheet.
 Future<void> showRoutineForm(BuildContext context, {Routine? routine}) =>
@@ -23,6 +23,7 @@ class RoutineForm extends ConsumerStatefulWidget {
 class _RoutineFormState extends ConsumerState<RoutineForm> {
   late final _name = TextEditingController(text: widget.routine?.name ?? '');
   late final Set<int> _days = {...?widget.routine?.weekdays, if (widget.routine == null) ...const [1, 2, 3, 4, 5, 6, 7]};
+  late RoutineKind _kind = widget.routine?.kind ?? RoutineKind.check;
   bool _busy = false;
   String? _nameError;
   String? _daysError;
@@ -51,6 +52,7 @@ class _RoutineFormState extends ConsumerState<RoutineForm> {
     return {
       if (_name.text.trim() != r.name) 'name': _name.text.trim(),
       if (_sortedDays.join(',') != original.join(',')) 'weekdays': _sortedDays,
+      if (_kind != r.kind) 'kind': _kind.api,
     };
   }
 
@@ -75,7 +77,7 @@ class _RoutineFormState extends ConsumerState<RoutineForm> {
       if (_editing) {
         await api.updateRoutine(widget.routine!.id, _patch);
       } else {
-        await api.createRoutine(name: _name.text.trim(), weekdays: _sortedDays);
+        await api.createRoutine(name: _name.text.trim(), weekdays: _sortedDays, kind: _kind);
       }
       ref.invalidate(routinesProvider);
       if (mounted) Navigator.of(context).pop();
@@ -83,7 +85,7 @@ class _RoutineFormState extends ConsumerState<RoutineForm> {
       if (mounted) {
         setState(() {
           _busy = false;
-          _error = apiErrorMessage(e, 'Không lưu được việc, thử lại nhé.');
+          _error = routineErrorMessage(e, 'Không lưu được việc, thử lại nhé.');
         });
       }
     }
@@ -118,7 +120,7 @@ class _RoutineFormState extends ConsumerState<RoutineForm> {
       if (mounted) {
         setState(() {
           _busy = false;
-          _error = apiErrorMessage(e, 'Không xoá được việc, thử lại nhé.');
+          _error = routineErrorMessage(e, 'Không xoá được việc, thử lại nhé.');
         });
       }
     }
@@ -136,6 +138,17 @@ class _RoutineFormState extends ConsumerState<RoutineForm> {
           maxLength: 255,
           decoration: InputDecoration(labelText: 'Tên việc', counterText: '', errorText: _nameError),
         ),
+        // Việc đã có log thì không đổi loại (backend 409 kind_locked): chỉ hiện loại hiện tại.
+        if (_editing && widget.routine!.hasRecentLogs)
+          Text('Loại: ${widget.routine!.kind.label} (đã có lịch sử nên không đổi được)', style: muted)
+        else ...[
+          Text('Loại', style: muted),
+          ChoiceRow<RoutineKind>(
+            options: {for (final k in RoutineKind.values) k: k.label},
+            selected: _kind,
+            onSelected: (k) => setState(() => _kind = k),
+          ),
+        ],
         Row(
           children: [
             Expanded(child: Text('Lặp lại vào', style: muted)),

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/utils/api_error.dart';
 import '../../../shared/widgets/scroll_card.dart';
 import '../models/routine.dart';
 import '../providers/nghi_su_duong_provider.dart';
+import '../utils/workout_form.dart';
 import 'routine_form.dart';
+import 'workout_log_sheet.dart';
 
 /// Dòng phụ: lịch lặp, "nghỉ hôm nay" nếu không đến hạn, rồi "chuỗi n ngày".
 String routineSubtitle(Routine r) => [
@@ -84,9 +85,7 @@ class _RoutineRowState extends ConsumerState<_RoutineRow> {
       await ref.read(routinesProvider.notifier).setDoneToday(widget.routine, done);
     } catch (e) {
       if (mounted) {
-        final message = apiErrorCode(e) == 'not_scheduled'
-            ? 'Hôm nay không phải ngày của việc này.'
-            : apiErrorMessage(e, 'Không cập nhật được việc hằng ngày, thử lại nhé.');
+        final message = routineErrorMessage(e, 'Không cập nhật được việc hằng ngày, thử lại nhé.');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
@@ -99,35 +98,52 @@ class _RoutineRowState extends ConsumerState<_RoutineRow> {
     final cs = Theme.of(context).colorScheme;
     final r = widget.routine;
     final dim = r.dueToday ? 1.0 : 0.5;
+    final workout = r.isWorkout;
+    // WORKOUT: bấm vào việc (đến hạn hôm nay) mở sheet ghi buổi tập thay vì tick.
+    final openSheet = workout && r.dueToday ? () => showWorkoutLogSheet(context, r) : null;
+    final body = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 4,
+        children: [
+          Text(
+            r.name,
+            style: TextStyle(
+              fontSize: 14,
+              color: cs.onSurface.withValues(alpha: dim),
+              decoration: r.doneToday && !workout ? TextDecoration.lineThrough : null,
+            ),
+          ),
+          if (workout && r.doneToday)
+            Text(
+              workoutSummary(r.todayLog),
+              key: ValueKey('workout-summary-${r.id}'),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary),
+            ),
+          Text(routineSubtitle(r), style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6 * dim + 0.1))),
+          _WeekDots(routine: r),
+        ],
+      ),
+    );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Checkbox(
-          // Chỉ tick được khi đến hạn hôm nay.
-          value: r.doneToday,
-          onChanged: r.dueToday && !_sending ? (v) => _toggle(v ?? false) : null,
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 4,
-              children: [
-                Text(
-                  r.name,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: cs.onSurface.withValues(alpha: dim),
-                    decoration: r.doneToday ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                Text(routineSubtitle(r), style: TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6 * dim + 0.1))),
-                _WeekDots(routine: r),
-              ],
-            ),
+        if (workout)
+          IconButton(
+            key: ValueKey('workout-open-${r.id}'),
+            tooltip: r.doneToday ? 'Sửa buổi tập hôm nay' : 'Ghi buổi tập hôm nay',
+            onPressed: openSheet,
+            color: r.doneToday ? cs.primary : null,
+            icon: Icon(r.doneToday ? Icons.check_circle : Icons.fitness_center_outlined),
+          )
+        else
+          Checkbox(
+            // Chỉ tick được khi đến hạn hôm nay.
+            value: r.doneToday,
+            onChanged: r.dueToday && !_sending ? (v) => _toggle(v ?? false) : null,
           ),
-        ),
+        Expanded(child: openSheet == null ? body : InkWell(onTap: openSheet, child: body)),
         IconButton(
           tooltip: 'Sửa việc hằng ngày',
           visualDensity: VisualDensity.compact,

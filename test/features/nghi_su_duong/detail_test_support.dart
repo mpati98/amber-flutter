@@ -121,6 +121,7 @@ class FakeApi extends NghiSuDuongApi {
   final routineCreates = <Map<String, Object?>>[];
   final routineUpdates = <Map<String, Object?>>[];
   final routineDeletes = <String>[];
+  final workoutSaves = <Map<String, Object?>>[]; // {id, date, durationMinutes, exercises: json}
   Completer<void>? routineGate;
   Object? routineError;
 
@@ -150,11 +151,11 @@ class FakeApi extends NghiSuDuongApi {
   }
 
   @override
-  Future<Routine> createRoutine({required String name, List<int>? weekdays}) async {
-    routineCreates.add({'name': name, 'weekdays': weekdays});
+  Future<Routine> createRoutine({required String name, List<int>? weekdays, RoutineKind kind = RoutineKind.check}) async {
+    routineCreates.add({'name': name, 'weekdays': weekdays, 'kind': kind.api});
     await routineGate?.future;
     if (routineError case final e?) throw e;
-    final r = mkRoutine('new-${routineCreates.length}', name, weekdays: weekdays ?? const [1, 2, 3, 4, 5, 6, 7]);
+    final r = mkRoutine('new-${routineCreates.length}', name, weekdays: weekdays ?? const [1, 2, 3, 4, 5, 6, 7], kind: kind);
     routines = [...routines, r];
     return r;
   }
@@ -165,7 +166,26 @@ class FakeApi extends NghiSuDuongApi {
     await routineGate?.future;
     if (routineError case final e?) throw e;
     final old = routines.firstWhere((x) => x.id == id);
-    final r = mkRoutine(id, (patch['name'] as String?) ?? old.name, weekdays: (patch['weekdays'] as List?)?.cast<int>() ?? old.weekdays);
+    final r = mkRoutine(
+      id,
+      (patch['name'] as String?) ?? old.name,
+      weekdays: (patch['weekdays'] as List?)?.cast<int>() ?? old.weekdays,
+      kind: patch['kind'] == null ? old.kind : RoutineKind.fromApi(patch['kind']),
+    );
+    routines = [for (final x in routines) x.id == id ? r : x];
+    return r;
+  }
+
+  @override
+  Future<Routine> saveWorkoutLog(String id, String date, {required int durationMinutes, required List<Exercise> exercises}) async {
+    workoutSaves.add({'id': id, 'date': date, 'durationMinutes': durationMinutes, 'exercises': [for (final e in exercises) e.toJson()]});
+    await routineGate?.future;
+    if (routineError case final e?) throw e;
+    final old = routines.firstWhere((x) => x.id == id).withDoneToday(true);
+    final r = Routine(
+      id: old.id, name: old.name, weekdays: old.weekdays, dueToday: old.dueToday, doneToday: true, streak: old.streak, last7: old.last7,
+      kind: old.kind, lastWorkout: old.lastWorkout, todayLog: TodayLog(durationMinutes: durationMinutes, exercises: exercises),
+    );
     routines = [for (final x in routines) x.id == id ? r : x];
     return r;
   }
@@ -446,6 +466,9 @@ Routine mkRoutine(
   Set<int> done = const {},
   Set<int>? dueDays,
   int streak = 0,
+  RoutineKind kind = RoutineKind.check,
+  TodayLog? todayLog,
+  List<Exercise>? lastWorkout,
 }) =>
     Routine(
       id: id,
@@ -454,6 +477,9 @@ Routine mkRoutine(
       dueToday: dueToday,
       doneToday: done.contains(6),
       streak: streak,
+      kind: kind,
+      todayLog: todayLog,
+      lastWorkout: lastWorkout,
       last7: [
         for (var i = 0; i < 7; i++)
           RoutineDay(date: '2026-10-0${i + 2}', due: dueDays == null ? (i == 6 ? dueToday : true) : dueDays.contains(i), done: done.contains(i)),

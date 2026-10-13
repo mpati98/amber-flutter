@@ -36,15 +36,15 @@ class NghiSuDuongApi {
   }
 
   /// [weekdays] 1–7 (1 = thứ Hai), không trùng; null = cả 7 ngày.
-  Future<Routine> createRoutine({required String name, List<int>? weekdays}) async {
+  Future<Routine> createRoutine({required String name, List<int>? weekdays, RoutineKind kind = RoutineKind.check}) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/du-an/routines',
-      data: {'name': name, 'weekdays': ?weekdays},
+      data: {'name': name, 'weekdays': ?weekdays, 'kind': kind.api},
     );
     return Routine.fromJson(res.data!);
   }
 
-  /// [patch] chỉ chứa trường cần đổi (name, weekdays).
+  /// [patch] chỉ chứa trường cần đổi (name, weekdays, kind — đổi kind khi đã có log: 409 `kind_locked`).
   Future<Routine> updateRoutine(String id, Map<String, Object?> patch) async {
     final res = await _dio.patch<Map<String, dynamic>>('/api/du-an/routines/$id', data: patch);
     return Routine.fromJson(res.data!);
@@ -60,7 +60,17 @@ class NghiSuDuongApi {
     return Routine.fromJson(res.data!);
   }
 
-  /// Bỏ đánh dấu ngày [date]. Trả routine đã cập nhật.
+  /// Ghi buổi tập WORKOUT ngày [date] (chỉ hôm nay: 400 `not_today`): thay cả danh sách bài, gọi lại là sửa.
+  /// 400 `{error: {...}}` khi dữ liệu không hợp lệ. Trả routine đã cập nhật.
+  Future<Routine> saveWorkoutLog(String id, String date, {required int durationMinutes, required List<Exercise> exercises}) async {
+    final res = await _dio.put<Map<String, dynamic>>(
+      '/api/du-an/routines/$id/logs/$date',
+      data: {'durationMinutes': durationMinutes, 'exercises': [for (final e in exercises) e.toJson()]},
+    );
+    return Routine.fromJson(res.data!);
+  }
+
+  /// Bỏ đánh dấu ngày [date] (WORKOUT: xoá cả buổi tập). Trả routine đã cập nhật.
   Future<Routine> unmarkRoutineDone(String id, String date) async {
     final res = await _dio.delete<Map<String, dynamic>>('/api/du-an/routines/$id/logs/$date');
     return Routine.fromJson(res.data!);

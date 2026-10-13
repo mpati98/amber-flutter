@@ -35,6 +35,11 @@ class RoutinesNotifier extends AsyncNotifier<List<Routine>> {
     state = AsyncData([for (final x in current) x.id == r.id ? r : x]);
   }
 
+  /// Ghi / sửa buổi tập hôm nay (PUT). Không lạc quan: sheet chờ kết quả; lỗi thì ném lại để sheet báo.
+  Future<void> saveWorkout(Routine routine, {required int durationMinutes, required List<Exercise> exercises}) async {
+    _replace(await ref.read(nghiSuDuongApiProvider).saveWorkoutLog(routine.id, vnToday(), durationMinutes: durationMinutes, exercises: exercises));
+  }
+
   /// Tick (`done` true → PUT log hôm nay) hoặc bỏ tick (DELETE). Đổi state NGAY; thành công thì thay bằng
   /// routine server trả về; lỗi thì trả lại bản cũ và ném lại để nơi gọi báo lỗi.
   Future<void> setDoneToday(Routine routine, bool done) async {

@@ -274,7 +274,7 @@ void main() {
       expect(find.text('T2 · T4 · T6'), findsOneWidget);
       await tester.tap(_saveButton());
       await tester.pumpAndSettle();
-      expect(api.routineCreates.single, {'name': 'Đọc sách', 'weekdays': [1, 3, 5]});
+      expect(api.routineCreates.single, {'name': 'Đọc sách', 'weekdays': [1, 3, 5], 'kind': 'CHECK'});
       expect(find.byType(Dialog), findsNothing);
       expect(find.text('Đọc sách'), findsOneWidget);
     });

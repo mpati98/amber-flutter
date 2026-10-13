@@ -1,3 +1,89 @@
+/// Loại việc hằng ngày: tick tay hoặc ghi buổi tập (phút + danh sách bài).
+enum RoutineKind {
+  check('CHECK', 'Việc thường'),
+  workout('WORKOUT', 'Tập thể dục');
+
+  const RoutineKind(this.api, this.label);
+
+  /// Giá trị trên API.
+  final String api;
+  final String label;
+
+  /// Thiếu / lạ → [check] (backend cũ chưa có trường `kind`).
+  static RoutineKind fromApi(Object? value) => RoutineKind.values.firstWhere((k) => k.api == value, orElse: () => check);
+}
+
+/// Cách đo một bài tập: số lần / số hiệp × số lần / thời lượng (giây).
+enum ExerciseMeasure {
+  reps('REPS', 'Số lần'),
+  setsReps('SETS_REPS', 'Hiệp × lần'),
+  duration('DURATION', 'Thời lượng');
+
+  const ExerciseMeasure(this.api, this.label);
+
+  final String api;
+  final String label;
+
+  static ExerciseMeasure fromApi(Object? value) => ExerciseMeasure.values.firstWhere((m) => m.api == value, orElse: () => reps);
+}
+
+/// Một bài trong buổi tập. Chỉ các trường thuộc [measure] có giá trị, còn lại null.
+class Exercise {
+  const Exercise({required this.name, required this.measure, this.sets, this.reps, this.durationSeconds});
+
+  factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
+        name: json['name'] as String,
+        measure: ExerciseMeasure.fromApi(json['measure']),
+        sets: json['sets'] as int?,
+        reps: json['reps'] as int?,
+        durationSeconds: json['durationSeconds'] as int?,
+      );
+
+  final String name;
+  final ExerciseMeasure measure;
+  final int? sets;
+  final int? reps;
+  final int? durationSeconds;
+
+  /// Body gửi PUT: backend từ chối trường không thuộc kiểu đo nên chỉ gửi đúng trường cần.
+  Map<String, Object> toJson() => {
+        'name': name,
+        'measure': measure.api,
+        if (measure == ExerciseMeasure.setsReps) 'sets': sets!,
+        if (measure != ExerciseMeasure.duration) 'reps': reps!,
+        if (measure == ExerciseMeasure.duration) 'durationSeconds': durationSeconds!,
+      };
+
+  /// "20 lần" / "3 × 15" / "60 giây" (chẵn phút: "2 phút").
+  String get amountLabel => switch (measure) {
+        ExerciseMeasure.reps => '$reps lần',
+        ExerciseMeasure.setsReps => '$sets × $reps',
+        ExerciseMeasure.duration => durationSeconds! >= 60 && durationSeconds! % 60 == 0 ? '${durationSeconds! ~/ 60} phút' : '$durationSeconds giây',
+      };
+}
+
+/// Log buổi tập của hôm nay: tổng phút (null với việc thường) + các bài theo thứ tự.
+class TodayLog {
+  const TodayLog({this.durationMinutes, this.exercises = const []});
+
+  factory TodayLog.fromJson(Map<String, dynamic> json) => TodayLog(
+        durationMinutes: json['durationMinutes'] as int?,
+        exercises: [for (final e in (json['exercises'] as List? ?? const [])) Exercise.fromJson(e as Map<String, dynamic>)],
+      );
+
+  final int? durationMinutes;
+  final List<Exercise> exercises;
+}
+
+/// "30 phút · 4 bài" (bỏ vế không có); chưa có số phút lẫn bài → "Đã tập".
+String workoutSummary(TodayLog? log) {
+  final parts = [
+    if (log?.durationMinutes != null) '${log!.durationMinutes} phút',
+    if (log != null && log.exercises.isNotEmpty) '${log.exercises.length} bài',
+  ];
+  return parts.isEmpty ? 'Đã tập' : parts.join(' · ');
+}
+
 /// Một ngày trong 7 ngày gần nhất của việc hằng ngày.
 class RoutineDay {
   const RoutineDay({required this.date, required this.due, required this.done});
@@ -26,6 +112,9 @@ class Routine {
     required this.doneToday,
     required this.streak,
     required this.last7,
+    this.kind = RoutineKind.check,
+    this.todayLog,
+    this.lastWorkout,
   });
 
   factory Routine.fromJson(Map<String, dynamic> json) => Routine(
@@ -36,6 +125,9 @@ class Routine {
         doneToday: json['doneToday'] as bool,
         streak: json['streak'] as int,
         last7: [for (final d in json['last7'] as List) RoutineDay.fromJson(d as Map<String, dynamic>)],
+        kind: RoutineKind.fromApi(json['kind']),
+        todayLog: json['todayLog'] == null ? null : TodayLog.fromJson(json['todayLog'] as Map<String, dynamic>),
+        lastWorkout: json['lastWorkout'] == null ? null : [for (final e in json['lastWorkout'] as List) Exercise.fromJson(e as Map<String, dynamic>)],
       );
 
   final String id;
@@ -51,6 +143,18 @@ class Routine {
 
   /// 7 ngày kết thúc ở hôm nay, cũ trước mới sau.
   final List<RoutineDay> last7;
+  final RoutineKind kind;
+
+  /// Log hôm nay (có số phút + bài với WORKOUT); null nếu chưa ghi.
+  final TodayLog? todayLog;
+
+  /// Các bài của buổi gần nhất trước hôm nay, để điền sẵn; chỉ WORKOUT, null nếu chưa có buổi nào.
+  final List<Exercise>? lastWorkout;
+
+  bool get isWorkout => kind == RoutineKind.workout;
+
+  /// Có bằng chứng đã có log (trong 7 ngày gần nhất). Log cũ hơn app không biết — backend chặn đổi loại bằng 409.
+  bool get hasRecentLogs => doneToday || last7.any((d) => d.done);
 
   /// Bản ước lượng ngay khi người dùng tick / bỏ tick hôm nay (trước khi server trả lời).
   Routine withDoneToday(bool done) => Routine(
@@ -63,6 +167,9 @@ class Routine {
         last7: [
           for (final (i, d) in last7.indexed) i == last7.length - 1 ? RoutineDay(date: d.date, due: d.due, done: done) : d,
         ],
+        kind: kind,
+        todayLog: done ? todayLog : null, // bỏ đánh dấu → log (kèm bài tập) bị xoá
+        lastWorkout: lastWorkout,
       );
 }
 
