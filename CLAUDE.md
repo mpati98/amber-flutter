@@ -13,9 +13,13 @@ flutter pub get
 flutter run -d chrome                                   # API mặc định http://localhost:3000
 flutter run --dart-define=API_BASE_URL=https://...      # trỏ backend khác
 flutter analyze                                         # phải sạch trước khi commit
-flutter test                                            # widget/unit test (test/)
-API_BASE_URL=https://... tool/deploy_web.sh             # build web release + vercel --prod
+flutter test                                            # widget/unit test (test/); test/integration tự bỏ qua nếu thiếu dart-define
+API_BASE_URL=https://api.duangmai.io.vn tool/deploy_web.sh   # build web release + vercel --prod
 ```
+
+Test hợp đồng với backend thật (`test/integration/nsd_backend_contract_test.dart`) cần
+`--dart-define=NSD_API_BASE_URL=… --dart-define=NSD_API_TOKEN=…` và GHI dữ liệu thật (tự dọn). **Chỉ chạy trên backend
+dev (Neon dev branch), không bao giờ trỏ vào `https://api.duangmai.io.vn`.**
 
 Dev local: chạy amber-v4 trước (`npm run dev` :3000).
 
@@ -26,6 +30,17 @@ Dev local: chạy amber-v4 trước (`npm run dev` :3000).
   không có file `.env`. Thiếu thì dùng `http://localhost:3000`.
 - `tool/deploy_web.sh` build vào `build/web` rồi rsync sang `deploy/`
   (gitignore, giữ `.vercel/` liên kết project). Header cache nằm ở `web/vercel.json`.
+
+## Triển khai production
+
+- Project Vercel `amber-flutter` (alias `amber.duangmai.io.vn`) **không nối Git**: `git push` KHÔNG deploy. Deploy bằng
+  `API_BASE_URL=https://api.duangmai.io.vn tool/deploy_web.sh` từ `main` sạch, SAU khi backend amber-v4 đã deploy.
+- **Đang chạy** (13/10/2026): `dpl_GcdByVm5Qm17oTRWRKsyimNHwXwZ` (build từ `95162a5`, có ghi buổi tập).
+  **Mốc rollback**: `dpl_7udy1WmxgqjXqrE4YpTAMrMqEK7s` (`vercel rollback <id>` hoặc promote từ dashboard).
+- Kiểm sau deploy (không đăng nhập, không ghi): `https://amber.duangmai.io.vn` trả 200; `main.dart.js` chứa
+  `api.duangmai.io.vn`, không chứa `localhost:3000` (chữ "localhost" đơn lẻ trong code Flutter là bình thường); chuỗi tiếng
+  Việt trong bundle bị mã hoá `\uXXXX` nên đừng tìm theo chữ có dấu.
+- **Máy này không có thông tin đăng nhập GitHub**: người dùng tự `git push`; đừng cố push hay cấu hình credential.
 
 ## Kiến trúc
 
