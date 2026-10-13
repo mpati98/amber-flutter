@@ -46,7 +46,7 @@ lib/
 test/                         cấu trúc song song lib/ (features/, shared/)
 ```
 
-Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau`, `tra_dinh`; feature `du_lieu_huan_luyen` (mục con của Tàng Kinh Các, không dùng chung model/API với sách và tài liệu).
+Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau`, `tra_dinh`, `amber` (chat với amber-brain); feature `du_lieu_huan_luyen` (mục con của Tàng Kinh Các, không dùng chung model/API với sách và tài liệu).
 
 ### Route (`app_router.dart`)
 
@@ -54,6 +54,7 @@ Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau
 |---|---|
 | Dư Đồ (trang chủ) | `/` |
 | Đăng nhập | `/login` |
+| Amber (chat AI) | `/amber` |
 | Nghị Sự Đường | `/nghi-su-duong`, `/du-an[/:projectId]`, `/finance[/:projectId]`, `/hoc-tap[/:courseId]` — 3 mảng ở **cấp gốc** |
 | Tàng Kinh Các | `/tang-kinh-cac`, `/tang-kinh-cac/{sach,tai-lieu,ke-hoach-doc}`, `/tang-kinh-cac/du-lieu-huan-luyen[/:logId]` (nhật ký amber-brain, feature `du_lieu_huan_luyen` riêng, gọi `/api/brain-logs` của amber-v4, không gọi brain) |
 | Kiều Lâu | `/kieu-lau` |
@@ -91,3 +92,11 @@ phải sửa cả amber-v4. `placement-test` phải đứng trước `:sessionId
 - **Upload** ảnh bìa / tệp (`image_picker`, `file_picker`) → POST
   `/api/tang-kinh-cac/upload` (backend chặn > 4 MB). Mở tệp qua `file_opener`
   (bản io / web riêng).
+- **Việc hằng ngày + ghi buổi tập** (`features/nghi_su_duong`): `Routine.kind` CHECK (tick) | WORKOUT. Bấm việc WORKOUT đến hạn
+  hôm nay mở `WorkoutLogSheet` (`widgets/workout_log_sheet.dart`, qua `showFinanceSheet`): tổng phút (1–1440, bắt buộc) + danh
+  sách bài (tên, kiểu đo REPS / SETS_REPS / DURATION, chỉ hiện ô số của kiểu đó), thêm/xoá dòng. Điền sẵn từ `todayLog`, nếu chưa
+  có thì từ `lastWorkout` (giữ bài, để trống phút). Lưu = PUT `/api/du-an/routines/:id/logs/:hôm-nay`; nút "Xoá buổi tập" (chỉ khi đã
+  có log) = DELETE. Thẻ hiện "30 phút · 4 bài" thay ô tick. Validate ở `utils/workout_form.dart` (`validateWorkoutForm`, giới hạn khớp
+  backend); mã lỗi `not_today`, `kind_locked`, `not_scheduled`, validate zod → câu tiếng Việt qua `routineErrorMessage`. Form thêm/sửa
+  việc có chọn loại; việc đã có log (thấy trong 7 ngày) thì khoá loại, log cũ hơn thì server trả 409 `kind_locked`. Việc CHECK giữ
+  nguyên (tick/bỏ tick, cho phép ngày đã qua ở backend). Test hợp đồng với backend thật: `test/integration/nsd_backend_contract_test.dart`.
