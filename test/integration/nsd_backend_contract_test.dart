@@ -4,9 +4,11 @@ import 'package:amber_flutter/features/tang_kinh_cac/services/document_api.dart'
 import 'package:amber_flutter/features/nghi_su_duong/models/key_result.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/finance_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
+import 'package:amber_flutter/features/nghi_su_duong/utils/workout_form.dart';
 import 'package:amber_flutter/shared/utils/api_error.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
@@ -304,6 +306,149 @@ void main() {
         expect(patched.last7, hasLength(7));
       } finally {
         // 5. xoá cả hai (lịch sử xoá theo)
+        for (final id in created) {
+          await api.deleteRoutine(id);
+        }
+      }
+      expect((await api.getRoutines()).map((r) => r.id).toList(), initial, reason: 'danh sách về như lúc đầu');
+    },
+    skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
+    'Việc hằng ngày WORKOUT: tạo → ghi buổi tập → ghi lại (thay) → ngày đã qua not_today → đổi loại kind_locked → xoá log (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = NghiSuDuongApi(dio);
+      final today = vnToday();
+      final yesterday = _dayBefore(today, 1);
+      final created = <String>[];
+
+      Future<DioException> failure(Future<Object?> call) async {
+        try {
+          await call;
+        } catch (e) {
+          if (e is DioException) return e;
+          rethrow;
+        }
+        fail('lẽ ra phải lỗi');
+      }
+
+      // So khớp đúng thứ tự và từng trường với những gì đã gửi.
+      void expectLog(TodayLog? log, int minutes, List<Exercise> sent) {
+        expect(log, isNotNull);
+        expect(log!.durationMinutes, minutes);
+        expect([for (final e in log.exercises) e.toJson()], [for (final e in sent) e.toJson()]);
+      }
+
+      final initial = (await api.getRoutines()).map((r) => r.id).toList();
+      try {
+        // 1. tạo WORKOUT đủ 7 ngày (đến hạn hôm nay): kind WORKOUT, chưa có log, chưa có buổi trước
+        final r = await api.createRoutine(name: 'TEST contract tập thể dục', kind: RoutineKind.workout);
+        created.add(r.id);
+        expect(r.kind, RoutineKind.workout);
+        expect(r.dueToday, isTrue);
+        expect(r.doneToday, isFalse);
+        expect(r.todayLog, isNull);
+        expect(r.lastWorkout, isNull);
+        final listed = (await api.getRoutines()).firstWhere((x) => x.id == r.id);
+        expect((listed.kind, listed.todayLog, listed.lastWorkout), (RoutineKind.workout, null, null));
+
+        // 2. ghi buổi tập: mỗi kiểu đo một bài; todayLog khớp, đúng thứ tự
+        const first = [
+          Exercise(name: 'Chống đẩy', measure: ExerciseMeasure.reps, reps: 20),
+          Exercise(name: 'Squat', measure: ExerciseMeasure.setsReps, sets: 3, reps: 15),
+          Exercise(name: 'Plank', measure: ExerciseMeasure.duration, durationSeconds: 60),
+        ];
+        final saved = await api.saveWorkoutLog(r.id, today, durationMinutes: 30, exercises: first);
+        expect(saved.doneToday, isTrue);
+        expect(saved.streak, 1);
+        expect(saved.last7.last.done, isTrue);
+        expect(saved.kind, RoutineKind.workout);
+        expectLog(saved.todayLog, 30, first);
+        expect(saved.lastWorkout, isNull, reason: 'buổi hôm nay không tính là buổi trước');
+        expect(workoutSummary(saved.todayLog), '30 phút · 3 bài');
+        expectLog((await api.getRoutines()).firstWhere((x) => x.id == r.id).todayLog, 30, first);
+
+        // 3. ghi lại cùng ngày với danh sách khác: thay, không nối thêm
+        const second = [Exercise(name: 'Plank', measure: ExerciseMeasure.duration, durationSeconds: 90)];
+        final replaced = await api.saveWorkoutLog(r.id, today, durationMinutes: 45, exercises: second);
+        expectLog(replaced.todayLog, 45, second);
+        expect(replaced.todayLog!.exercises, hasLength(1));
+        expect(replaced.streak, 1, reason: 'sửa buổi tập không tăng chuỗi');
+        final again = (await api.getRoutines()).firstWhere((x) => x.id == r.id);
+        expectLog(again.todayLog, 45, second);
+
+        // 4. ngày đã qua: not_today (400), và app đổi ra câu tiếng Việt; dữ liệu hôm nay không đổi
+        final past = await failure(api.saveWorkoutLog(r.id, yesterday, durationMinutes: 20, exercises: first));
+        expect(past.response?.statusCode, 400);
+        expect(apiErrorCode(past), 'not_today');
+        expect(routineErrorMessage(past, 'x'), 'Chỉ ghi được buổi tập của hôm nay.');
+        expectLog((await api.getRoutines()).firstWhere((x) => x.id == r.id).todayLog, 45, second);
+
+        // 5. đã có log thì không đổi loại: 409 kind_locked, vẫn là WORKOUT
+        final locked = await failure(api.updateRoutine(r.id, {'kind': 'CHECK'}));
+        expect(locked.response?.statusCode, 409);
+        expect(apiErrorCode(locked), 'kind_locked');
+        expect(routineErrorMessage(locked, 'x'), 'Việc này đã có lịch sử nên không đổi loại được.');
+        expect((await api.getRoutines()).firstWhere((x) => x.id == r.id).kind, RoutineKind.workout);
+
+        // 6. xoá log: todayLog null, chưa làm; bài tập xoá theo (ghi lại sau đó chỉ có danh sách mới)
+        final deleted = await api.unmarkRoutineDone(r.id, today);
+        expect(deleted.todayLog, isNull);
+        expect(deleted.doneToday, isFalse);
+        expect(deleted.streak, 0);
+        expect((await api.getRoutines()).firstWhere((x) => x.id == r.id).todayLog, isNull);
+        final reborn = await api.saveWorkoutLog(r.id, today, durationMinutes: 10, exercises: const []);
+        expectLog(reborn.todayLog, 10, const []);
+        expect(reborn.todayLog!.exercises, isEmpty, reason: 'bài của log đã xoá không quay lại');
+      } finally {
+        // 7. xoá routine (log + bài tập xoá theo)
+        for (final id in created) {
+          await api.deleteRoutine(id);
+        }
+      }
+      expect((await api.getRoutines()).map((r) => r.id).toList(), initial, reason: 'danh sách về như lúc đầu');
+    },
+    skip: missing ? 'Cần --dart-define=NSD_API_BASE_URL và NSD_API_TOKEN (backend thật)' : null,
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
+    'Việc hằng ngày CHECK vẫn tick / bỏ tick như cũ sau khi có WORKOUT: kind CHECK, todayLog rỗng khi đã tick, không có lastWorkout (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = NghiSuDuongApi(dio);
+      final today = vnToday();
+      final created = <String>[];
+
+      final initial = (await api.getRoutines()).map((r) => r.id).toList();
+      try {
+        final r = await api.createRoutine(name: 'TEST contract việc thường');
+        created.add(r.id);
+        expect(r.kind, RoutineKind.check, reason: 'mặc định CHECK');
+        expect((r.doneToday, r.todayLog, r.lastWorkout), (false, null, null));
+
+        final ticked = await api.markRoutineDone(r.id, today);
+        expect((ticked.kind, ticked.doneToday, ticked.streak), (RoutineKind.check, true, 1));
+        expect(ticked.todayLog!.durationMinutes, isNull, reason: 'CHECK không có số phút');
+        expect(ticked.todayLog!.exercises, isEmpty);
+        expect(ticked.lastWorkout, isNull);
+
+        // body của WORKOUT gửi nhầm cho CHECK bị bỏ qua (hành vi cũ), không tạo bài tập
+        final saved = await api.saveWorkoutLog(r.id, today, durationMinutes: 5, exercises: const [Exercise(name: 'x', measure: ExerciseMeasure.reps, reps: 1)]);
+        expect(saved.todayLog!.durationMinutes, isNull);
+        expect(saved.todayLog!.exercises, isEmpty);
+
+        final unticked = await api.unmarkRoutineDone(r.id, today);
+        expect((unticked.doneToday, unticked.streak, unticked.todayLog), (false, 0, null));
+
+        // chưa có log thì đổi loại được
+        final switched = await api.updateRoutine(r.id, {'kind': 'WORKOUT'});
+        expect(switched.kind, RoutineKind.workout);
+        expect(switched.lastWorkout, isNull);
+      } finally {
         for (final id in created) {
           await api.deleteRoutine(id);
         }
