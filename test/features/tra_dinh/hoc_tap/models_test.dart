@@ -2,6 +2,7 @@ import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/hoc_tap_errors.dart';
@@ -123,5 +124,57 @@ void main() {
     expect(hocTapErrorMessage(apiError(400, {'error': 'sections_unparsed'})), contains('chưa đọc được'));
     expect(hocTapErrorMessage(apiError(400, {'error': 'a_new_code'})), 'Có lỗi, thử lại');
     expect(hocTapErrorMessage(StateError('x')), 'Có lỗi, thử lại');
+  });
+
+  test('StudyLogResult.fromJson (POST /logs, không gắn khóa, có lý do dừng)', () {
+    final r = StudyLogResult.fromJson(fixtureMap('log_created'));
+    expect(r.log.minutes, 20);
+    expect(r.log.courseId, isNull);
+    expect(r.log.courseTitle, isNull);
+    expect(r.log.sections, isEmpty);
+    expect(r.log.note, 'Ôn lại');
+    expect(r.today.minutes, 50);
+    expect(r.today.goalMinutes, 60);
+    expect(r.today.done, isFalse);
+    expect(r.today.reason?.code, ReasonCode.busy);
+    expect(r.course, isNull);
+  });
+
+  test('StudyLog.fromJson (GET /logs): khóa, phần, markedDone', () {
+    final logs = [for (final l in fixtureList('logs_today')) StudyLog.fromJson(l as Map<String, dynamic>)];
+    expect(logs.length, 2);
+    final withCourse = logs.firstWhere((l) => l.courseId != null);
+    expect(withCourse.courseTitle, 'English Tenses 101');
+    expect(withCourse.minutes, 30);
+    expect(withCourse.sections.map((s) => (s.title, s.markedDone)), [('Basics', true), ('First English Sentences', false)]);
+    expect(withCourse.createdAt.isUtc, isTrue);
+  });
+
+  test('recentLogs của chi tiết khóa có sections {sectionId, title, markedDone}; fixture cũ (không sections) vẫn đọc được', () {
+    final d = CourseDetail.fromJson(fixtureMap('course_detail_logs'));
+    expect(d.recentLogs.single.sections.map((s) => (s.title, s.markedDone)), [('Basics', true), ('First English Sentences', false)]);
+    expect(d.recentLogs.single.minutes, 30);
+    expect(CourseDetail.fromJson(fixtureMap('course_detail')).recentLogs.first.sections, isEmpty);
+  });
+
+  test('Routine STUDY có pendingReasonDates (tăng dần như server trả)', () {
+    final study = [for (final r in fixtureList('routines_pending')) Routine.fromJson(r as Map<String, dynamic>)].firstWhere((r) => r.isStudy);
+    expect(study.pendingReasonDates.length, 3);
+    expect([...study.pendingReasonDates]..sort(), study.pendingReasonDates);
+    expect(study.todayMinutes, 50);
+    expect(study.goalMinutes, 60);
+  });
+
+  test('DayReasonEntry.fromJson (PUT reasons)', () {
+    final r = DayReasonEntry.fromJson(fixtureMap('reason_put'));
+    expect(r.code, ReasonCode.other);
+    expect(r.text, 'Đi khám');
+    expect(r.date, matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')));
+  });
+
+  test('mã lỗi mới → tiếng Việt', () {
+    for (final code in ['not_today', 'reason_text_required', 'course_not_in_subject', 'sections_without_course', 'section_not_in_course', 'duplicate_section', 'future_date', 'goal_met', 'goal_missing', 'study_routine_auto', 'reason_required']) {
+      expect(hocTapErrorMessage(apiError(400, {'error': code})), isNot('Có lỗi, thử lại'), reason: code);
+    }
   });
 }

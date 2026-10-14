@@ -4,7 +4,7 @@ enum RoutineKind {
   workout('WORKOUT', 'Tập thể dục'),
 
   /// Tự tính từ nhật ký học của một môn (Trà Đình) — không tick tay, không tạo từ form việc hằng ngày.
-  study('STUDY', 'Học tập');
+  study('STUDY', 'Học');
 
   const RoutineKind(this.api, this.label);
 

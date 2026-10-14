@@ -18,7 +18,7 @@ const _buildings = [
     glow: ScrollCardGlow.shuiro,
   ),
   (path: '/kieu-lau', name: 'Kiều Lâu', sub: 'Thông báo & tin tức', emoji: '📰', glow: ScrollCardGlow.yugen),
-  (path: '/tra-dinh', name: 'Trà Đình', sub: 'Trò chuyện & luyện tập', emoji: '🍵', glow: ScrollCardGlow.kincha),
+  (path: '/tra-dinh', name: 'Trà Đình', sub: 'Học tập & luyện tập', emoji: '🍵', glow: ScrollCardGlow.kincha),
 ];
 
 /// Trang chủ "/" — port HomeScene (Âm Dương Giới). Web đặt 4 ảnh tòa nhà lên

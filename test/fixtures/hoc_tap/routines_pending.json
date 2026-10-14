@@ -1,0 +1,66 @@
+[
+  {
+    "id": "d3f38447-42af-416b-8433-cec197c938b4",
+    "name": "Học tiếng Anh",
+    "kind": "STUDY",
+    "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "dueToday": true,
+    "doneToday": false,
+    "streak": 0,
+    "last7": [
+      {
+        "date": "2026-10-08",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-09",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-10",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-11",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-12",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-13",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-14",
+        "due": true,
+        "done": false
+      }
+    ],
+    "todayLog": null,
+    "studySubjectId": "6a182a42-3d39-458a-9bd6-fddb18b50bb3",
+    "studySubjectName": "Tiếng Anh",
+    "todayMinutes": 50,
+    "goalMinutes": 60,
+    "pendingReasonDates": [
+      "2026-10-11",
+      "2026-10-12",
+      "2026-10-13"
+    ]
+  }
+]

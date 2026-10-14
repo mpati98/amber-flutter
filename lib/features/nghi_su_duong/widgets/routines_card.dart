@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/scroll_card.dart';
 import '../models/routine.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../utils/workout_form.dart';
 import 'routine_form.dart';
+import 'study_routine_row.dart';
 import 'workout_log_sheet.dart';
 
 /// Dòng phụ: lịch lặp, "nghỉ hôm nay" nếu không đến hạn, rồi "chuỗi n ngày".
@@ -59,7 +59,8 @@ class RoutinesCard extends ConsumerWidget {
           else if (routines.isEmpty)
             Text('Chưa có việc hằng ngày nào.', style: muted)
           else
-            for (final r in routines) _RoutineRow(key: ValueKey('routine-${r.id}'), routine: r),
+            for (final r in routines)
+              r.isStudy ? StudyRoutineRow(key: ValueKey('routine-${r.id}'), routine: r) : _RoutineRow(key: ValueKey('routine-${r.id}'), routine: r),
           Text('7 ngày gần nhất · ô cuối là hôm nay', style: muted),
         ],
       ),
@@ -100,7 +101,6 @@ class _RoutineRowState extends ConsumerState<_RoutineRow> {
     final r = widget.routine;
     final dim = r.dueToday ? 1.0 : 0.5;
     final workout = r.isWorkout;
-    final study = r.isStudy;
     // WORKOUT: bấm vào việc (đến hạn hôm nay) mở sheet ghi buổi tập thay vì tick.
     final openSheet = workout && r.dueToday ? () => showWorkoutLogSheet(context, r) : null;
     final body = Padding(
@@ -117,12 +117,6 @@ class _RoutineRowState extends ConsumerState<_RoutineRow> {
               decoration: r.doneToday && !workout ? TextDecoration.lineThrough : null,
             ),
           ),
-          if (study)
-            Text(
-              '${r.todayMinutes ?? 0} / ${r.goalMinutes ?? 0} phút',
-              key: ValueKey('study-progress-${r.id}'),
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary),
-            ),
           if (workout && r.doneToday)
             Text(
               workoutSummary(r.todayLog),
@@ -137,13 +131,7 @@ class _RoutineRowState extends ConsumerState<_RoutineRow> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (study)
-          // Không tick tay: tự tính từ nhật ký học; bấm vào việc → màn Học tập của Trà Đình.
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Icon(r.doneToday ? Icons.check_circle : Icons.school_outlined, key: ValueKey('study-icon-${r.id}'), color: r.doneToday ? cs.primary : null),
-          )
-        else if (workout)
+        if (workout)
           IconButton(
             key: ValueKey('workout-open-${r.id}'),
             tooltip: r.doneToday ? 'Sửa buổi tập hôm nay' : 'Ghi buổi tập hôm nay',
@@ -157,13 +145,7 @@ class _RoutineRowState extends ConsumerState<_RoutineRow> {
             value: r.doneToday,
             onChanged: r.dueToday && !_sending ? (v) => _toggle(v ?? false) : null,
           ),
-        Expanded(
-          child: study
-              ? InkWell(key: ValueKey('study-open-${r.id}'), onTap: () => context.push('/tra-dinh'), child: body)
-              : openSheet == null
-                  ? body
-                  : InkWell(onTap: openSheet, child: body),
-        ),
+        Expanded(child: openSheet == null ? body : InkWell(onTap: openSheet, child: body)),
         IconButton(
           tooltip: 'Sửa việc hằng ngày',
           visualDensity: VisualDensity.compact,

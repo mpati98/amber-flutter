@@ -112,9 +112,14 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   invalidate tổng quan, danh sách khóa, chi tiết và `routinesProvider` (routine STUDY tính từ nhật ký học). Tick phần ở chi
   tiết khóa là lạc quan (`StudyCourseDetailNotifier.setSectionDone`, lỗi thì hoàn tác). Mã lỗi backend → tiếng Việt ở
   `utils/hoc_tap_errors.dart`. Fixture JSON thật của backend ở `test/fixtures/hoc_tap/` (chụp từ dev). Màu chữ phụ mới:
-  `Theme.of(context).textMuted` / `textFaint` (AppThemeColors). Tab Lịch và Thống kê còn là màn chờ; nút "Ghi buổi học" tạm báo "Sắp có".
+  `Theme.of(context).textMuted` / `textFaint` (AppThemeColors). Tab Lịch và Thống kê còn là màn chờ.
+  **Ghi buổi học** (`widgets/log_sheet.dart`, `showLogSheet`): chỉ hôm nay; mở từ thẻ Hôm nay, chi tiết khóa hoặc `/tra-dinh?openLog=1&subjectId=…`
+  (shell mở Tổng quan, mở sheet một lần rồi xoá query). Tổng "đã ghi + đang nhập" < mục tiêu mới hiện công tắc dừng + lý do (`ReasonPicker`);
+  sửa / xoá buổi hôm nay từ thẻ Hôm nay. Ngày thiếu lý do: `missing_reason_sheet.dart` (từng ngày, cũ trước).
   Test hợp đồng với backend thật: `test/integration/hoc_tap_backend_contract_test.dart` (cùng `--dart-define` như nsd).
-- **Routine kind STUDY**: `Routine.isStudy`, thẻ không tick, hiện "X / Y phút", bấm → `/tra-dinh`; form việc hằng ngày không cho tạo / đổi sang STUDY.
+- **Routine kind STUDY** (nhãn "Học"): `Routine.isStudy`; thẻ `widgets/study_routine_row.dart` — vòng tiến độ, "X / Y phút · chuỗi N ngày", không tick;
+  bấm → `/tra-dinh?openLog=1&subjectId=…`; `pendingReasonDates` → hàng "Thiếu lý do" mở sheet lý do. Form việc hằng ngày cho tạo loại Học
+  (chọn môn có mục tiêu và chưa có routine STUDY; sửa thì khoá loại, đổi môn được).
 - **Việc hằng ngày + ghi buổi tập** (`features/nghi_su_duong`): `Routine.kind` CHECK (tick) | WORKOUT. Bấm việc WORKOUT đến hạn
   hôm nay mở `WorkoutLogSheet` (`widgets/workout_log_sheet.dart`, qua `showFinanceSheet`): tổng phút (1–1440, bắt buộc) + danh
   sách bài (tên, kiểu đo REPS / SETS_REPS / DURATION, chỉ hiện ô số của kiểu đó), thêm/xoá dòng. Điền sẵn từ `todayLog`, nếu chưa

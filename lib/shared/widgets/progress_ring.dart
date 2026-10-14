@@ -13,11 +13,17 @@ class ProgressRing extends StatelessWidget {
     required this.value,
     required this.max,
     this.size = 128, // h-32 w-32
+    this.label,
+    this.labelStyle,
   });
 
   final double value;
   final double max;
   final double size;
+
+  /// Chữ ở giữa; null = số % như cũ.
+  final String? label;
+  final TextStyle? labelStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +45,8 @@ class ProgressRing extends StatelessWidget {
           ),
           // text-2xl = 24px → headlineSmall (24, Noto Serif trong darkTheme).
           Text(
-            '${(pct * 100).round()}%',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+            label ?? '${(pct * 100).round()}%',
+            style: labelStyle ?? Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
           ),
         ],
       ),

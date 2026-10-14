@@ -36,10 +36,11 @@ class NghiSuDuongApi {
   }
 
   /// [weekdays] 1–7 (1 = thứ Hai), không trùng; null = cả 7 ngày.
-  Future<Routine> createRoutine({required String name, List<int>? weekdays, RoutineKind kind = RoutineKind.check}) async {
+  /// [studySubjectId] bắt buộc với kind STUDY (môn phải có mục tiêu ngày và chưa có routine STUDY), không dùng với kind khác.
+  Future<Routine> createRoutine({required String name, List<int>? weekdays, RoutineKind kind = RoutineKind.check, String? studySubjectId}) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/api/du-an/routines',
-      data: {'name': name, 'weekdays': ?weekdays, 'kind': kind.api},
+      data: {'name': name, 'weekdays': ?weekdays, 'kind': kind.api, 'studySubjectId': ?studySubjectId},
     );
     return Routine.fromJson(res.data!);
   }

@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/utils/vn_time.dart';
 import '../../../nghi_su_duong/providers/nghi_su_duong_provider.dart';
 import '../models/course.dart';
 import '../models/study_enums.dart';
+import '../models/study_log.dart';
 import '../models/study_overview.dart';
 import '../models/study_subject.dart';
 import '../services/hoc_tap_api.dart';
@@ -71,11 +73,18 @@ class StudyCourseDetailNotifier extends AsyncNotifier<CourseDetail> {
 
 final studyCourseDetailProvider = AsyncNotifierProvider.autoDispose.family<StudyCourseDetailNotifier, CourseDetail, String>(StudyCourseDetailNotifier.new);
 
+/// Các buổi đã ghi HÔM NAY của một môn (mới nhất trước).
+final studyTodayLogsProvider = FutureProvider.autoDispose.family<List<StudyLog>, String>((ref, subjectId) {
+  final today = vnToday();
+  return ref.watch(hocTapApiProvider).getLogs(from: today, to: today, subjectId: subjectId);
+});
+
 /// Mọi thứ phụ thuộc khóa / môn học cần tải lại sau một thay đổi: tổng quan, danh sách khóa, chi tiết,
 /// và việc hằng ngày của Nghị Sự Đường (routine STUDY tính từ nhật ký học).
 void _invalidateAround(Ref ref, {String? courseId, bool keepDetail = false, bool subjects = false}) {
   ref.invalidate(studyOverviewProvider);
   ref.invalidate(studyCoursesProvider);
+  ref.invalidate(studyTodayLogsProvider);
   if (!keepDetail) ref.invalidate(studyCourseDetailProvider);
   if (subjects) ref.invalidate(studySubjectsProvider);
   ref.invalidate(routinesProvider);
@@ -130,6 +139,34 @@ class HocTapActions {
   Future<void> putSections(String courseId, List<SectionInput> sections) async {
     await _api.putSections(courseId, sections);
     _invalidateAround(_ref, courseId: courseId);
+  }
+
+  /// Ghi buổi học hôm nay. Ném lại lỗi API cho sheet báo.
+  Future<StudyLogResult> createLog(Map<String, Object?> body) async {
+    final r = await _api.createLog(body);
+    _invalidateAround(_ref, courseId: r.log.courseId);
+    return r;
+  }
+
+  Future<StudyLogResult> patchLog(String id, Map<String, Object?> patch) async {
+    final r = await _api.patchLog(id, patch);
+    _invalidateAround(_ref, courseId: r.log.courseId);
+    return r;
+  }
+
+  Future<void> deleteLog(String id) async {
+    await _api.deleteLog(id);
+    _invalidateAround(_ref);
+  }
+
+  Future<void> putReason(String subjectId, String date, {required ReasonCode code, String? text}) async {
+    await _api.putReason(subjectId, date, code: code, text: text);
+    _invalidateAround(_ref);
+  }
+
+  Future<void> deleteReason(String subjectId, String date) async {
+    await _api.deleteReason(subjectId, date);
+    _invalidateAround(_ref);
   }
 
   Future<void> moveCourse(String id, {required bool up}) async {

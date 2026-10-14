@@ -108,6 +108,21 @@ void main() {
       expect(api.rebaselines, 1);
     });
 
+    testWidgets('buổi học gần đây hiện các phần (xong đánh dấu); nút "Ghi buổi học" mở sheet chọn sẵn khóa', (tester) async {
+      final detail = CourseDetail.fromJson(fixtureMap('course_detail_logs'));
+      final api = FakeHocTapApi(detail: detail);
+      await pumpHocTap(tester, CourseDetailScreen(courseId: detail.course.id), api: api);
+
+      final log = detail.recentLogs.single;
+      expect(find.byKey(ValueKey('recent-sections-${log.id}')), findsOneWidget);
+      expect(find.text('Basics ✓ xong · First English Sentences'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const ValueKey('log-from-course')));
+      await tester.tap(find.byKey(const ValueKey('log-from-course')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
+    });
+
     testWidgets('khóa DONE hiện ngày xong thay cho dự kiến', (tester) async {
       final done = CourseDetail.fromJson({...fixtureMap('course_detail'), 'status': 'DONE', 'finishedAt': '2026-10-12T05:00:00.000Z'});
       final api = FakeHocTapApi(detail: done);

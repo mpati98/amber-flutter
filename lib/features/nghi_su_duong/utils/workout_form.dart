@@ -146,6 +146,18 @@ String routineErrorMessage(Object error, String fallback) {
       return 'Việc này đã có lịch sử nên không đổi loại được.';
     case 'routine_not_found':
       return 'Không tìm thấy việc này, có thể đã bị xoá.';
+    case 'study_subject_required':
+      return 'Chọn môn học cho việc này.';
+    case 'study_subject_not_allowed':
+      return 'Chỉ việc loại Học mới gắn với môn học.';
+    case 'subject_not_found':
+      return 'Không tìm thấy môn học này.';
+    case 'goal_missing':
+      return 'Môn này chưa đặt mục tiêu mỗi ngày, đặt trong Trà Đình trước.';
+    case 'study_routine_exists':
+      return 'Môn này đã có việc hằng ngày học tập.';
+    case 'study_routine_auto':
+      return 'Việc học tập tự tính từ buổi học ở Trà Đình, không tick tay.';
   }
   // Lỗi validate của zod: 400 với `error` là object (không phải câu cho người đọc).
   if (error is DioException &&

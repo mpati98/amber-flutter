@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
@@ -45,12 +46,55 @@ class FakeHocTapApi extends HocTapApi {
   final subjectPatches = <Map<String, Object?>>[];
   final subjectDeletes = <String>[];
   Object? subjectDeleteError;
+  /// Các buổi học trả về cho getLogs (lọc theo môn + khoảng ngày như server).
+  List<StudyLog> logs = [];
+  final logCreates = <Map<String, Object?>>[];
+  final logPatches = <Map<String, Object?>>[];
+  final logDeletes = <String>[];
+  final reasonPuts = <({String subjectId, String date, ReasonCode code, String? text})>[];
+  Object? reasonError;
+  Object? logError;
+  late StudyLogResult logResult = StudyLogResult.fromJson(fixtureMap('log_created'));
   int overviewCalls = 0;
   int rebaselines = 0;
   Object? toggleError;
   Completer<void>? toggleGate;
   Object? createError;
   Object? overviewError;
+
+  @override
+  Future<List<StudyLog>> getLogs({required String from, required String to, String? subjectId}) async => [
+    for (final l in logs)
+      if ((subjectId == null || l.subjectId == subjectId) && l.logDate.compareTo(from) >= 0 && l.logDate.compareTo(to) <= 0) l,
+  ];
+
+  @override
+  Future<StudyLogResult> createLog(Map<String, Object?> body) async {
+    logCreates.add(body);
+    if (logError case final e?) throw e;
+    return logResult;
+  }
+
+  @override
+  Future<StudyLogResult> patchLog(String id, Map<String, Object?> patch) async {
+    logPatches.add({'id': id, ...patch});
+    if (logError case final e?) throw e;
+    return logResult;
+  }
+
+  @override
+  Future<TodaySummary> deleteLog(String id) async {
+    logDeletes.add(id);
+    if (logError case final e?) throw e;
+    return logResult.today;
+  }
+
+  @override
+  Future<DayReasonEntry> putReason(String subjectId, String date, {required ReasonCode code, String? text}) async {
+    reasonPuts.add((subjectId: subjectId, date: date, code: code, text: text));
+    if (reasonError case final e?) throw e;
+    return DayReasonEntry(date: date, code: code, text: text);
+  }
 
   @override
   Future<StudyOverview> getOverview() async {

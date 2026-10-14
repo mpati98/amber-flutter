@@ -151,8 +151,8 @@ class FakeApi extends NghiSuDuongApi {
   }
 
   @override
-  Future<Routine> createRoutine({required String name, List<int>? weekdays, RoutineKind kind = RoutineKind.check}) async {
-    routineCreates.add({'name': name, 'weekdays': weekdays, 'kind': kind.api});
+  Future<Routine> createRoutine({required String name, List<int>? weekdays, RoutineKind kind = RoutineKind.check, String? studySubjectId}) async {
+    routineCreates.add({'name': name, 'weekdays': weekdays, 'kind': kind.api, 'studySubjectId': ?studySubjectId});
     await routineGate?.future;
     if (routineError case final e?) throw e;
     final r = mkRoutine('new-${routineCreates.length}', name, weekdays: weekdays ?? const [1, 2, 3, 4, 5, 6, 7], kind: kind);

@@ -1,0 +1,77 @@
+{
+  "id": "4646f476-b2c6-4862-903e-a7bb6085c35d",
+  "subjectId": "6a182a42-3d39-458a-9bd6-fddb18b50bb3",
+  "title": "English Tenses 101",
+  "instructor": null,
+  "platform": null,
+  "url": null,
+  "status": "ACTIVE",
+  "queuePosition": null,
+  "targetPrice": null,
+  "note": null,
+  "startedAt": "2026-10-14T14:14:38.248Z",
+  "finishedAt": null,
+  "baselineFinishDate": "2026-10-21",
+  "forecastFinishDate": "2026-10-21",
+  "deltaDays": 0,
+  "progress": {
+    "doneSections": 1,
+    "totalSections": 3,
+    "doneMinutes": 46,
+    "totalMinutes": 262
+  },
+  "nextSection": {
+    "id": "63509f50-9840-4fbb-8a3a-06a1934c73c6",
+    "title": "First English Sentences"
+  },
+  "sections": [
+    {
+      "id": "d09812fe-4439-4c0d-b934-439e08a44cb1",
+      "position": 0,
+      "title": "Basics",
+      "durationMinutes": 46,
+      "doneAt": "2026-10-14T14:14:41.816Z",
+      "done": true
+    },
+    {
+      "id": "63509f50-9840-4fbb-8a3a-06a1934c73c6",
+      "position": 1,
+      "title": "First English Sentences",
+      "durationMinutes": 91,
+      "doneAt": null,
+      "done": false
+    },
+    {
+      "id": "feed6af5-fd5f-4eda-ad70-aa824922b39c",
+      "position": 2,
+      "title": "Present Tenses",
+      "durationMinutes": 125,
+      "doneAt": null,
+      "done": false
+    }
+  ],
+  "recentLogs": [
+    {
+      "id": "139bac2c-fbdb-4466-83e1-76953caf1939",
+      "subjectId": "6a182a42-3d39-458a-9bd6-fddb18b50bb3",
+      "courseId": "4646f476-b2c6-4862-903e-a7bb6085c35d",
+      "courseTitle": "English Tenses 101",
+      "logDate": "2026-10-14",
+      "minutes": 30,
+      "note": "Xong phần cơ bản",
+      "createdAt": "2026-10-14T14:14:41.475Z",
+      "sections": [
+        {
+          "sectionId": "d09812fe-4439-4c0d-b934-439e08a44cb1",
+          "title": "Basics",
+          "markedDone": true
+        },
+        {
+          "sectionId": "63509f50-9840-4fbb-8a3a-06a1934c73c6",
+          "title": "First English Sentences",
+          "markedDone": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import 'study_enums.dart';
+import 'study_log.dart';
 
 class CourseProgress {
   const CourseProgress({required this.doneSections, required this.totalSections, required this.doneMinutes, required this.totalMinutes});
@@ -143,21 +144,23 @@ class CourseSection {
   CourseSection withDone(bool value) => CourseSection(id: id, position: position, title: title, durationMinutes: durationMinutes, done: value);
 }
 
-/// Dòng trong `recentLogs` của chi tiết khóa (rút gọn: không có phần).
+/// Dòng trong `recentLogs` của chi tiết khóa (cùng dạng GET /logs; backend cũ chưa có `sections` → rỗng).
 class RecentLog {
-  const RecentLog({required this.id, required this.logDate, required this.minutes, this.note});
+  const RecentLog({required this.id, required this.logDate, required this.minutes, this.note, this.sections = const []});
 
   factory RecentLog.fromJson(Map<String, dynamic> json) => RecentLog(
     id: json['id'] as String,
     logDate: json['logDate'] as String,
     minutes: json['minutes'] as int,
     note: json['note'] as String?,
+    sections: [for (final s in (json['sections'] as List? ?? const [])) StudyLogSection.fromJson(s as Map<String, dynamic>)],
   );
 
   final String id;
   final String logDate;
   final int minutes;
   final String? note;
+  final List<StudyLogSection> sections;
 }
 
 /// GET /courses/:id, và phản hồi của POST /courses, PUT/PATCH sections (cùng dạng, thiếu `recentLogs`).

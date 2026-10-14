@@ -5,6 +5,7 @@ import '../../../../shared/services/api_client.dart';
 import '../models/course.dart';
 import '../models/parsed_sections.dart';
 import '../models/study_enums.dart';
+import '../models/study_log.dart';
 import '../models/study_overview.dart';
 import '../models/study_subject.dart';
 
@@ -102,6 +103,40 @@ class HocTapApi {
     final res = await _dio.post<Map<String, dynamic>>('$_base/sections/parse', data: {'text': text});
     return ParsedSections.fromJson(res.data!);
   }
+
+  /// Buổi học trong [from, to] ("YYYY-MM-DD", tối đa 400 ngày), mới nhất trước.
+  Future<List<StudyLog>> getLogs({required String from, required String to, String? subjectId}) async {
+    final res = await _dio.get<List<dynamic>>('$_base/logs', queryParameters: {'subjectId': ?subjectId, 'from': from, 'to': to});
+    return [for (final e in res.data!) StudyLog.fromJson(e as Map<String, dynamic>)];
+  }
+
+  /// Ghi buổi học HÔM NAY (server tự đặt ngày). [body]: subjectId, courseId, minutes, sections [{sectionId, markDone}],
+  /// note, stopForToday {code, text}.
+  Future<StudyLogResult> createLog(Map<String, Object?> body) async {
+    final res = await _dio.post<Map<String, dynamic>>('$_base/logs', data: body);
+    return StudyLogResult.fromJson(res.data!);
+  }
+
+  /// Sửa buổi của hôm nay (400 `not_today` nếu không phải). [patch]: minutes, note, sections (thay cả danh sách), stopForToday.
+  Future<StudyLogResult> patchLog(String id, Map<String, Object?> patch) async {
+    final res = await _dio.patch<Map<String, dynamic>>('$_base/logs/$id', data: patch);
+    return StudyLogResult.fromJson(res.data!);
+  }
+
+  /// Xoá buổi của hôm nay; trả tổng hôm nay mới.
+  Future<TodaySummary> deleteLog(String id) async {
+    final res = await _dio.delete<Map<String, dynamic>>('$_base/logs/$id');
+    return TodaySummary.fromJson(res.data!['today'] as Map<String, dynamic>);
+  }
+
+  /// Ghi lý do chưa đủ mục tiêu cho [date] ("YYYY-MM-DD", hôm nay hoặc đã qua). 400 `goal_met`, `future_date`, `goal_missing`,
+  /// `reason_text_required`.
+  Future<DayReasonEntry> putReason(String subjectId, String date, {required ReasonCode code, String? text}) async {
+    final res = await _dio.put<Map<String, dynamic>>('$_base/subjects/$subjectId/reasons/$date', data: {'code': code.api, 'text': ?text});
+    return DayReasonEntry.fromJson(res.data!);
+  }
+
+  Future<void> deleteReason(String subjectId, String date) => _dio.delete<void>('$_base/subjects/$subjectId/reasons/$date');
 
   Future<StudyOverview> getOverview() async {
     final res = await _dio.get<Map<String, dynamic>>('$_base/overview');

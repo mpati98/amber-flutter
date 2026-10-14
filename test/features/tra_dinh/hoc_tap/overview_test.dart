@@ -1,7 +1,10 @@
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
+import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,18 +61,57 @@ void main() {
     expect(find.descendant(of: find.byKey(const ValueKey('link-Muốn mua')), matching: find.text('1')), findsOneWidget);
   });
 
-  testWidgets('Ghi buổi học tạm báo "Sắp có"; link Chờ học và thẻ Luyện tập điều hướng đúng', (tester) async {
-    await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: FakeHocTapApi());
+  testWidgets('nút Ghi buổi học mở sheet cho môn đang chọn; link Chờ học điều hướng đúng', (tester) async {
+    final api = FakeHocTapApi();
+    await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
 
     await tester.tap(find.text('Ghi buổi học'));
-    await tester.pump();
-    expect(find.text('Sắp có'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('Ghi buổi học'), findsWidgets);
+    expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
+    await tester.tap(find.byType(CloseButton));
+    await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.byKey(const ValueKey('link-Chờ học')));
     await tester.tap(find.byKey(const ValueKey('link-Chờ học')));
     await tester.pumpAndSettle();
     expect(visited.last, contains('/tra-dinh/hoc-tap/courses?subjectId='));
     expect(visited.last, contains('status=QUEUED'));
+  });
+
+  testWidgets('thẻ Hôm nay: danh sách buổi đã ghi, bấm → sheet sửa; lý do hiện "Dừng sớm"', (tester) async {
+    final api = FakeHocTapApi();
+    final subjectId = api.subjects.first.id;
+    api.logs = [for (final l in fixtureList('logs_today')) StudyLog.fromJson({...(l as Map<String, dynamic>), 'subjectId': subjectId, 'logDate': vnToday()})];
+    final base = StudyOverview.fromJson(fixtureMap('overview'));
+    final first = base.subjects.first;
+    api.overview = StudyOverview(
+      today: base.today,
+      week: base.week,
+      subjects: [
+        SubjectOverview(
+          subjectId: first.subjectId,
+          name: first.name,
+          goalMinutes: first.goalMinutes,
+          today: const TodayInfo(minutes: 50, logCount: 2, done: false, reason: DayReason(code: ReasonCode.busy)),
+          activeCourse: first.activeCourse,
+          counts: first.counts,
+        ),
+        ...base.subjects.skip(1),
+      ],
+    );
+    await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
+
+    expect(find.text('Dừng sớm: Bận'), findsOneWidget);
+    expect(find.byKey(ValueKey('today-log-${api.logs[0].id}')), findsOneWidget);
+    expect(find.byKey(ValueKey('today-log-${api.logs[1].id}')), findsOneWidget);
+    expect(find.textContaining('Ôn tập'), findsOneWidget);
+    expect(find.textContaining('English Tenses 101 · Basics ✓, First English Sentences'), findsOneWidget);
+
+    await tester.tap(find.byKey(ValueKey('today-log-${api.logs[0].id}')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sửa buổi học'), findsOneWidget);
+    expect(find.byKey(const ValueKey('log-delete')), findsOneWidget);
   });
 
   testWidgets('thẻ Luyện tập với AI → /tra-dinh/luyen-tap', (tester) async {
@@ -112,5 +154,58 @@ void main() {
     await tester.tap(find.text('Tổng quan'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('week-chart')), findsOneWidget);
+  });
+
+  group('route /tra-dinh?openLog=1', () {
+    Future<GoRouter> pumpRoute(WidgetTester tester, FakeHocTapApi api, String location) async {
+      tester.view.physicalSize = const Size(390, 2600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final router = GoRouter(
+        initialLocation: location,
+        routes: [
+          GoRoute(
+            path: '/tra-dinh',
+            builder: (_, state) => TraDinhHocTapScreen(tab: state.uri.queryParameters['tab'], openLog: state.uri.queryParameters['openLog'] == '1', subjectId: state.uri.queryParameters['subjectId']),
+          ),
+        ],
+      );
+      await tester.pumpWidget(ProviderScope(overrides: [hocTapApiProvider.overrideWithValue(api)], child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router)));
+      await tester.pumpAndSettle();
+      return router;
+    }
+
+    testWidgets('mở Tổng quan, tự mở sheet đúng một lần, xoá query khỏi URL, chọn môn theo subjectId', (tester) async {
+      final api = FakeHocTapApi();
+      final second = api.subjects[1].id; // môn "Lập trình"
+      final router = await pumpRoute(tester, api, '/tra-dinh?openLog=1&subjectId=$second');
+
+      expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
+      expect(router.state.uri.toString(), '/tra-dinh');
+      // sheet mở với môn đã chỉ định (môn thứ 2 không có mục tiêu)
+      expect(find.text('Môn chưa đặt mục tiêu mỗi ngày.'), findsOneWidget);
+
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsNothing);
+      // Không tự mở lại khi rebuild / chuyển tab.
+      await tester.tap(find.text('Lịch'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tổng quan'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsNothing);
+      expect(find.byKey(const ValueKey('week-chart')), findsOneWidget);
+    });
+
+    testWidgets('mở từ tab khác vẫn về Tổng quan; không có openLog thì không mở sheet', (tester) async {
+      final api = FakeHocTapApi();
+      final router = await pumpRoute(tester, api, '/tra-dinh?tab=stats&openLog=1&subjectId=${api.subjects.first.id}');
+      expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
+      expect(router.state.uri.toString(), '/tra-dinh');
+
+      final api2 = FakeHocTapApi();
+      await pumpRoute(tester, api2, '/tra-dinh?tab=stats');
+      expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsNothing);
+    });
   });
 }

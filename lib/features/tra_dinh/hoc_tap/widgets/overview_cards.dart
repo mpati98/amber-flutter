@@ -1,24 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/duration_format.dart';
+import '../../../../shared/utils/vn_time.dart';
 import '../../../../shared/widgets/progress_bar.dart';
 import '../../../../shared/widgets/scroll_card.dart';
 import '../../../../shared/widgets/tag.dart';
 import '../models/course.dart';
+import '../models/study_log.dart';
 import '../models/study_overview.dart';
+import '../providers/hoc_tap_provider.dart';
 import 'hoc_tap_common.dart';
+import 'log_sheet.dart';
 
-/// Thẻ "Hôm nay" của môn đang chọn: phút / mục tiêu, số buổi, lý do, phần kế tiếp, nút ghi buổi học.
-class TodayCard extends StatelessWidget {
+/// "09:41" theo giờ VN.
+String vnClock(DateTime at) {
+  final d = vnNow(at);
+  return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+}
+
+/// Thẻ "Hôm nay" của môn đang chọn: phút / mục tiêu, số buổi, lý do dừng, các buổi đã ghi, phần kế tiếp, nút ghi buổi học.
+class TodayCard extends ConsumerWidget {
   const TodayCard({super.key, required this.subject, required this.onLog});
 
   final SubjectOverview subject;
   final VoidCallback onLog;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logs = ref.watch(studyTodayLogsProvider(subject.subjectId)).value ?? const <StudyLog>[];
     final theme = Theme.of(context);
     final today = subject.today;
     final goal = subject.goalMinutes;
@@ -71,11 +83,12 @@ class TodayCard extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Tag(
-                label: 'Hôm nay dừng: ${reason.label}',
+                label: 'Dừng sớm: ${reason.label}',
                 color: theme.colorScheme.secondary,
                 variant: TagVariant.tonal,
               ),
             ),
+          for (final l in logs) _LogRow(log: l),
           if (next != null)
             Text(
               'Tiếp theo: ${next.sectionTitle} · ${next.courseTitle}',
@@ -88,6 +101,39 @@ class TodayCard extends StatelessWidget {
             label: const Text('Ghi buổi học'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LogRow extends StatelessWidget {
+  const _LogRow({required this.log});
+
+  final StudyLog log;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final sections = log.sections.map((s) => s.markedDone ? '${s.title} ✓' : s.title).join(', ');
+    return InkWell(
+      key: ValueKey('today-log-${log.id}'),
+      onTap: () => showLogSheet(context, editing: log),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(width: 48, child: Text(vnClock(log.createdAt), style: TextStyle(fontSize: 12, color: theme.textMuted))),
+            SizedBox(width: 44, child: Text('${log.minutes}p', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+            Expanded(
+              child: Text(
+                [log.courseTitle ?? 'Ôn tập', if (sections.isNotEmpty) sections].join(' · '),
+                style: TextStyle(fontSize: 12, color: theme.textMuted),
+              ),
+            ),
+            Icon(Icons.edit_outlined, size: 14, color: theme.textFaint),
+          ],
+        ),
       ),
     );
   }

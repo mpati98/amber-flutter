@@ -8,6 +8,7 @@ import '../models/study_overview.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
+import '../widgets/log_sheet.dart';
 import '../widgets/overview_cards.dart';
 import '../widgets/subject_sheet.dart';
 import '../widgets/week_goal_card.dart';
@@ -58,7 +59,7 @@ class _Loaded extends ConsumerWidget {
         WeekGoalCard(overview: overview),
         TodayCard(
           subject: subject,
-          onLog: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sắp có'))),
+          onLog: () => showLogSheet(context, subjectId: subject.subjectId),
         ),
         ActiveCourseCard(course: subject.activeCourse),
         CourseLinksCard(subject: subject),

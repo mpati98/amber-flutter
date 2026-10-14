@@ -161,7 +161,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/tra-dinh',
-        builder: (_, state) => TraDinhHocTapScreen(tab: state.uri.queryParameters['tab']),
+        builder: (_, state) => TraDinhHocTapScreen(
+          tab: state.uri.queryParameters['tab'],
+          openLog: state.uri.queryParameters['openLog'] == '1',
+          subjectId: state.uri.queryParameters['subjectId'],
+        ),
         routes: [
           // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.
           GoRoute(path: 'luyen-tap', builder: (_, _) => const TraDinhScreen()),

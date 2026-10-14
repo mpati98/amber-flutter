@@ -14,6 +14,18 @@ const _messages = {
   'not_queued': 'Chỉ đổi thứ tự được với khóa đang chờ học',
   'too_many_sections': 'Khóa có quá nhiều phần',
   'invalid_json': 'Dữ liệu gửi lên không hợp lệ',
+  'not_today': 'Chỉ sửa hoặc xoá được buổi học của hôm nay',
+  'log_not_found': 'Không tìm thấy buổi học, có thể đã bị xoá',
+  'reason_required': 'Chọn lý do dừng',
+  'reason_text_required': 'Nhập lý do khi chọn "Khác"',
+  'course_not_in_subject': 'Khóa học này không thuộc môn đã chọn',
+  'sections_without_course': 'Chọn khóa học trước khi chọn các phần đã học',
+  'section_not_in_course': 'Có phần không thuộc khóa học đã chọn',
+  'duplicate_section': 'Một phần bị chọn hai lần',
+  'future_date': 'Không ghi được cho ngày chưa tới',
+  'goal_met': 'Ngày đó đã đủ mục tiêu, không cần lý do',
+  'study_routine_auto': 'Việc học tập tự tính từ buổi học, không tick tay',
+  'invalid_date': 'Ngày không hợp lệ',
 };
 
 /// Mã lỗi backend → câu tiếng Việt cho người dùng; mã lạ / lỗi mạng → "Có lỗi, thử lại".

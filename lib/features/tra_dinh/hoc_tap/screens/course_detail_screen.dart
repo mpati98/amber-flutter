@@ -17,6 +17,7 @@ import '../utils/hoc_tap_errors.dart';
 import '../utils/open_course_link.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
+import '../widgets/log_sheet.dart';
 import '../widgets/sections_editor_sheet.dart';
 
 Color courseStatusColor(BuildContext context, CourseStatus s) => switch (s) {
@@ -217,16 +218,37 @@ class _Detail extends StatelessWidget {
         else
           for (final l in detail.recentLogs)
             Padding(
+              key: ValueKey('recent-log-${l.id}'),
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(width: 56, child: Text(formatDayMonth(l.logDate), style: TextStyle(fontSize: 13, color: theme.textMuted))),
                   SizedBox(width: 56, child: Text(formatDuration(l.minutes), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                  Expanded(child: Text(l.note ?? '', style: TextStyle(fontSize: 13, color: theme.textMuted))),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (l.sections.isNotEmpty)
+                          Text(
+                            [for (final s in l.sections) s.markedDone ? '${s.title} ✓ xong' : s.title].join(' · '),
+                            key: ValueKey('recent-sections-${l.id}'),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        if (l.note != null) Text(l.note!, style: TextStyle(fontSize: 13, color: theme.textMuted)),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
+        const SizedBox(height: 20),
+        FilledButton.icon(
+          key: const ValueKey('log-from-course'),
+          onPressed: () => showLogSheet(context, subjectId: c.subjectId, courseId: c.id),
+          icon: const Icon(Icons.edit_note),
+          label: const Text('Ghi buổi học'),
+        ),
       ],
     );
   }

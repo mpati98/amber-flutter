@@ -1,0 +1,23 @@
+{
+  "log": {
+    "id": "73bd1949-a884-4f53-8a28-47b355ed8211",
+    "subjectId": "6a182a42-3d39-458a-9bd6-fddb18b50bb3",
+    "courseId": null,
+    "courseTitle": null,
+    "logDate": "2026-10-14",
+    "minutes": 20,
+    "note": "Ôn lại",
+    "createdAt": "2026-10-14T14:14:43.718Z",
+    "sections": []
+  },
+  "today": {
+    "minutes": 50,
+    "goalMinutes": 60,
+    "done": false,
+    "reason": {
+      "code": "BUSY",
+      "text": null
+    }
+  },
+  "course": null
+}

@@ -90,7 +90,7 @@ void main() {
       ('Tàng Kinh Các', 'Lưu trữ & tri thức'),
       ('Nghị Sự Đường', 'Việc chính & thông báo'),
       ('Kiều Lâu', 'Thông báo & tin tức'),
-      ('Trà Đình', 'Trò chuyện & luyện tập'),
+      ('Trà Đình', 'Học tập & luyện tập'),
     ]) {
       expect(find.text(name), findsWidgets, reason: name);
       expect(find.text(sub), findsOneWidget, reason: sub);
