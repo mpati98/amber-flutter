@@ -1,0 +1,169 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
+import 'package:dio/dio.dart';
+
+/// JSON thật lấy từ backend dev (test/fixtures/hoc_tap).
+Object fixture(String name) => jsonDecode(File('test/fixtures/hoc_tap/$name.json').readAsStringSync()) as Object;
+
+Map<String, dynamic> fixtureMap(String name) => fixture(name) as Map<String, dynamic>;
+List<dynamic> fixtureList(String name) => fixture(name) as List<dynamic>;
+
+DioException apiError(int status, Object data) {
+  final req = RequestOptions(path: '/api/tra-dinh/hoc-tap/x');
+  return DioException(requestOptions: req, type: DioExceptionType.badResponse, response: Response(requestOptions: req, statusCode: status, data: data));
+}
+
+/// API giả: dữ liệu lấy từ fixture, ghi lại các lệnh ghi, có thể chặn / báo lỗi.
+class FakeHocTapApi extends HocTapApi {
+  FakeHocTapApi({StudyOverview? overview, List<StudySubject>? subjects, List<CourseView>? courses, CourseDetail? detail})
+    : overview = overview ?? StudyOverview.fromJson(fixtureMap('overview')),
+      subjects = subjects ?? [for (final s in fixtureList('subjects')) StudySubject.fromJson(s as Map<String, dynamic>)],
+      courses = courses ?? [for (final c in fixtureList('courses_list')) CourseView.fromJson(c as Map<String, dynamic>)],
+      detail = detail ?? CourseDetail.fromJson(fixtureMap('course_detail')),
+      super(Dio());
+
+  StudyOverview overview;
+  List<StudySubject> subjects;
+  List<CourseView> courses;
+  CourseDetail detail;
+
+  final created = <Map<String, Object?>>[];
+  final patches = <Map<String, Object?>>[];
+  final moves = <({String id, bool up})>[];
+  final sectionToggles = <({String sectionId, bool done})>[];
+  final parsedTexts = <String>[];
+  final puts = <List<SectionInput>>[];
+  final subjectBodies = <Map<String, Object?>>[];
+  final subjectPatches = <Map<String, Object?>>[];
+  final subjectDeletes = <String>[];
+  Object? subjectDeleteError;
+  int overviewCalls = 0;
+  int rebaselines = 0;
+  Object? toggleError;
+  Completer<void>? toggleGate;
+  Object? createError;
+  Object? overviewError;
+
+  @override
+  Future<StudyOverview> getOverview() async {
+    overviewCalls++;
+    if (overviewError case final e?) throw e;
+    return overview;
+  }
+
+  @override
+  Future<List<StudySubject>> getSubjects() async => subjects;
+
+  @override
+  Future<StudySubject> createSubject(Map<String, Object?> body) async {
+    subjectBodies.add(body);
+    return subjects.first;
+  }
+
+  @override
+  Future<StudySubject> updateSubject(String id, Map<String, Object?> patch) async {
+    subjectPatches.add({'id': id, ...patch});
+    return subjects.first;
+  }
+
+  @override
+  Future<void> deleteSubject(String id) async {
+    subjectDeletes.add(id);
+    if (subjectDeleteError case final e?) throw e;
+  }
+
+  @override
+  Future<List<CourseView>> getCourses({String? subjectId, Iterable<CourseStatus> statuses = const []}) async => [
+    for (final c in courses)
+      if ((subjectId == null || c.subjectId == subjectId) && (statuses.isEmpty || statuses.contains(c.status))) c,
+  ];
+
+  @override
+  Future<CourseDetail> getCourseDetail(String id) async => detail;
+
+  @override
+  Future<CourseDetail> setSectionDone(String courseId, String sectionId, bool done) async {
+    sectionToggles.add((sectionId: sectionId, done: done));
+    await toggleGate?.future;
+    if (toggleError case final e?) throw e;
+    detail = detail.withSectionDone(sectionId, done);
+    return detail.copyWith(recentLogs: const []);
+  }
+
+  @override
+  Future<ParsedSections> parseSections(String text) async {
+    parsedTexts.add(text);
+    final sections = <ParsedSection>[];
+    final skipped = <SkippedLine>[];
+    final lines = text.split('\n');
+    for (final (i, line) in lines.indexed) {
+      if (line.trim().isEmpty) continue;
+      final m = RegExp(r'^(.*?)\s*(\d+)min$').firstMatch(line.trim());
+      if (m == null || m.group(1)!.isEmpty) {
+        skipped.add(SkippedLine(line: i + 1, text: line.trim()));
+      } else {
+        sections.add(ParsedSection(title: m.group(1)!, durationMinutes: int.parse(m.group(2)!)));
+      }
+    }
+    return ParsedSections(sections: sections, skipped: skipped, totalMinutes: sections.fold(0, (n, s) => n + s.durationMinutes));
+  }
+
+  @override
+  Future<CourseDetail> createCourse(Map<String, Object?> body) async {
+    created.add(body);
+    if (createError case final e?) throw e;
+    return detail;
+  }
+
+  @override
+  Future<CourseView> patchCourse(String id, Map<String, Object?> patch) async {
+    patches.add({'id': id, ...patch});
+    final old = courses.firstWhere((c) => c.id == id);
+    if (patch['status'] case final String s) {
+      courses = [
+        for (final c in courses)
+          if (c.id == id)
+            CourseView(id: c.id, subjectId: c.subjectId, title: c.title, status: CourseStatus.fromApi(s), progress: c.progress)
+          else
+            c,
+      ];
+    }
+    return old;
+  }
+
+  @override
+  Future<List<CourseView>> moveCourse(String id, {required bool up}) async {
+    moves.add((id: id, up: up));
+    final queued = courses.where((c) => c.status == CourseStatus.queued).toList();
+    final i = queued.indexWhere((c) => c.id == id);
+    final j = up ? i - 1 : i + 1;
+    if (i >= 0 && j >= 0 && j < queued.length) {
+      final a = queued[i], b = queued[j];
+      courses = [for (final c in courses) c.id == a.id ? b : (c.id == b.id ? a : c)];
+    }
+    return courses;
+  }
+
+  @override
+  Future<void> deleteCourse(String id) async {}
+
+  @override
+  Future<CourseDetail> putSections(String courseId, List<SectionInput> sections) async {
+    puts.add(sections);
+    return detail;
+  }
+
+  @override
+  Future<List<CourseView>> rebaseline(String subjectId) async {
+    rebaselines++;
+    return courses;
+  }
+}

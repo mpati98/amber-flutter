@@ -73,10 +73,10 @@ Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau
 | Nghị Sự Đường | `/nghi-su-duong`, `/du-an[/:projectId]`, `/finance[/:projectId]`, `/hoc-tap[/:courseId]` — 3 mảng ở **cấp gốc** |
 | Tàng Kinh Các | `/tang-kinh-cac`, `/tang-kinh-cac/{sach,tai-lieu,ke-hoach-doc}`, `/tang-kinh-cac/du-lieu-huan-luyen[/:logId]` (nhật ký amber-brain, feature `du_lieu_huan_luyen` riêng, gọi `/api/brain-logs` của amber-v4, không gọi brain) |
 | Kiều Lâu | `/kieu-lau` |
-| Trà Đình | `/tra-dinh`, `/tra-dinh/placement-test`, `/tra-dinh/:sessionId` |
+| Trà Đình | `/tra-dinh` (Học tập, 3 tab `?tab=overview\|schedule\|stats`), `/tra-dinh/luyen-tap` (màn luyện AI cũ), `/tra-dinh/placement-test`, `/tra-dinh/hoc-tap/courses[?subjectId=&status=]`, `/tra-dinh/hoc-tap/courses/:courseId`, `/tra-dinh/hoc-tap/wishlist`, `/tra-dinh/:sessionId` |
 
 `alert.href` của Kiều Lâu (backend trả) dùng thẳng với `context.go` — đổi path
-phải sửa cả amber-v4. `placement-test` phải đứng trước `:sessionId`.
+phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luyen-tap`, `placement-test`, `hoc-tap/...`) phải đứng trước `:sessionId`.
 
 ### Xác thực (`api_client.dart`)
 
@@ -107,6 +107,14 @@ phải sửa cả amber-v4. `placement-test` phải đứng trước `:sessionId
 - **Upload** ảnh bìa / tệp (`image_picker`, `file_picker`) → POST
   `/api/tang-kinh-cac/upload` (backend chặn > 4 MB). Mở tệp qua `file_opener`
   (bản io / web riêng).
+- **Học tập của Trà Đình** (`features/tra_dinh/hoc_tap/{models,services,providers,screens,widgets,utils}`): API `/api/tra-dinh/hoc-tap/*`
+  (môn, khóa, phần, tổng quan) qua `HocTapApi` (`hocTapApiProvider`). Mọi thao tác ghi đi qua `hocTapActionsProvider` — nó
+  invalidate tổng quan, danh sách khóa, chi tiết và `routinesProvider` (routine STUDY tính từ nhật ký học). Tick phần ở chi
+  tiết khóa là lạc quan (`StudyCourseDetailNotifier.setSectionDone`, lỗi thì hoàn tác). Mã lỗi backend → tiếng Việt ở
+  `utils/hoc_tap_errors.dart`. Fixture JSON thật của backend ở `test/fixtures/hoc_tap/` (chụp từ dev). Màu chữ phụ mới:
+  `Theme.of(context).textMuted` / `textFaint` (AppThemeColors). Tab Lịch và Thống kê còn là màn chờ; nút "Ghi buổi học" tạm báo "Sắp có".
+  Test hợp đồng với backend thật: `test/integration/hoc_tap_backend_contract_test.dart` (cùng `--dart-define` như nsd).
+- **Routine kind STUDY**: `Routine.isStudy`, thẻ không tick, hiện "X / Y phút", bấm → `/tra-dinh`; form việc hằng ngày không cho tạo / đổi sang STUDY.
 - **Việc hằng ngày + ghi buổi tập** (`features/nghi_su_duong`): `Routine.kind` CHECK (tick) | WORKOUT. Bấm việc WORKOUT đến hạn
   hôm nay mở `WorkoutLogSheet` (`widgets/workout_log_sheet.dart`, qua `showFinanceSheet`): tổng phút (1–1440, bắt buộc) + danh
   sách bài (tên, kiểu đo REPS / SETS_REPS / DURATION, chỉ hiện ô số của kiểu đó), thêm/xoá dòng. Điền sẵn từ `todayLog`, nếu chưa

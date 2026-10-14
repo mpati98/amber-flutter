@@ -19,6 +19,11 @@ import '../../features/tang_kinh_cac/screens/ke_hoach_doc_screen.dart';
 import '../../features/tang_kinh_cac/screens/sach_screen.dart';
 import '../../features/tang_kinh_cac/screens/tai_lieu_screen.dart';
 import '../../features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
+import '../../features/tra_dinh/hoc_tap/models/study_enums.dart';
+import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart' as hoc_tap;
+import '../../features/tra_dinh/hoc_tap/screens/course_list_screen.dart';
+import '../../features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
+import '../../features/tra_dinh/hoc_tap/screens/wishlist_screen.dart';
 import '../../features/tra_dinh/screens/placement_test_screen.dart';
 import '../../features/tra_dinh/screens/practice_chat_screen.dart';
 import '../../features/tra_dinh/screens/tra_dinh_screen.dart';
@@ -156,10 +161,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/tra-dinh',
-        builder: (_, _) => const TraDinhScreen(),
+        builder: (_, state) => TraDinhHocTapScreen(tab: state.uri.queryParameters['tab']),
         routes: [
-          // Phải đứng trước ':sessionId', nếu không "placement-test" bị hiểu là 1 sessionId.
+          // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.
+          GoRoute(path: 'luyen-tap', builder: (_, _) => const TraDinhScreen()),
           GoRoute(path: 'placement-test', builder: (_, _) => const PlacementTestScreen()),
+          GoRoute(
+            path: 'hoc-tap/courses',
+            builder: (_, state) => CourseListScreen(
+              subjectId: state.uri.queryParameters['subjectId'],
+              statuses: [for (final s in state.uri.queryParametersAll['status'] ?? const <String>[]) CourseStatus.fromApi(s)].where((s) => s != CourseStatus.unknown).toList(),
+            ),
+          ),
+          GoRoute(
+            path: 'hoc-tap/courses/:courseId',
+            builder: (_, state) => hoc_tap.CourseDetailScreen(courseId: state.pathParameters['courseId']!),
+          ),
+          GoRoute(path: 'hoc-tap/wishlist', builder: (_, state) => WishlistScreen(subjectId: state.uri.queryParameters['subjectId'])),
           GoRoute(
             path: ':sessionId',
             builder: (_, state) => PracticeChatScreen(sessionId: state.pathParameters['sessionId']!),

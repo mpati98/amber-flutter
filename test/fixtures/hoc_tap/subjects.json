@@ -1,0 +1,24 @@
+[
+  {
+    "id": "291d6fb1-6c9b-4820-a1f2-8763f05e9e3b",
+    "name": "Tiếng Anh",
+    "dailyGoalMinutes": 60,
+    "videoMinutesPerDay": 40,
+    "reviewWeekdays": [
+      7
+    ],
+    "position": 0,
+    "createdAt": "2026-10-14T13:39:00.792Z"
+  },
+  {
+    "id": "f663e7e9-aa0a-45a6-b3ba-8667e7229ca1",
+    "name": "Lập trình",
+    "dailyGoalMinutes": null,
+    "videoMinutesPerDay": 40,
+    "reviewWeekdays": [
+      7
+    ],
+    "position": 1,
+    "createdAt": "2026-10-14T13:39:07.157Z"
+  }
+]

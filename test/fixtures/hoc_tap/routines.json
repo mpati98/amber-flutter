@@ -1,0 +1,117 @@
+[
+  {
+    "id": "9a3e16f4-79cc-4425-b463-b57b65fb6a61",
+    "name": "Học tiếng Anh",
+    "kind": "STUDY",
+    "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "dueToday": true,
+    "doneToday": false,
+    "streak": 0,
+    "last7": [
+      {
+        "date": "2026-10-08",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-09",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-10",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-11",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-12",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-13",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-14",
+        "due": true,
+        "done": false
+      }
+    ],
+    "todayLog": null,
+    "studySubjectId": "291d6fb1-6c9b-4820-a1f2-8763f05e9e3b",
+    "studySubjectName": "Tiếng Anh",
+    "todayMinutes": 30,
+    "goalMinutes": 60,
+    "pendingReasonDates": []
+  },
+  {
+    "id": "c350a31d-b8d8-409e-b907-c40d0ea3e905",
+    "name": "Uống nước",
+    "kind": "CHECK",
+    "weekdays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "dueToday": true,
+    "doneToday": false,
+    "streak": 0,
+    "last7": [
+      {
+        "date": "2026-10-08",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-09",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-10",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-11",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-12",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-13",
+        "due": true,
+        "done": false
+      },
+      {
+        "date": "2026-10-14",
+        "due": true,
+        "done": false
+      }
+    ],
+    "todayLog": null
+  }
+]

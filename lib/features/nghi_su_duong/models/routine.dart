@@ -1,7 +1,10 @@
 /// Loại việc hằng ngày: tick tay hoặc ghi buổi tập (phút + danh sách bài).
 enum RoutineKind {
   check('CHECK', 'Việc thường'),
-  workout('WORKOUT', 'Tập thể dục');
+  workout('WORKOUT', 'Tập thể dục'),
+
+  /// Tự tính từ nhật ký học của một môn (Trà Đình) — không tick tay, không tạo từ form việc hằng ngày.
+  study('STUDY', 'Học tập');
 
   const RoutineKind(this.api, this.label);
 
@@ -115,6 +118,11 @@ class Routine {
     this.kind = RoutineKind.check,
     this.todayLog,
     this.lastWorkout,
+    this.studySubjectId,
+    this.studySubjectName,
+    this.todayMinutes,
+    this.goalMinutes,
+    this.pendingReasonDates = const [],
   });
 
   factory Routine.fromJson(Map<String, dynamic> json) => Routine(
@@ -128,6 +136,11 @@ class Routine {
         kind: RoutineKind.fromApi(json['kind']),
         todayLog: json['todayLog'] == null ? null : TodayLog.fromJson(json['todayLog'] as Map<String, dynamic>),
         lastWorkout: json['lastWorkout'] == null ? null : [for (final e in json['lastWorkout'] as List) Exercise.fromJson(e as Map<String, dynamic>)],
+        studySubjectId: json['studySubjectId'] as String?,
+        studySubjectName: json['studySubjectName'] as String?,
+        todayMinutes: json['todayMinutes'] as int?,
+        goalMinutes: json['goalMinutes'] as int?,
+        pendingReasonDates: [for (final d in (json['pendingReasonDates'] as List? ?? const [])) d as String],
       );
 
   final String id;
@@ -151,6 +164,15 @@ class Routine {
   /// Các bài của buổi gần nhất trước hôm nay, để điền sẵn; chỉ WORKOUT, null nếu chưa có buổi nào.
   final List<Exercise>? lastWorkout;
 
+  /// Chỉ routine STUDY: môn đang theo dõi, phút đã học hôm nay / mục tiêu ngày, các ngày còn thiếu lý do.
+  final String? studySubjectId;
+  final String? studySubjectName;
+  final int? todayMinutes;
+  final int? goalMinutes;
+  final List<String> pendingReasonDates;
+
+  bool get isStudy => kind == RoutineKind.study;
+
   bool get isWorkout => kind == RoutineKind.workout;
 
   /// Có bằng chứng đã có log (trong 7 ngày gần nhất). Log cũ hơn app không biết — backend chặn đổi loại bằng 409.
@@ -170,6 +192,11 @@ class Routine {
         kind: kind,
         todayLog: done ? todayLog : null, // bỏ đánh dấu → log (kèm bài tập) bị xoá
         lastWorkout: lastWorkout,
+        studySubjectId: studySubjectId,
+        studySubjectName: studySubjectName,
+        todayMinutes: todayMinutes,
+        goalMinutes: goalMinutes,
+        pendingReasonDates: pendingReasonDates,
       );
 }
 

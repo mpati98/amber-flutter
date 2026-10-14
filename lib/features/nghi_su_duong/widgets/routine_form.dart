@@ -139,12 +139,15 @@ class _RoutineFormState extends ConsumerState<RoutineForm> {
           decoration: InputDecoration(labelText: 'Tên việc', counterText: '', errorText: _nameError),
         ),
         // Việc đã có log thì không đổi loại (backend 409 kind_locked): chỉ hiện loại hiện tại.
-        if (_editing && widget.routine!.hasRecentLogs)
+        if (_editing && widget.routine!.isStudy)
+          Text('Loại: ${RoutineKind.study.label} (tự tính từ nhật ký học, không đổi được)', style: muted)
+        else if (_editing && widget.routine!.hasRecentLogs)
           Text('Loại: ${widget.routine!.kind.label} (đã có lịch sử nên không đổi được)', style: muted)
         else ...[
           Text('Loại', style: muted),
           ChoiceRow<RoutineKind>(
-            options: {for (final k in RoutineKind.values) k: k.label},
+            // STUDY không tạo / chọn từ đây: nó gắn với một môn học và do Trà Đình quản lý.
+            options: {for (final k in RoutineKind.values) if (k != RoutineKind.study) k: k.label},
             selected: _kind,
             onSelected: (k) => setState(() => _kind = k),
           ),

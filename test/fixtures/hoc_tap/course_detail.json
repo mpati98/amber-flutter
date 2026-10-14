@@ -1,0 +1,77 @@
+{
+  "id": "ac6b30ba-9a71-4979-9225-ab7ad51a3d3a",
+  "subjectId": "291d6fb1-6c9b-4820-a1f2-8763f05e9e3b",
+  "title": "English Tenses 101",
+  "instructor": "Cô Lan",
+  "platform": "Udemy",
+  "url": "https://example.com/tenses",
+  "status": "ACTIVE",
+  "queuePosition": null,
+  "targetPrice": null,
+  "note": null,
+  "startedAt": "2026-10-14T13:39:08.157Z",
+  "finishedAt": null,
+  "baselineFinishDate": "2026-10-23",
+  "forecastFinishDate": "2026-10-23",
+  "deltaDays": 0,
+  "progress": {
+    "doneSections": 1,
+    "totalSections": 4,
+    "doneMinutes": 46,
+    "totalMinutes": 327
+  },
+  "nextSection": {
+    "id": "f6083a19-c057-46e1-bf8a-d54350b2ca42",
+    "title": "First English Sentences"
+  },
+  "sections": [
+    {
+      "id": "d3852ac6-6111-4820-bada-7f7013f2d868",
+      "position": 0,
+      "title": "Basics",
+      "durationMinutes": 46,
+      "doneAt": "2026-10-14T13:40:12.297Z",
+      "done": true
+    },
+    {
+      "id": "f6083a19-c057-46e1-bf8a-d54350b2ca42",
+      "position": 1,
+      "title": "First English Sentences",
+      "durationMinutes": 91,
+      "doneAt": null,
+      "done": false
+    },
+    {
+      "id": "78613214-2667-43c8-bdd6-b785e3b21493",
+      "position": 2,
+      "title": "Present Tenses",
+      "durationMinutes": 125,
+      "doneAt": null,
+      "done": false
+    },
+    {
+      "id": "ebed6c21-e3df-474a-9017-eb830feffc7d",
+      "position": 3,
+      "title": "Past Tenses",
+      "durationMinutes": 65,
+      "doneAt": null,
+      "done": false
+    }
+  ],
+  "recentLogs": [
+    {
+      "id": "27889546-ee14-4ef0-bd59-4035d7dcace1",
+      "logDate": "2026-10-14",
+      "minutes": 30,
+      "note": "Xong phần cơ bản",
+      "createdAt": "2026-10-14T13:40:11.260Z"
+    },
+    {
+      "id": "7864972f-a47c-469a-aef7-69b5e8578bb6",
+      "logDate": "2026-10-13",
+      "minutes": 45,
+      "note": "Ôn lại thì hiện tại",
+      "createdAt": "2026-10-14T13:40:02.189Z"
+    }
+  ]
+}

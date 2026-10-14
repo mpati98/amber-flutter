@@ -1,0 +1,46 @@
+{
+  "id": "ccb698e5-82a0-4f21-b785-7728c48a1c40",
+  "subjectId": "291d6fb1-6c9b-4820-a1f2-8763f05e9e3b",
+  "title": "Complete English Course",
+  "instructor": null,
+  "platform": "Udemy",
+  "url": null,
+  "status": "QUEUED",
+  "queuePosition": 1,
+  "targetPrice": null,
+  "note": null,
+  "startedAt": null,
+  "finishedAt": null,
+  "baselineFinishDate": "2026-10-26",
+  "forecastFinishDate": "2026-10-24",
+  "deltaDays": -2,
+  "progress": {
+    "doneSections": 0,
+    "totalSections": 2,
+    "doneMinutes": 0,
+    "totalMinutes": 75
+  },
+  "nextSection": {
+    "id": "dbcbbfea-80e8-49d3-b607-5963d2d651d1",
+    "title": "Unit 1"
+  },
+  "sections": [
+    {
+      "id": "dbcbbfea-80e8-49d3-b607-5963d2d651d1",
+      "position": 0,
+      "title": "Unit 1",
+      "durationMinutes": 30,
+      "doneAt": null,
+      "done": false
+    },
+    {
+      "id": "9dcfa535-9988-48ef-9151-7878cdd77c2b",
+      "position": 1,
+      "title": "Unit 2",
+      "durationMinutes": 45,
+      "doneAt": null,
+      "done": false
+    }
+  ],
+  "recentLogs": []
+}

@@ -59,6 +59,12 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
 extension AppThemeColors on ThemeData {
   /// Màu thành công của theme; theme không khai báo (vd ThemeData.dark() trong test) thì dùng primary.
   Color get success => extension<AppSemanticColors>()?.success ?? colorScheme.primary;
+
+  /// Chữ phụ vẫn đọc được trên nền tối (62%). Chỉ dùng ở màn mới, màn cũ tự đặt độ mờ riêng.
+  Color get textMuted => colorScheme.onSurface.withValues(alpha: 0.62);
+
+  /// Chi tiết trang trí, không mang thông tin chính (40%).
+  Color get textFaint => colorScheme.onSurface.withValues(alpha: 0.4);
 }
 
 abstract final class AppTheme {

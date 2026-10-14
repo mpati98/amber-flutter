@@ -113,7 +113,7 @@ class _PlacementTestScreenState extends ConsumerState<PlacementTestScreen> {
   void _backToHub() {
     ref.invalidate(skillScoresProvider);
     // Mở thẳng bằng URL thì không có màn nào bên dưới để pop.
-    context.canPop() ? context.pop() : context.go('/tra-dinh');
+    context.canPop() ? context.pop() : context.go('/tra-dinh/luyen-tap');
   }
 
   @override

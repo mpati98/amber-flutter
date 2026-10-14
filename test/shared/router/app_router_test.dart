@@ -157,5 +157,22 @@ void main() {
       final match = c.read(routerProvider).configuration.findMatch(Uri.parse('/tra-dinh/placement-test'));
       expect(match.last.route, isA<GoRoute>().having((r) => r.path, 'path', 'placement-test'));
     });
+
+    testWidgets('các route Học tập của Trà Đình đứng trước :sessionId', (tester) async {
+      final c = await pumpApp(tester, token: 'saved-access');
+      String? routePath(String location) {
+        final match = c.read(routerProvider).configuration.findMatch(Uri.parse(location));
+        return match.last.route.path;
+      }
+
+      expect(routePath('/tra-dinh'), '/tra-dinh');
+      expect(routePath('/tra-dinh?tab=stats'), '/tra-dinh');
+      expect(routePath('/tra-dinh/luyen-tap'), 'luyen-tap');
+      expect(routePath('/tra-dinh/hoc-tap/courses?subjectId=s&status=QUEUED'), 'hoc-tap/courses');
+      expect(routePath('/tra-dinh/hoc-tap/courses/abc'), 'hoc-tap/courses/:courseId');
+      expect(routePath('/tra-dinh/hoc-tap/wishlist'), 'hoc-tap/wishlist');
+      expect(routePath('/tra-dinh/placement-test'), 'placement-test');
+      expect(routePath('/tra-dinh/một-id-buổi-luyện'), ':sessionId');
+    });
   });
 }

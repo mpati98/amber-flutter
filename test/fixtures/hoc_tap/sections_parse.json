@@ -1,0 +1,23 @@
+{
+  "sections": [
+    {
+      "title": "Intro",
+      "durationMinutes": 10
+    },
+    {
+      "title": "Bài 2",
+      "durationMinutes": 90
+    }
+  ],
+  "skipped": [
+    {
+      "line": 3,
+      "text": "không có giờ"
+    },
+    {
+      "line": 4,
+      "text": "9:46"
+    }
+  ],
+  "totalMinutes": 100
+}
