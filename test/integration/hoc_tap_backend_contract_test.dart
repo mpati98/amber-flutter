@@ -15,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 //
 // Đi hết luồng của app bằng đúng HocTapApi và model của app: tạo môn → dán mục lục → thêm khóa Đang học / Chờ học →
 // đổi thứ tự → tick phần → Tổng quan → Muốn mua → Đã mua → routine STUDY → ghi buổi học (30 + 35 phút) → dừng + lý do →
-// học thêm xoá lý do → lý do ngày đã qua → sửa / xoá buổi hôm nay → lịch (hôm nay có buổi thật, ngày làm việc kế tiếp có kế hoạch).
+// học thêm xoá lý do → lý do ngày đã qua → sửa / xoá buổi hôm nay → lịch (hôm nay có buổi thật, ngày làm việc kế tiếp có kế hoạch) → thống kê 7 ngày.
 // Không có log hôm qua: test Flutter không chạm được DB (backend e2e chèn log quá khứ bằng SQL) nên `pendingReasonDates`
 // của routine mới tạo luôn rỗng ở đây; ngày đã qua chỉ kiểm bằng PUT / DELETE lý do (server cho phép ngày không có log). Ghi dữ liệu thật vào DB mà backend đang trỏ:
 // chỉ chạy trên nhánh dev; môn thử được xoá ở cuối (cascade khóa, phần, log).
@@ -196,6 +196,28 @@ void main() {
           api.getSchedule(subjectId: subjectId, from: _dayBefore(today, 70), to: today),
           throwsA(isA<DioException>().having((e) => (e.response?.data as Map)['error'], 'error', 'range_too_large')),
         );
+
+        // 10c. Thống kê 7 ngày: đúng tổng phút và theo khóa của buổi còn lại (35' gắn English Tenses 101).
+        final stats = await api.getStats(subjectId: subjectId, range: '7');
+        expect(stats.totalMinutes, 35);
+        expect(stats.logCount, 1);
+        expect(stats.avgPerDay, 5); // 35 / 7
+        expect(stats.series.length, 7);
+        expect(stats.series.last.start, today);
+        expect(stats.series.last.minutes, 35);
+        expect(stats.bucket, 'day');
+        expect(stats.byCourse.single.title, 'English Tenses 101');
+        expect(stats.byCourse.single.minutes, 35);
+        expect(stats.byCourse.single.logCount, 1);
+        expect(stats.byCourse.single.courseId, tenses.course.id);
+        expect(stats.longestDay?.minutes, 35);
+        expect(stats.reasonCounts.total, 0);
+        expect(stats.vsPlan.any((p) => p.courseId == tenses.course.id), isTrue);
+        expect(stats.overallDeltaDays.single.subjectId, subjectId);
+        final statsAll = await api.getStats(range: 'all');
+        expect(statsAll.totalMinutes, greaterThanOrEqualTo(35));
+        expect(statsAll.series, isNotEmpty);
+        await expectLater(api.getStats(range: '14'), throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 400)));
 
         // 11. Môn thứ hai: 45' + dừng (BUSY) → lý do lưu; học thêm 15' → lý do tự xoá.
         secondSubjectId = (await api.createSubject({'name': 'TEST Lập trình ${DateTime.now().millisecondsSinceEpoch}', 'dailyGoalMinutes': 60})).id;

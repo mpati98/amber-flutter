@@ -76,7 +76,8 @@ void main() {
       final byDate = {for (final d in s.days) d.date: d};
       expect(s.days.length, 7);
       expect(byDate['2026-10-12']!.kind, ScheduleKind.past);
-      expect(byDate['2026-10-12']!.missingReason, isTrue, reason: 'đã qua, chưa đủ, chưa có lý do');
+      expect(byDate['2026-10-12']!.needsReason, isTrue, reason: 'server báo nợ lý do');
+      expect(byDate['2026-10-12']!.missingReason, isTrue);
       expect(byDate['2026-10-13']!.missingReason, isFalse, reason: 'đã có lý do');
       expect(byDate['2026-10-14']!.done, isTrue);
       expect(byDate['2026-10-14']!.extraMinutes, 10);
@@ -216,6 +217,36 @@ void main() {
       await tester.tap(_k('day-2026-10-15'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
+    });
+
+    testWidgets('"Thiếu lý do" chỉ dựa vào needsReason của server, không tự suy ra từ phút / lý do', (tester) async {
+      final week = _sched('schedule_week', (j) {
+        _day(j, '2026-10-12')['needsReason'] = false; // 0 phút, chưa có lý do nhưng server nói không nợ (vd trước ngày tạo môn)
+        _day(j, '2026-10-14')['needsReason'] = true; // đã đủ mục tiêu mà server vẫn báo nợ → hiện theo server
+      });
+      await _pump(tester, _api(week: week), _weekUrl);
+      expect(_k('missing-reason-2026-10-12'), findsNothing);
+      expect(_k('missing-reason-2026-10-14'), findsOneWidget);
+    });
+
+    testWidgets('chuyển tab rồi quay lại Lịch: nhớ view + date (provider), không phải về tuần hôm nay', (tester) async {
+      await _pump(tester, _api(), _monthUrl);
+      expect(find.text('Tháng 10/2026'), findsOneWidget);
+      await tester.tap(find.text('Tổng quan'));
+      await tester.pumpAndSettle();
+      expect(_router.state.uri.toString(), '/tra-dinh?tab=overview');
+      await tester.tap(find.text('Lịch'));
+      await tester.pumpAndSettle();
+      expect(_router.state.uri.toString(), '/tra-dinh?tab=schedule&view=month&date=2026-10-15');
+      expect(find.text('Tháng 10/2026'), findsOneWidget);
+      // điều hướng tiếp (tháng sau) cũng được nhớ
+      await tester.tap(_k('nav-next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thống kê'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lịch'));
+      await tester.pumpAndSettle();
+      expect(_router.state.uri.toString(), '/tra-dinh?tab=schedule&view=month&date=2026-11-01');
     });
 
     testWidgets('hôm nay chưa có buổi: hiện gợi ý từ plannedItems', (tester) async {

@@ -8,6 +8,7 @@ import '../../../../shared/widgets/scroll_card.dart';
 import '../models/course.dart';
 import '../models/study_enums.dart';
 import '../providers/hoc_tap_provider.dart';
+import '../utils/async_view.dart';
 import '../utils/hoc_tap_errors.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/overview_cards.dart';
@@ -34,7 +35,7 @@ class CourseListScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(_title)),
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyCoursesProvider(query).future),
-        child: switch (async) {
+        child: switch (async.settled) {
           AsyncData(:final value) when value.isEmpty => ListView(children: [Padding(padding: const EdgeInsets.all(32), child: Center(child: Text('Chưa có khóa nào.', style: TextStyle(color: Theme.of(context).textMuted))))]),
           AsyncData(:final value) => ListView(
             padding: const EdgeInsets.all(16),

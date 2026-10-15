@@ -6,9 +6,9 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/date_format.dart';
 import '../../../../shared/utils/vn_time.dart';
 import '../models/study_enums.dart';
-import '../models/study_schedule.dart';
 import '../models/study_subject.dart';
 import '../providers/hoc_tap_provider.dart';
+import '../utils/async_view.dart';
 import '../utils/schedule_range.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
@@ -132,8 +132,7 @@ class _Loaded extends ConsumerWidget {
             TextButton(key: const ValueKey('nav-today'), onPressed: () => onGo(null, vnToday()), child: const Text('Hôm nay')),
           ],
         ),
-        // Riverpod tự thử lại khi lỗi (state là AsyncLoading kèm lỗi): vẫn hiện lỗi + nút thử lại thay vì khung chờ vô hạn.
-        switch (async.hasValue ? async : (async.hasError ? AsyncError<StudySchedule>(async.error!, async.stackTrace ?? StackTrace.empty) : async)) {
+        switch (async.settled) {
           AsyncData(:final value) => month
               ? ScheduleMonthView(
                   schedule: value,

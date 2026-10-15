@@ -7,6 +7,8 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/course_detail_sc
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/course_list_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/wishlist_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/async_view.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'hoc_tap_test_support.dart';
@@ -177,6 +179,50 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.patches.single, {'id': wish.id, 'status': 'QUEUED'});
       expect(find.text('IELTS Masterclass'), findsNothing, reason: 'rời danh sách Muốn mua sau khi tải lại');
+    });
+  });
+
+  group('lỗi hiện ngay + Thử lại (helper settled)', () {
+    test('settled: giá trị / lỗi đang tự thử lại / đang tải', () async {
+      expect(const AsyncData<int>(1).settled, isA<AsyncData<int>>());
+      expect(const AsyncLoading<int>().settled, isA<AsyncLoading<int>>());
+
+      // Provider lỗi thật: Riverpod tự thử lại nên state có thể là AsyncLoading kèm lỗi — settled vẫn phải là AsyncError.
+      final failing = FutureProvider.autoDispose<int>((ref) async => throw StateError('hỏng'));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final sub = container.listen(failing, (_, _) {});
+      await pumpEventQueue();
+      expect(sub.read().hasValue, isFalse);
+      expect(sub.read().hasError, isTrue);
+      expect(sub.read().settled, isA<AsyncError<int>>());
+      sub.close();
+    });
+
+    testWidgets('danh sách khóa', (tester) async {
+      final api = FakeHocTapApi()..coursesError = apiError(500, {'error': 'x'});
+      await pumpHocTap(tester, CourseListScreen(subjectId: api.subjects.first.id, statuses: const [CourseStatus.queued]), api: api);
+      expect(find.textContaining('Không tải được danh sách khóa'), findsOneWidget);
+      api.coursesError = null;
+      await tester.tap(find.text('Thử lại'));
+      await tester.pumpAndSettle();
+      expect(find.text('Complete English Course'), findsOneWidget);
+    });
+
+    testWidgets('Muốn mua', (tester) async {
+      final api = FakeHocTapApi()..coursesError = apiError(500, {'error': 'x'});
+      await pumpHocTap(tester, WishlistScreen(subjectId: api.subjects.first.id), api: api);
+      expect(find.textContaining('Không tải được danh sách muốn mua'), findsOneWidget);
+    });
+
+    testWidgets('chi tiết khóa', (tester) async {
+      final api = FakeHocTapApi()..detailError = apiError(500, {'error': 'x'});
+      await pumpHocTap(tester, CourseDetailScreen(courseId: api.detail.course.id), api: api);
+      expect(find.textContaining('Không tải được khóa học'), findsOneWidget);
+      api.detailError = null;
+      await tester.tap(find.text('Thử lại'));
+      await tester.pumpAndSettle();
+      expect(find.text('English Tenses 101'), findsOneWidget);
     });
   });
 

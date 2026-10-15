@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cf9dc151-5858-41c1-9d51-b56074dd9d41",
+    "name": "Tiếng Anh",
+    "dailyGoalMinutes": 60,
+    "videoMinutesPerDay": 40,
+    "reviewWeekdays": [
+      7
+    ],
+    "position": 0,
+    "createdAt": "2026-03-29T13:21:36.852Z"
+  },
+  {
+    "id": "51981030-cfec-4919-bed4-fd4833f5df58",
+    "name": "Lập trình",
+    "dailyGoalMinutes": 30,
+    "videoMinutesPerDay": 40,
+    "reviewWeekdays": [
+      7
+    ],
+    "position": 1,
+    "createdAt": "2026-03-29T13:21:36.852Z"
+  },
+  {
+    "id": "e53551ee-8385-4f34-87e0-96dfb76ed860",
+    "name": "Môn trống",
+    "dailyGoalMinutes": 45,
+    "videoMinutesPerDay": 40,
+    "reviewWeekdays": [
+      7
+    ],
+    "position": 2,
+    "createdAt": "2026-03-29T13:21:36.852Z"
+  }
+]

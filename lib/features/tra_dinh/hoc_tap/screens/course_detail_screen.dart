@@ -13,6 +13,7 @@ import '../../../../shared/widgets/tag.dart';
 import '../models/course.dart';
 import '../models/study_enums.dart';
 import '../providers/hoc_tap_provider.dart';
+import '../utils/async_view.dart';
 import '../utils/hoc_tap_errors.dart';
 import '../utils/open_course_link.dart';
 import '../widgets/course_form_sheet.dart';
@@ -121,7 +122,7 @@ class CourseDetailScreen extends ConsumerWidget {
       ),
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyCourseDetailProvider(courseId).future),
-        child: switch (async) {
+        child: switch (async.settled) {
           AsyncData(:final value) => _Detail(detail: value, onToggle: (id, done) => _toggle(context, ref, id, done)),
           AsyncError(:final error) =>
             apiErrorCode(error) == 'course_not_found'

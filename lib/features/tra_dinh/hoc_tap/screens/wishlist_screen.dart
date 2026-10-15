@@ -7,6 +7,7 @@ import '../../../../shared/widgets/scroll_card.dart';
 import '../models/course.dart';
 import '../models/study_enums.dart';
 import '../providers/hoc_tap_provider.dart';
+import '../utils/async_view.dart';
 import '../utils/hoc_tap_errors.dart';
 import '../utils/open_course_link.dart';
 import '../widgets/course_form_sheet.dart';
@@ -34,7 +35,7 @@ class WishlistScreen extends ConsumerWidget {
       ),
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyCoursesProvider(query).future),
-        child: switch (async) {
+        child: switch (async.settled) {
           AsyncData(:final value) when value.isEmpty => ListView(children: [Padding(padding: const EdgeInsets.all(32), child: Center(child: Text('Chưa có khóa nào muốn mua.', style: TextStyle(color: Theme.of(context).textMuted))))]),
           AsyncData(:final value) => ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),

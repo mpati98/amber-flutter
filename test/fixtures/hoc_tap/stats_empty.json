@@ -1,0 +1,29 @@
+{
+  "from": "2026-10-15",
+  "to": "2026-10-15",
+  "totalMinutes": 0,
+  "logCount": 0,
+  "avgPerDay": 0,
+  "goalDays": {
+    "met": 0,
+    "total": 0
+  },
+  "bucket": "day",
+  "series": [],
+  "byCourse": [],
+  "vsPlan": [],
+  "overallDeltaDays": [
+    {
+      "subjectId": "e53551ee-8385-4f34-87e0-96dfb76ed860",
+      "deltaDays": null
+    }
+  ],
+  "longestDay": null,
+  "topWeekday": null,
+  "reasonCounts": {
+    "BUSY": 0,
+    "TIRED": 0,
+    "AWAY": 0,
+    "OTHER": 0
+  }
+}

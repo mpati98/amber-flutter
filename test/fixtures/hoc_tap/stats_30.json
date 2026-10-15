@@ -1,0 +1,230 @@
+{
+  "from": "2026-09-16",
+  "to": "2026-10-15",
+  "totalMinutes": 900,
+  "logCount": 16,
+  "avgPerDay": 30,
+  "goalDays": {
+    "met": 9,
+    "total": 29
+  },
+  "bucket": "day",
+  "series": [
+    {
+      "start": "2026-09-16",
+      "minutes": 70,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-17",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-18",
+      "minutes": 60,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-19",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-20",
+      "minutes": 25,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-21",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-22",
+      "minutes": 90,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-23",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-24",
+      "minutes": 45,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-25",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-26",
+      "minutes": 70,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-27",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-28",
+      "minutes": 60,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-29",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-09-30",
+      "minutes": 25,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-01",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-02",
+      "minutes": 90,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-03",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-04",
+      "minutes": 45,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-05",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-06",
+      "minutes": 70,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-07",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-08",
+      "minutes": 60,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-09",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-10",
+      "minutes": 25,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-11",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-12",
+      "minutes": 90,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-13",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-14",
+      "minutes": 45,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-10-15",
+      "minutes": 30,
+      "goalMinutes": 60
+    }
+  ],
+  "byCourse": [
+    {
+      "courseId": "3990b6da-4b0b-49f4-81b6-2132985c7f90",
+      "title": "English Tenses 101",
+      "minutes": 460,
+      "logCount": 9
+    },
+    {
+      "courseId": null,
+      "title": "Ôn tập",
+      "minutes": 440,
+      "logCount": 7
+    }
+  ],
+  "vsPlan": [
+    {
+      "courseId": "3990b6da-4b0b-49f4-81b6-2132985c7f90",
+      "title": "English Tenses 101",
+      "status": "ACTIVE",
+      "progressPct": 17,
+      "baselineFinishDate": "2026-10-22",
+      "forecastFinishDate": "2026-10-22",
+      "finishedDate": null,
+      "deltaDays": 0
+    },
+    {
+      "courseId": "3702c554-fdc4-48e9-b39f-c8c6403e17e7",
+      "title": "Complete English Course",
+      "status": "QUEUED",
+      "progressPct": 0,
+      "baselineFinishDate": "2026-10-29",
+      "forecastFinishDate": "2026-10-29",
+      "finishedDate": null,
+      "deltaDays": 0
+    },
+    {
+      "courseId": "0d87c7bf-3df0-4257-b736-682a0ab23de1",
+      "title": "Grammar Basics",
+      "status": "DONE",
+      "progressPct": 100,
+      "baselineFinishDate": null,
+      "forecastFinishDate": "2026-10-15",
+      "finishedDate": "2026-10-15",
+      "deltaDays": null
+    }
+  ],
+  "overallDeltaDays": [
+    {
+      "subjectId": "cf9dc151-5858-41c1-9d51-b56074dd9d41",
+      "deltaDays": 0
+    }
+  ],
+  "longestDay": {
+    "date": "2026-09-22",
+    "minutes": 90
+  },
+  "topWeekday": {
+    "weekday": 2,
+    "minutes": 160
+  },
+  "reasonCounts": {
+    "BUSY": 2,
+    "TIRED": 1,
+    "AWAY": 0,
+    "OTHER": 1
+  }
+}

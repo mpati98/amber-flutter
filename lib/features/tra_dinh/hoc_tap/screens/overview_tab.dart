@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/scroll_card.dart';
 import '../models/study_overview.dart';
 import '../providers/hoc_tap_provider.dart';
+import '../utils/async_view.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/log_sheet.dart';
@@ -27,7 +28,7 @@ class OverviewTab extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          switch (async) {
+          switch (async.settled) {
             AsyncData(:final value) => _Loaded(overview: value, selectedId: selectedId),
             AsyncError() => HocTapLoadError(what: 'tổng quan học tập', onRetry: () => ref.invalidate(studyOverviewProvider)),
             _ => const Padding(padding: EdgeInsets.symmetric(vertical: 48), child: Center(child: CircularProgressIndicator())),

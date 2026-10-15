@@ -7,6 +7,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -19,6 +20,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -31,6 +33,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -43,6 +46,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -55,6 +59,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -67,6 +72,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -79,6 +85,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -91,6 +98,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -103,6 +111,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -115,6 +124,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -127,6 +137,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -139,11 +150,12 @@
       "goalMinutes": 60,
       "minutes": 60,
       "done": true,
+      "needsReason": false,
       "extraMinutes": 0,
       "reason": null,
       "logs": [
         {
-          "id": "793b8bb1-4138-4b9d-a33c-c6de6ccc7166",
+          "id": "ed835e06-8645-46e9-8f83-1589c139b3f4",
           "courseTitle": "English Tenses 101",
           "minutes": 60,
           "sections": []
@@ -158,11 +170,12 @@
       "goalMinutes": 60,
       "minutes": 45,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [
         {
-          "id": "c6219da4-2e9a-481a-99e6-0211b533363e",
+          "id": "307c4d57-65e8-41a2-b747-e5a8ec7e82e5",
           "courseTitle": null,
           "minutes": 45,
           "sections": []
@@ -177,6 +190,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -189,6 +203,7 @@
       "goalMinutes": 60,
       "minutes": 0,
       "done": false,
+      "needsReason": true,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -201,6 +216,7 @@
       "goalMinutes": 60,
       "minutes": 30,
       "done": false,
+      "needsReason": false,
       "extraMinutes": 0,
       "reason": {
         "code": "BUSY",
@@ -208,7 +224,7 @@
       },
       "logs": [
         {
-          "id": "1c4bb376-b78d-4d83-9f2c-f189ba9a9d19",
+          "id": "c730f092-c9d7-4df7-a932-5f38e4fa8d2b",
           "courseTitle": "English Tenses 101",
           "minutes": 30,
           "sections": []
@@ -223,11 +239,12 @@
       "goalMinutes": 60,
       "minutes": 70,
       "done": true,
+      "needsReason": false,
       "extraMinutes": 10,
       "reason": null,
       "logs": [
         {
-          "id": "3f0c6e98-0a8e-435e-a5bc-abf05046e749",
+          "id": "9209f34f-65a4-41c9-b06a-7f8de38a1f53",
           "courseTitle": "English Tenses 101",
           "minutes": 70,
           "sections": []
@@ -242,16 +259,17 @@
       "goalMinutes": 60,
       "minutes": 20,
       "done": false,
+      "needsReason": false,
       "extraMinutes": 0,
       "reason": null,
       "logs": [
         {
-          "id": "97fcefa7-b3e1-40f6-b66e-3443e89649bc",
+          "id": "2283a84c-0485-4ac7-8ad5-03be7352518c",
           "courseTitle": "English Tenses 101",
           "minutes": 20,
           "sections": [
             {
-              "sectionId": "dfdd9d79-e801-47ed-8052-75400981b881",
+              "sectionId": "1b28c117-9364-4723-9529-757ad8da2d9f",
               "title": "Basics",
               "markedDone": true
             }
@@ -265,11 +283,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "ad28c7e0-ee9e-400b-a385-db274f6875d9",
+          "sectionId": "566386c7-d4e4-49ac-a885-30bf7a19668c",
           "title": "First Sentences",
           "minutes": 40
         }
@@ -281,18 +300,19 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "ad28c7e0-ee9e-400b-a385-db274f6875d9",
+          "sectionId": "566386c7-d4e4-49ac-a885-30bf7a19668c",
           "title": "First Sentences",
           "minutes": 20
         },
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "60e377e6-40dc-4312-ad0d-6289b0ba67a0",
+          "sectionId": "0e46a89f-06da-4b06-ac68-f45e846773f1",
           "title": "Present Tenses",
           "minutes": 20
         }
@@ -304,6 +324,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -312,11 +333,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "60e377e6-40dc-4312-ad0d-6289b0ba67a0",
+          "sectionId": "0e46a89f-06da-4b06-ac68-f45e846773f1",
           "title": "Present Tenses",
           "minutes": 40
         }
@@ -328,18 +350,19 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "60e377e6-40dc-4312-ad0d-6289b0ba67a0",
+          "sectionId": "0e46a89f-06da-4b06-ac68-f45e846773f1",
           "title": "Present Tenses",
           "minutes": 30
         },
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "7d1387fe-36df-42fa-8707-c7ee47849226",
+          "sectionId": "2e0810b0-cc6e-4994-960b-749d8695d50a",
           "title": "Past Tenses",
           "minutes": 10
         }
@@ -351,18 +374,19 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "7d1387fe-36df-42fa-8707-c7ee47849226",
+          "sectionId": "2e0810b0-cc6e-4994-960b-749d8695d50a",
           "title": "Past Tenses",
           "minutes": 30
         },
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "7e27121d-8ffe-45e4-bf40-67f72599c3f6",
+          "sectionId": "dc6fb84c-82aa-4a2b-98c0-1dd420dadbb8",
           "title": "Future Tenses",
           "minutes": 10
         }
@@ -374,25 +398,26 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
-          "sectionId": "7e27121d-8ffe-45e4-bf40-67f72599c3f6",
+          "sectionId": "dc6fb84c-82aa-4a2b-98c0-1dd420dadbb8",
           "title": "Future Tenses",
           "minutes": 20
         },
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "sectionId": "3b27c4cb-554c-43f4-881d-83fc27095013",
           "title": "Unit 1",
           "minutes": 20
         }
       ],
       "milestones": [
         {
-          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
           "courseTitle": "English Tenses 101",
           "type": "finish"
         }
@@ -403,11 +428,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "sectionId": "3b27c4cb-554c-43f4-881d-83fc27095013",
           "title": "Unit 1",
           "minutes": 40
         }
@@ -419,11 +445,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "sectionId": "3b27c4cb-554c-43f4-881d-83fc27095013",
           "title": "Unit 1",
           "minutes": 40
         }
@@ -435,6 +462,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -443,18 +471,19 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "sectionId": "3b27c4cb-554c-43f4-881d-83fc27095013",
           "title": "Unit 1",
           "minutes": 20
         },
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 20
         }
@@ -466,11 +495,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 40
         }
@@ -482,11 +512,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 40
         }
@@ -498,18 +529,19 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 20
         }
       ],
       "milestones": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
           "type": "finish"
         }
@@ -520,6 +552,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -528,6 +561,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -536,6 +570,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     }
@@ -545,7 +580,7 @@
     "plannedMinutes": 460,
     "vsBaseline": [
       {
-        "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+        "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
         "courseTitle": "English Tenses 101",
         "status": "ACTIVE",
         "baselineFinishDate": "2026-10-22",
@@ -553,7 +588,7 @@
         "deltaDays": 0
       },
       {
-        "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+        "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
         "courseTitle": "Complete English Course",
         "status": "QUEUED",
         "baselineFinishDate": "2026-10-29",

@@ -8,6 +8,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart'
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_stats.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:dio/dio.dart';
@@ -62,6 +63,12 @@ class FakeHocTapApi extends HocTapApi {
   final scheduleCalls = <({String subjectId, String from, String to})>[];
   Object? scheduleError;
   Completer<void>? scheduleGate;
+  /// Thống kê trả về: khớp theo "range|all" (mọi môn) hoặc "range|one" (một môn); mặc định lấy fixture.
+  final statsResponses = <String, StudyStats>{};
+  final statsCalls = <({String? subjectId, String range})>[];
+  Object? statsError;
+  Object? coursesError;
+  Object? detailError;
   int overviewCalls = 0;
   int rebaselines = 0;
   Object? toggleError;
@@ -119,6 +126,16 @@ class FakeHocTapApi extends HocTapApi {
   }
 
   @override
+  Future<StudyStats> getStats({String? subjectId, String range = '30'}) async {
+    statsCalls.add((subjectId: subjectId, range: range));
+    if (statsError case final e?) throw e;
+    final key = '$range|${subjectId == null ? 'all' : 'one'}';
+    if (statsResponses[key] case final r?) return r;
+    final file = subjectId == null ? 'stats_all_subjects' : {'7': 'stats_7', '30': 'stats_30', 'all': 'stats_all'}[range]!;
+    return StudyStats.fromJson(fixtureMap(file));
+  }
+
+  @override
   Future<List<StudySubject>> getSubjects() async => subjects;
 
   @override
@@ -140,13 +157,19 @@ class FakeHocTapApi extends HocTapApi {
   }
 
   @override
-  Future<List<CourseView>> getCourses({String? subjectId, Iterable<CourseStatus> statuses = const []}) async => [
+  Future<List<CourseView>> getCourses({String? subjectId, Iterable<CourseStatus> statuses = const []}) async {
+    if (coursesError case final e?) throw e;
+    return [
     for (final c in courses)
       if ((subjectId == null || c.subjectId == subjectId) && (statuses.isEmpty || statuses.contains(c.status))) c,
-  ];
+    ];
+  }
 
   @override
-  Future<CourseDetail> getCourseDetail(String id) async => detail;
+  Future<CourseDetail> getCourseDetail(String id) async {
+    if (detailError case final e?) throw e;
+    return detail;
+  }
 
   @override
   Future<CourseDetail> setSectionDone(String courseId, String sectionId, bool done) async {

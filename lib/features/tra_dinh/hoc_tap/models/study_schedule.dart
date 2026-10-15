@@ -84,6 +84,7 @@ class ScheduleDay {
     this.logs = const [],
     this.plannedItems,
     this.milestones = const [],
+    this.needsReason = false,
   });
 
   factory ScheduleDay.fromJson(Map<String, dynamic> json) => ScheduleDay(
@@ -98,6 +99,7 @@ class ScheduleDay {
     logs: [for (final l in (json['logs'] as List? ?? const [])) ScheduleLog.fromJson(l as Map<String, dynamic>)],
     plannedItems: json['plannedItems'] == null ? null : [for (final p in json['plannedItems'] as List) PlannedItem.fromJson(p as Map<String, dynamic>)],
     milestones: [for (final m in (json['milestones'] as List? ?? const [])) Milestone.fromJson(m as Map<String, dynamic>)],
+    needsReason: json['needsReason'] as bool? ?? false,
   );
 
   final String date;
@@ -128,8 +130,11 @@ class ScheduleDay {
   /// Tổng phút dự kiến của ngày.
   int get plannedMinutes => (plannedItems ?? const []).fold(0, (n, p) => n + p.minutes);
 
-  /// Ngày đã qua, môn có mục tiêu, chưa đủ và chưa có lý do → app còn nợ lý do.
-  bool get missingReason => isPast && goalMinutes != null && done != true && reason == null;
+  /// Server tính: ngày đã qua, môn có mục tiêu, chưa đủ, chưa có lý do, sau ngày tạo môn (và routine STUDY nếu có,
+  /// đúng thứ đến hạn của nó). Client chỉ tin cờ này, không tự suy ra.
+  final bool needsReason;
+
+  bool get missingReason => needsReason;
 }
 
 /// Một khóa trong so sánh với kế hoạch gốc.

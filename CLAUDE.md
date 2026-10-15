@@ -112,7 +112,10 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   invalidate tổng quan, danh sách khóa, chi tiết và `routinesProvider` (routine STUDY tính từ nhật ký học). Tick phần ở chi
   tiết khóa là lạc quan (`StudyCourseDetailNotifier.setSectionDone`, lỗi thì hoàn tác). Mã lỗi backend → tiếng Việt ở
   `utils/hoc_tap_errors.dart`. Fixture JSON thật của backend ở `test/fixtures/hoc_tap/` (chụp từ dev). Màu chữ phụ mới:
-  `Theme.of(context).textMuted` / `textFaint` (AppThemeColors). Tab Thống kê còn là màn chờ.
+  `Theme.of(context).textMuted` / `textFaint` (AppThemeColors). **Thống kê** (`screens/stats_tab.dart`, `widgets/stats_chart.dart`, API `GET /stats`): `?tab=stats&range=7|30|all&subject=<id|all>`;
+  biểu đồ cột tự vẽ bằng Container (không thư viện), bucket `week` khi range=all > 92 ngày; So với kế hoạch + Cả lộ trình từ `overallDeltaDays`.
+  Tab Lịch nhớ view + date trong `scheduleNavProvider` khi chuyển tab. Mọi màn tải dữ liệu dùng `AsyncValue.settled` (`utils/async_view.dart`):
+  chưa có giá trị mà có lỗi → hiện lỗi + Thử lại ngay, không kẹt khung chờ khi Riverpod tự thử lại. "Thiếu lý do" của Lịch chỉ dựa vào `needsReason` của server.
   **Lịch** (`screens/schedule_tab.dart`, API `GET /schedule` ≤ 62 ngày): `?tab=schedule&view=week|month&date=YYYY-MM-DD` (mặc định tuần chứa hôm nay);
   tuần = banner so kế hoạch gốc + `ScheduleDayRow` mỗi ngày; tháng = lưới thứ Hai–Chủ nhật (`utils/schedule_range.dart: monthGrid`, 35 hoặc 42 ngày),
   bấm ô → bottom sheet cùng `ScheduleDayRow`. Lỗi tải hiện ngay (kể cả khi Riverpod đang tự thử lại) kèm nút Thử lại. `studyScheduleProvider` nằm trong danh sách invalidate sau mọi mutation.

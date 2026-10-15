@@ -8,6 +8,7 @@ import '../models/study_enums.dart';
 import '../models/study_log.dart';
 import '../models/study_overview.dart';
 import '../models/study_schedule.dart';
+import '../models/study_stats.dart';
 import '../models/study_subject.dart';
 
 /// Một dòng khi thay cả danh sách phần (PUT sections): có [id] thì giữ trạng thái xong.
@@ -143,6 +144,12 @@ class HocTapApi {
   Future<StudySchedule> getSchedule({required String subjectId, required String from, required String to}) async {
     final res = await _dio.get<Map<String, dynamic>>('$_base/schedule', queryParameters: {'subjectId': subjectId, 'from': from, 'to': to});
     return StudySchedule.fromJson(res.data!);
+  }
+
+  /// Thống kê [range] = "7" | "30" | "all" (mặc định server 30); [subjectId] null = tất cả môn.
+  Future<StudyStats> getStats({String? subjectId, String range = '30'}) async {
+    final res = await _dio.get<Map<String, dynamic>>('$_base/stats', queryParameters: {'subjectId': ?subjectId, 'range': range});
+    return StudyStats.fromJson(res.data!);
   }
 
   Future<StudyOverview> getOverview() async {

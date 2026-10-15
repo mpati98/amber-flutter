@@ -7,6 +7,7 @@
       "goalMinutes": null,
       "minutes": 0,
       "done": false,
+      "needsReason": false,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -19,6 +20,7 @@
       "goalMinutes": null,
       "minutes": 0,
       "done": false,
+      "needsReason": false,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -31,11 +33,12 @@
       "goalMinutes": null,
       "minutes": 25,
       "done": false,
+      "needsReason": false,
       "extraMinutes": 0,
       "reason": null,
       "logs": [
         {
-          "id": "ee38bfd3-1779-49ee-9449-51ae71ef05ee",
+          "id": "47ce22eb-3b08-4e5c-8b21-69409bcc6ef4",
           "courseTitle": null,
           "minutes": 25,
           "sections": []
@@ -50,6 +53,7 @@
       "goalMinutes": null,
       "minutes": 0,
       "done": false,
+      "needsReason": false,
       "extraMinutes": 0,
       "reason": null,
       "logs": [],
@@ -61,6 +65,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": null,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -69,6 +74,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": null,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -77,6 +83,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": null,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     }

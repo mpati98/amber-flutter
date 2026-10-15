@@ -5,18 +5,19 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "sectionId": "3b27c4cb-554c-43f4-881d-83fc27095013",
           "title": "Unit 1",
           "minutes": 20
         },
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 20
         }
@@ -28,11 +29,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 40
         }
@@ -44,11 +46,12 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 40
         }
@@ -60,18 +63,19 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
-          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "sectionId": "d32ce61d-8e02-4444-ae7a-b5a62a95057d",
           "title": "Unit 2",
           "minutes": 20
         }
       ],
       "milestones": [
         {
-          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
           "courseTitle": "Complete English Course",
           "type": "finish"
         }
@@ -82,6 +86,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -90,6 +95,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -98,6 +104,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -106,6 +113,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -114,6 +122,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -122,6 +131,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -130,6 +140,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -138,6 +149,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -146,6 +158,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -154,6 +167,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -162,6 +176,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -170,6 +185,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -178,6 +194,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -186,6 +203,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -194,6 +212,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -202,6 +221,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -210,6 +230,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -218,6 +239,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -226,6 +248,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -234,6 +257,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -242,6 +266,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -250,6 +275,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -258,6 +284,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -266,6 +293,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -274,6 +302,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -282,6 +311,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -290,6 +320,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -298,6 +329,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -306,6 +338,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -314,6 +347,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -322,6 +356,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -330,6 +365,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -338,6 +374,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -346,6 +383,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -354,6 +392,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -362,6 +401,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -370,6 +410,7 @@
       "kind": "planned",
       "isReviewDay": false,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     },
@@ -378,6 +419,7 @@
       "kind": "planned",
       "isReviewDay": true,
       "goalMinutes": 60,
+      "needsReason": false,
       "plannedItems": [],
       "milestones": []
     }
@@ -387,7 +429,7 @@
     "plannedMinutes": 140,
     "vsBaseline": [
       {
-        "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+        "courseId": "e1022659-a91d-498a-8c79-8018bd7055ef",
         "courseTitle": "English Tenses 101",
         "status": "ACTIVE",
         "baselineFinishDate": "2026-10-22",
@@ -395,7 +437,7 @@
         "deltaDays": 0
       },
       {
-        "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+        "courseId": "7e0052ef-f835-4a07-a511-d2c7ceb3b91f",
         "courseTitle": "Complete English Course",
         "status": "QUEUED",
         "baselineFinishDate": "2026-10-29",

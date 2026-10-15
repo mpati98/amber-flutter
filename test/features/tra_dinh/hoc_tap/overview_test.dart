@@ -132,7 +132,7 @@ void main() {
     expect(find.byKey(const ValueKey('week-chart')), findsOneWidget);
   });
 
-  testWidgets('shell 3 tab: tab lưu ở ?tab=, Lịch có toggle Tuần/Tháng, Thống kê là màn chờ "đang xây"', (tester) async {
+  testWidgets('shell 3 tab: tab lưu ở ?tab=, Lịch có toggle Tuần/Tháng, Thống kê có số liệu', (tester) async {
     tester.view.physicalSize = const Size(390, 2600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -144,12 +144,11 @@ void main() {
       ProviderScope(overrides: [hocTapApiProvider.overrideWithValue(FakeHocTapApi())], child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router)),
     );
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('placeholder-Thống kê')), findsOneWidget, reason: '?tab=stats mở đúng tab');
+    expect(find.byKey(const ValueKey('tile-total')), findsOneWidget, reason: '?tab=stats mở đúng tab Thống kê');
 
     await tester.tap(find.text('Lịch'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('view-toggle')), findsOneWidget);
-    expect(find.byKey(const ValueKey('placeholder-Lịch')), findsNothing);
     expect(router.state.uri.toString(), '/tra-dinh?tab=schedule');
 
     await tester.tap(find.text('Tổng quan'));

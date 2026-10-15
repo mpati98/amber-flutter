@@ -6,6 +6,7 @@ import '../models/course.dart';
 import '../models/study_enums.dart';
 import '../models/study_log.dart';
 import '../models/study_schedule.dart';
+import '../models/study_stats.dart';
 import '../models/study_overview.dart';
 import '../models/study_subject.dart';
 import '../services/hoc_tap_api.dart';
@@ -93,6 +94,38 @@ final studyScheduleProvider = FutureProvider.autoDispose.family<StudySchedule, S
   (ref, q) => ref.watch(hocTapApiProvider).getSchedule(subjectId: q.subjectId, from: q.from, to: q.to),
 );
 
+/// Khoá của thống kê: môn (null = tất cả môn) + khoảng "7" | "30" | "all".
+class StatsQuery {
+  const StatsQuery({this.subjectId, this.range = '30'});
+
+  final String? subjectId;
+  final String range;
+
+  @override
+  bool operator ==(Object other) => other is StatsQuery && other.subjectId == subjectId && other.range == range;
+
+  @override
+  int get hashCode => Object.hash(subjectId, range);
+}
+
+final studyStatsProvider = FutureProvider.autoDispose.family<StudyStats, StatsQuery>(
+  (ref, q) => ref.watch(hocTapApiProvider).getStats(subjectId: q.subjectId, range: q.range),
+);
+
+/// Chế độ xem + mốc ngày của tab Lịch, nhớ khi chuyển sang tab khác (mất khi tải lại trang).
+typedef ScheduleNav = ({String view, String date});
+
+class ScheduleNavNotifier extends Notifier<ScheduleNav?> {
+  @override
+  ScheduleNav? build() => null;
+
+  void remember(String view, String date) {
+    if (state?.view != view || state?.date != date) state = (view: view, date: date);
+  }
+}
+
+final scheduleNavProvider = NotifierProvider<ScheduleNavNotifier, ScheduleNav?>(ScheduleNavNotifier.new);
+
 /// Các buổi đã ghi HÔM NAY của một môn (mới nhất trước).
 final studyTodayLogsProvider = FutureProvider.autoDispose.family<List<StudyLog>, String>((ref, subjectId) {
   final today = vnToday();
@@ -106,6 +139,7 @@ void _invalidateAround(Ref ref, {String? courseId, bool keepDetail = false, bool
   ref.invalidate(studyCoursesProvider);
   ref.invalidate(studyTodayLogsProvider);
   ref.invalidate(studyScheduleProvider);
+  ref.invalidate(studyStatsProvider);
   if (!keepDetail) ref.invalidate(studyCourseDetailProvider);
   if (subjects) ref.invalidate(studySubjectsProvider);
   ref.invalidate(routinesProvider);
