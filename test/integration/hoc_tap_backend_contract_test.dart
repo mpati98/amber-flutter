@@ -1,6 +1,7 @@
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
@@ -14,7 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 //
 // Đi hết luồng của app bằng đúng HocTapApi và model của app: tạo môn → dán mục lục → thêm khóa Đang học / Chờ học →
 // đổi thứ tự → tick phần → Tổng quan → Muốn mua → Đã mua → routine STUDY → ghi buổi học (30 + 35 phút) → dừng + lý do →
-// học thêm xoá lý do → lý do ngày đã qua → sửa / xoá buổi hôm nay.
+// học thêm xoá lý do → lý do ngày đã qua → sửa / xoá buổi hôm nay → lịch (hôm nay có buổi thật, ngày làm việc kế tiếp có kế hoạch).
 // Không có log hôm qua: test Flutter không chạm được DB (backend e2e chèn log quá khứ bằng SQL) nên `pendingReasonDates`
 // của routine mới tạo luôn rỗng ở đây; ngày đã qua chỉ kiểm bằng PUT / DELETE lý do (server cho phép ngày không có log). Ghi dữ liệu thật vào DB mà backend đang trỏ:
 // chỉ chạy trên nhánh dev; môn thử được xoá ở cuối (cascade khóa, phần, log).
@@ -165,6 +166,36 @@ void main() {
         expect(afterDelete.minutes, 35);
         expect(afterDelete.done, isFalse);
         expect((await api.getLogs(from: today, to: today, subjectId: subjectId)).length, 1);
+
+        // 10b. Lịch: hôm nay có buổi thật, ngày làm việc kế tiếp có kế hoạch (hôm nay đã có buổi → bắt đầu từ ngày mai).
+        final schedule = await api.getSchedule(subjectId: subjectId, from: today, to: _dayBefore(today, -7));
+        expect(schedule.days.length, 8);
+        final todayDay = schedule.days.first;
+        expect(todayDay.date, today);
+        expect(todayDay.kind, ScheduleKind.today);
+        expect(todayDay.minutes, 35);
+        expect(todayDay.logs.single.minutes, 35);
+        expect(todayDay.logs.single.sections.single.markedDone, isTrue);
+        expect(todayDay.plannedItems, isNull, reason: 'hôm nay đã có buổi → không còn kế hoạch của hôm nay');
+        final tomorrow = _dayBefore(today, -1);
+        final tomorrowDay = schedule.days[1];
+        expect(tomorrowDay.date, tomorrow);
+        expect(tomorrowDay.kind, ScheduleKind.planned);
+        if (!tomorrowDay.isReviewDay) {
+          expect(tomorrowDay.plannedItems, isNotEmpty, reason: 'ngày mai (không phải ngày ôn) có kế hoạch');
+        } else {
+          expect(tomorrowDay.plannedItems, isEmpty);
+        }
+        final nextStudyDay = schedule.days.skip(1).firstWhere((d) => !d.isReviewDay);
+        expect(nextStudyDay.plannedItems, isNotEmpty);
+        expect(nextStudyDay.plannedItems!.first.courseTitle, 'English Tenses 101');
+        expect(schedule.summary.minutes, 35);
+        expect(schedule.summary.plannedMinutes, greaterThan(0));
+        expect(schedule.summary.vsBaseline.any((b) => b.courseId == tenses.course.id), isTrue);
+        await expectLater(
+          api.getSchedule(subjectId: subjectId, from: _dayBefore(today, 70), to: today),
+          throwsA(isA<DioException>().having((e) => (e.response?.data as Map)['error'], 'error', 'range_too_large')),
+        );
 
         // 11. Môn thứ hai: 45' + dừng (BUSY) → lý do lưu; học thêm 15' → lý do tự xoá.
         secondSubjectId = (await api.createSubject({'name': 'TEST Lập trình ${DateTime.now().millisecondsSinceEpoch}', 'dailyGoalMinutes': 60})).id;

@@ -6,6 +6,7 @@ import '../../../../shared/theme/app_theme.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../widgets/log_sheet.dart';
 import 'overview_tab.dart';
+import 'schedule_tab.dart';
 
 const hocTapTabs = ['overview', 'schedule', 'stats'];
 
@@ -13,9 +14,13 @@ const hocTapTabs = ['overview', 'schedule', 'stats'];
 ///
 /// `?openLog=1&subjectId=…` (từ thẻ routine STUDY): mở tab Tổng quan, tự mở sheet ghi buổi học MỘT lần rồi xoá query khỏi URL.
 class TraDinhHocTapScreen extends ConsumerStatefulWidget {
-  const TraDinhHocTapScreen({super.key, this.tab, this.openLog = false, this.subjectId});
+  const TraDinhHocTapScreen({super.key, this.tab, this.openLog = false, this.subjectId, this.view, this.date});
 
   final String? tab;
+
+  /// Tab Lịch: `week` | `month` và ngày mốc "YYYY-MM-DD".
+  final String? view;
+  final String? date;
   final bool openLog;
   final String? subjectId;
 
@@ -78,7 +83,7 @@ class _TraDinhHocTapScreenState extends ConsumerState<TraDinhHocTapScreen> with 
       ),
       body: TabBarView(
         controller: _controller,
-        children: const [OverviewTab(), _Placeholder('Lịch'), _Placeholder('Thống kê')],
+        children: [const OverviewTab(), ScheduleTab(view: widget.view, date: widget.date), const _Placeholder('Thống kê')],
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../../../nghi_su_duong/providers/nghi_su_duong_provider.dart';
 import '../models/course.dart';
 import '../models/study_enums.dart';
 import '../models/study_log.dart';
+import '../models/study_schedule.dart';
 import '../models/study_overview.dart';
 import '../models/study_subject.dart';
 import '../services/hoc_tap_api.dart';
@@ -73,6 +74,25 @@ class StudyCourseDetailNotifier extends AsyncNotifier<CourseDetail> {
 
 final studyCourseDetailProvider = AsyncNotifierProvider.autoDispose.family<StudyCourseDetailNotifier, CourseDetail, String>(StudyCourseDetailNotifier.new);
 
+/// Khoá của lịch: môn + khoảng ngày (so sánh theo giá trị để family cache đúng).
+class ScheduleQuery {
+  const ScheduleQuery({required this.subjectId, required this.from, required this.to});
+
+  final String subjectId;
+  final String from;
+  final String to;
+
+  @override
+  bool operator ==(Object other) => other is ScheduleQuery && other.subjectId == subjectId && other.from == from && other.to == to;
+
+  @override
+  int get hashCode => Object.hash(subjectId, from, to);
+}
+
+final studyScheduleProvider = FutureProvider.autoDispose.family<StudySchedule, ScheduleQuery>(
+  (ref, q) => ref.watch(hocTapApiProvider).getSchedule(subjectId: q.subjectId, from: q.from, to: q.to),
+);
+
 /// Các buổi đã ghi HÔM NAY của một môn (mới nhất trước).
 final studyTodayLogsProvider = FutureProvider.autoDispose.family<List<StudyLog>, String>((ref, subjectId) {
   final today = vnToday();
@@ -85,6 +105,7 @@ void _invalidateAround(Ref ref, {String? courseId, bool keepDetail = false, bool
   ref.invalidate(studyOverviewProvider);
   ref.invalidate(studyCoursesProvider);
   ref.invalidate(studyTodayLogsProvider);
+  ref.invalidate(studyScheduleProvider);
   if (!keepDetail) ref.invalidate(studyCourseDetailProvider);
   if (subjects) ref.invalidate(studySubjectsProvider);
   ref.invalidate(routinesProvider);

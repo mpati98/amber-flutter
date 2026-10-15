@@ -112,7 +112,10 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   invalidate tổng quan, danh sách khóa, chi tiết và `routinesProvider` (routine STUDY tính từ nhật ký học). Tick phần ở chi
   tiết khóa là lạc quan (`StudyCourseDetailNotifier.setSectionDone`, lỗi thì hoàn tác). Mã lỗi backend → tiếng Việt ở
   `utils/hoc_tap_errors.dart`. Fixture JSON thật của backend ở `test/fixtures/hoc_tap/` (chụp từ dev). Màu chữ phụ mới:
-  `Theme.of(context).textMuted` / `textFaint` (AppThemeColors). Tab Lịch và Thống kê còn là màn chờ.
+  `Theme.of(context).textMuted` / `textFaint` (AppThemeColors). Tab Thống kê còn là màn chờ.
+  **Lịch** (`screens/schedule_tab.dart`, API `GET /schedule` ≤ 62 ngày): `?tab=schedule&view=week|month&date=YYYY-MM-DD` (mặc định tuần chứa hôm nay);
+  tuần = banner so kế hoạch gốc + `ScheduleDayRow` mỗi ngày; tháng = lưới thứ Hai–Chủ nhật (`utils/schedule_range.dart: monthGrid`, 35 hoặc 42 ngày),
+  bấm ô → bottom sheet cùng `ScheduleDayRow`. Lỗi tải hiện ngay (kể cả khi Riverpod đang tự thử lại) kèm nút Thử lại. `studyScheduleProvider` nằm trong danh sách invalidate sau mọi mutation.
   **Ghi buổi học** (`widgets/log_sheet.dart`, `showLogSheet`): chỉ hôm nay; mở từ thẻ Hôm nay, chi tiết khóa hoặc `/tra-dinh?openLog=1&subjectId=…`
   (shell mở Tổng quan, mở sheet một lần rồi xoá query). Tổng "đã ghi + đang nhập" < mục tiêu mới hiện công tắc dừng + lý do (`ReasonPicker`);
   sửa / xoá buổi hôm nay từ thẻ Hôm nay. Ngày thiếu lý do: `missing_reason_sheet.dart` (từng ngày, cũ trước).

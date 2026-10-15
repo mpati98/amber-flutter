@@ -7,6 +7,7 @@ import '../models/parsed_sections.dart';
 import '../models/study_enums.dart';
 import '../models/study_log.dart';
 import '../models/study_overview.dart';
+import '../models/study_schedule.dart';
 import '../models/study_subject.dart';
 
 /// Một dòng khi thay cả danh sách phần (PUT sections): có [id] thì giữ trạng thái xong.
@@ -137,6 +138,12 @@ class HocTapApi {
   }
 
   Future<void> deleteReason(String subjectId, String date) => _dio.delete<void>('$_base/subjects/$subjectId/reasons/$date');
+
+  /// Lịch của một môn trong [from, to] ("YYYY-MM-DD", tối đa 62 ngày): ngày đã qua = buổi học thật, ngày tới = dự kiến.
+  Future<StudySchedule> getSchedule({required String subjectId, required String from, required String to}) async {
+    final res = await _dio.get<Map<String, dynamic>>('$_base/schedule', queryParameters: {'subjectId': subjectId, 'from': from, 'to': to});
+    return StudySchedule.fromJson(res.data!);
+  }
 
   Future<StudyOverview> getOverview() async {
     final res = await _dio.get<Map<String, dynamic>>('$_base/overview');

@@ -7,6 +7,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.d
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:dio/dio.dart';
@@ -55,6 +56,12 @@ class FakeHocTapApi extends HocTapApi {
   Object? reasonError;
   Object? logError;
   late StudyLogResult logResult = StudyLogResult.fromJson(fixtureMap('log_created'));
+  /// Lịch trả về cho getSchedule: khớp theo (from, to) nếu có trong [schedules], không thì [defaultSchedule] (hoặc tự dựng).
+  final schedules = <String, StudySchedule>{};
+  StudySchedule? defaultSchedule;
+  final scheduleCalls = <({String subjectId, String from, String to})>[];
+  Object? scheduleError;
+  Completer<void>? scheduleGate;
   int overviewCalls = 0;
   int rebaselines = 0;
   Object? toggleError;
@@ -94,6 +101,14 @@ class FakeHocTapApi extends HocTapApi {
     reasonPuts.add((subjectId: subjectId, date: date, code: code, text: text));
     if (reasonError case final e?) throw e;
     return DayReasonEntry(date: date, code: code, text: text);
+  }
+
+  @override
+  Future<StudySchedule> getSchedule({required String subjectId, required String from, required String to}) async {
+    scheduleCalls.add((subjectId: subjectId, from: from, to: to));
+    await scheduleGate?.future;
+    if (scheduleError case final e?) throw e;
+    return schedules['$from|$to'] ?? defaultSchedule ?? const StudySchedule(days: [], summary: ScheduleSummary(minutes: 0, plannedMinutes: 0));
   }
 
   @override

@@ -165,6 +165,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           tab: state.uri.queryParameters['tab'],
           openLog: state.uri.queryParameters['openLog'] == '1',
           subjectId: state.uri.queryParameters['subjectId'],
+          view: state.uri.queryParameters['view'],
+          date: state.uri.queryParameters['date'],
         ),
         routes: [
           // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.

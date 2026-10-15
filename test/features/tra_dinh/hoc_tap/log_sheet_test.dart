@@ -291,6 +291,24 @@ void main() {
       expect(find.byType(Dialog), findsNothing, reason: 'xong hết thì đóng');
     });
 
+    testWidgets('"Bỏ qua ngày này" / "Để sau" KHÔNG lưu gì: không gọi API, mở lại vẫn từ ngày đầu', (tester) async {
+      await openReasons(tester, ['2026-10-12', '2026-10-13']);
+      await tester.tap(_k('reason-skip'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiếng Anh · ngày 2/2'), findsOneWidget);
+      expect(find.text('Để sau'), findsOneWidget, reason: 'ngày cuối');
+      await tester.tap(_k('reason-skip'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('reason-skip')), findsNothing, reason: 'sheet đóng');
+      expect(api.reasonPuts, isEmpty);
+
+      // Mở lại (như lần sau vào app: pendingReasonDates vẫn trả đủ 2 ngày) → bắt đầu lại từ ngày đầu.
+      await tester.tap(find.text('mở'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiếng Anh · ngày 1/2'), findsOneWidget);
+      expect(find.text('12/10 · đã học 30/60 phút'), findsOneWidget);
+    });
+
     testWidgets('goal_met → báo, không sang ngày sau; "Bỏ qua ngày này" sang ngày tiếp', (tester) async {
       api.reasonError = apiError(400, {'error': 'goal_met'});
       await openReasons(tester, ['2026-10-12', '2026-10-13']);

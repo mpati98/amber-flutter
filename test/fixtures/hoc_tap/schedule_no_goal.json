@@ -1,0 +1,89 @@
+{
+  "days": [
+    {
+      "date": "2026-10-12",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": null,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-13",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": null,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-14",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": null,
+      "minutes": 25,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [
+        {
+          "id": "ee38bfd3-1779-49ee-9449-51ae71ef05ee",
+          "courseTitle": null,
+          "minutes": 25,
+          "sections": []
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-15",
+      "kind": "today",
+      "isReviewDay": false,
+      "goalMinutes": null,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": [],
+      "plannedItems": []
+    },
+    {
+      "date": "2026-10-16",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": null,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-17",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": null,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-18",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": null,
+      "plannedItems": [],
+      "milestones": []
+    }
+  ],
+  "summary": {
+    "minutes": 25,
+    "plannedMinutes": 0,
+    "vsBaseline": []
+  }
+}

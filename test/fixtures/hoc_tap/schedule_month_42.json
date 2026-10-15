@@ -1,0 +1,407 @@
+{
+  "days": [
+    {
+      "date": "2026-10-26",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "title": "Unit 1",
+          "minutes": 20
+        },
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 20
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-27",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-28",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-29",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 20
+        }
+      ],
+      "milestones": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "type": "finish"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-31",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-01",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-02",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-03",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-04",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-05",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-06",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-07",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-08",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-09",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-10",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-11",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-12",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-13",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-14",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-15",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-16",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-17",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-18",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-19",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-20",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-21",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-22",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-23",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-24",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-25",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-26",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-27",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-28",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-29",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-30",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-12-01",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-12-02",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-12-03",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-12-04",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-12-05",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-12-06",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    }
+  ],
+  "summary": {
+    "minutes": 0,
+    "plannedMinutes": 140,
+    "vsBaseline": [
+      {
+        "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+        "courseTitle": "English Tenses 101",
+        "status": "ACTIVE",
+        "baselineFinishDate": "2026-10-22",
+        "forecastFinishDate": "2026-10-22",
+        "deltaDays": 0
+      },
+      {
+        "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+        "courseTitle": "Complete English Course",
+        "status": "QUEUED",
+        "baselineFinishDate": "2026-10-29",
+        "forecastFinishDate": "2026-10-29",
+        "deltaDays": 0
+      }
+    ]
+  }
+}

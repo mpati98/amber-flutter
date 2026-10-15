@@ -1,0 +1,565 @@
+{
+  "days": [
+    {
+      "date": "2026-09-28",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-09-29",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-09-30",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-01",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-03",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-04",
+      "kind": "past",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-05",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-06",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-07",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-08",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-09",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 60,
+      "done": true,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [
+        {
+          "id": "793b8bb1-4138-4b9d-a33c-c6de6ccc7166",
+          "courseTitle": "English Tenses 101",
+          "minutes": 60,
+          "sections": []
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-10",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 45,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [
+        {
+          "id": "c6219da4-2e9a-481a-99e6-0211b533363e",
+          "courseTitle": null,
+          "minutes": 45,
+          "sections": []
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-11",
+      "kind": "past",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-12",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-13",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 30,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": {
+        "code": "BUSY",
+        "text": null
+      },
+      "logs": [
+        {
+          "id": "1c4bb376-b78d-4d83-9f2c-f189ba9a9d19",
+          "courseTitle": "English Tenses 101",
+          "minutes": 30,
+          "sections": []
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-14",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 70,
+      "done": true,
+      "extraMinutes": 10,
+      "reason": null,
+      "logs": [
+        {
+          "id": "3f0c6e98-0a8e-435e-a5bc-abf05046e749",
+          "courseTitle": "English Tenses 101",
+          "minutes": 70,
+          "sections": []
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-15",
+      "kind": "today",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 20,
+      "done": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [
+        {
+          "id": "97fcefa7-b3e1-40f6-b66e-3443e89649bc",
+          "courseTitle": "English Tenses 101",
+          "minutes": 20,
+          "sections": [
+            {
+              "sectionId": "dfdd9d79-e801-47ed-8052-75400981b881",
+              "title": "Basics",
+              "markedDone": true
+            }
+          ]
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-16",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "ad28c7e0-ee9e-400b-a385-db274f6875d9",
+          "title": "First Sentences",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-17",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "ad28c7e0-ee9e-400b-a385-db274f6875d9",
+          "title": "First Sentences",
+          "minutes": 20
+        },
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "60e377e6-40dc-4312-ad0d-6289b0ba67a0",
+          "title": "Present Tenses",
+          "minutes": 20
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-18",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-19",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "60e377e6-40dc-4312-ad0d-6289b0ba67a0",
+          "title": "Present Tenses",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-20",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "60e377e6-40dc-4312-ad0d-6289b0ba67a0",
+          "title": "Present Tenses",
+          "minutes": 30
+        },
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "7d1387fe-36df-42fa-8707-c7ee47849226",
+          "title": "Past Tenses",
+          "minutes": 10
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-21",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "7d1387fe-36df-42fa-8707-c7ee47849226",
+          "title": "Past Tenses",
+          "minutes": 30
+        },
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "7e27121d-8ffe-45e4-bf40-67f72599c3f6",
+          "title": "Future Tenses",
+          "minutes": 10
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-22",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "sectionId": "7e27121d-8ffe-45e4-bf40-67f72599c3f6",
+          "title": "Future Tenses",
+          "minutes": 20
+        },
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "title": "Unit 1",
+          "minutes": 20
+        }
+      ],
+      "milestones": [
+        {
+          "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+          "courseTitle": "English Tenses 101",
+          "type": "finish"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-23",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "title": "Unit 1",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-24",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "title": "Unit 1",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-25",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-26",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "78d25ec0-e370-4e4a-8d51-6a4527ce578a",
+          "title": "Unit 1",
+          "minutes": 20
+        },
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 20
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-27",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-28",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 40
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-29",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "sectionId": "5c9d4906-a9c4-4480-aca8-49d0c9db64ef",
+          "title": "Unit 2",
+          "minutes": 20
+        }
+      ],
+      "milestones": [
+        {
+          "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+          "courseTitle": "Complete English Course",
+          "type": "finish"
+        }
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-10-31",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-01",
+      "kind": "planned",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "plannedItems": [],
+      "milestones": []
+    }
+  ],
+  "summary": {
+    "minutes": 225,
+    "plannedMinutes": 460,
+    "vsBaseline": [
+      {
+        "courseId": "e328c28a-7bdc-4b90-ab70-6091937ae67b",
+        "courseTitle": "English Tenses 101",
+        "status": "ACTIVE",
+        "baselineFinishDate": "2026-10-22",
+        "forecastFinishDate": "2026-10-22",
+        "deltaDays": 0
+      },
+      {
+        "courseId": "c5dc05a1-fffe-4687-8514-95e94acbec70",
+        "courseTitle": "Complete English Course",
+        "status": "QUEUED",
+        "baselineFinishDate": "2026-10-29",
+        "forecastFinishDate": "2026-10-29",
+        "deltaDays": 0
+      }
+    ]
+  }
+}
