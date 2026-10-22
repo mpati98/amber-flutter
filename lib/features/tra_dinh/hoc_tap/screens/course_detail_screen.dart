@@ -20,6 +20,7 @@ import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/log_sheet.dart';
 import '../widgets/sections_editor_sheet.dart';
+import '../../../../shared/widgets/app_bar_back.dart';
 
 Color courseStatusColor(BuildContext context, CourseStatus s) => switch (s) {
   CourseStatus.active => AppColors.kincha400,
@@ -101,6 +102,7 @@ class CourseDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBarBack(fallback: '/tra-dinh'),
         title: const Text('Chi tiết khóa'),
         actions: [
           if (detail != null)

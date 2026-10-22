@@ -12,6 +12,7 @@ import '../providers/finance_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/finance_api.dart';
 import '../utils/finance_month.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -58,7 +59,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
     final showStart = months.hasValue && !hasCurrentFinanceMonth(months.value!);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tài chính cá nhân')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/nghi-su-duong'), title: const Text('Tài chính cá nhân')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),

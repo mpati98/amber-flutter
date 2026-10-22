@@ -8,6 +8,7 @@ import '../widgets/log_sheet.dart';
 import 'overview_tab.dart';
 import 'schedule_tab.dart';
 import 'stats_tab.dart';
+import '../../../../shared/widgets/app_bar_back.dart';
 
 const hocTapTabs = ['overview', 'schedule', 'stats'];
 
@@ -95,6 +96,7 @@ class _TraDinhHocTapScreenState extends ConsumerState<TraDinhHocTapScreen> with 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBarBack(),
         title: const Text('Trà Đình'),
         bottom: TabBar(
           controller: _controller,

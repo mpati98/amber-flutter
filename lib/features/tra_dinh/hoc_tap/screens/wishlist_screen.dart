@@ -13,6 +13,7 @@ import '../utils/open_course_link.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/overview_cards.dart';
+import '../../../../shared/widgets/app_bar_back.dart';
 
 /// Muốn mua: các khóa chưa mua, kèm giá định mua, ghi chú; "Đã mua" chuyển vào hàng chờ.
 class WishlistScreen extends ConsumerWidget {
@@ -26,7 +27,7 @@ class WishlistScreen extends ConsumerWidget {
     final async = ref.watch(studyCoursesProvider(query));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Muốn mua')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: const Text('Muốn mua')),
       floatingActionButton: FloatingActionButton.extended(
         key: const ValueKey('add-wishlist'),
         onPressed: () => showCourseFormSheet(context, subjectId: subjectId, initialStatus: CourseStatus.wishlist),

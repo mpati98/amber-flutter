@@ -7,6 +7,7 @@ import '../../../shared/utils/currency.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/scroll_card.dart';
 import '../providers/nghi_su_duong_provider.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 /// Port /nghi-su-duong: trang chính 3 mảng Dự án / Tài chính / Học tập.
 /// Xếp 1 cột thay cho lưới 1–3 cột bên web.
@@ -19,7 +20,7 @@ class NghiSuDuongScreen extends ConsumerWidget {
     void push(String path) => context.push(path);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nghị Sự Đường')),
+      appBar: AppBar(leading: const AppBarBack(), title: const Text('Nghị Sự Đường')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),

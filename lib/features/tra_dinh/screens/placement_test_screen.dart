@@ -9,6 +9,7 @@ import '../models/placement_test.dart';
 import '../models/skill_score.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../services/tra_dinh_api.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -120,7 +121,7 @@ class _PlacementTestScreenState extends ConsumerState<PlacementTestScreen> {
   Widget build(BuildContext context) {
     final test = _test;
     return Scaffold(
-      appBar: AppBar(title: const Text('Bài test đầu vào')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh/luyen-tap'), title: const Text('Bài test đầu vào')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),

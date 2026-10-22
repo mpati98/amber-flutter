@@ -14,6 +14,7 @@ import '../models/feed_source.dart';
 import '../providers/kieu_lau_provider.dart';
 import '../services/kieu_lau_api.dart';
 import '../widgets/add_feed_source_dialog.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 // Giá trị `source` thật của activity_logs (xem logActivity bên amber-v4).
 const _sourceIcon = {
@@ -39,6 +40,7 @@ class KieuLauScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBarBack(),
         title: const Text('Kiều Lâu'),
         actions: [
           // TODO: tạm để test luồng auth — chuyển sang màn Cài đặt khi có router.

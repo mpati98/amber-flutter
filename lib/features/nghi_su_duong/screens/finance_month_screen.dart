@@ -19,6 +19,7 @@ import '../widgets/add_account_modal.dart';
 import '../widgets/add_category_modal.dart';
 import '../widgets/add_transaction_modal.dart';
 import '../widgets/set_budget_modal.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -99,7 +100,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
     final hasAccounts = accounts.value?.isNotEmpty ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: Text(summary?.projectName ?? 'Tháng tài chính')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/finance'), title: Text(summary?.projectName ?? 'Tháng tài chính')),
       floatingActionButton: summary == null || ended || !accounts.hasValue
           ? null
           : FloatingActionButton.extended(

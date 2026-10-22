@@ -12,6 +12,7 @@ import '../utils/async_view.dart';
 import '../utils/hoc_tap_errors.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/overview_cards.dart';
+import '../../../../shared/widgets/app_bar_back.dart';
 
 /// Danh sách khóa theo trạng thái (Chờ học / Đã xong...) của một môn. Chờ học có số thứ tự + nút lên/xuống.
 class CourseListScreen extends ConsumerWidget {
@@ -32,7 +33,7 @@ class CourseListScreen extends ConsumerWidget {
     final queued = statuses.length == 1 && statuses.single == CourseStatus.queued;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_title)),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: Text(_title)),
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyCoursesProvider(query).future),
         child: switch (async.settled) {

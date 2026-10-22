@@ -9,6 +9,7 @@ import '../widgets/add_document_modal.dart';
 import '../widgets/document_card.dart';
 import '../widgets/document_viewer_modal.dart';
 import '../widgets/type_tag.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 // Thứ tự giống bộ lọc bên web (null = Tất cả).
 const _filters = <DocumentType?>[
@@ -38,7 +39,7 @@ class _TaiLieuScreenState extends ConsumerState<TaiLieuScreen> {
     final docs = ref.watch(documentsProvider(_filter));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tài liệu')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tang-kinh-cac'), title: const Text('Tài liệu')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showAddDocumentModal(context),
         icon: const Icon(Icons.add),

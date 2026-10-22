@@ -11,6 +11,7 @@ import '../widgets/attention_card.dart';
 import '../widgets/new_project_modal.dart';
 import '../widgets/project_card.dart';
 import '../widgets/routines_card.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 const _weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
 
@@ -43,7 +44,7 @@ class DuAnScreen extends ConsumerWidget {
     final userName = auth is Authenticated ? auth.user['name'] as String? : null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dự án')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/nghi-su-duong'), title: const Text('Dự án')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),

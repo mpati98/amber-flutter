@@ -11,6 +11,7 @@ import '../providers/tra_dinh_provider.dart';
 import '../services/recording_service.dart';
 import '../services/tra_dinh_api.dart';
 import '../services/tts_service.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -278,6 +279,7 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBarBack(fallback: '/tra-dinh/luyen-tap'),
         title: session == null
             ? const Text('Buổi luyện')
             : Column(

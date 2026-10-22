@@ -9,6 +9,7 @@ import '../widgets/add_book_modal.dart';
 import '../widgets/book_card.dart';
 import '../widgets/book_detail_modal.dart';
 import '../widgets/status_badge.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 // Thứ tự giống bộ lọc bên web (null = Tất cả).
 const _filters = <PublicationStatus?>[
@@ -36,7 +37,7 @@ class _SachScreenState extends ConsumerState<SachScreen> {
     final books = ref.watch(publicationsProvider(_filter));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tủ sách')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tang-kinh-cac'), title: const Text('Tủ sách')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showAddBookModal(context),
         icon: const Icon(Icons.add),

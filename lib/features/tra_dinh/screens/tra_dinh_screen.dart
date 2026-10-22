@@ -12,6 +12,7 @@ import '../models/practice_session.dart';
 import '../models/skill_score.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../widgets/new_practice_session_modal.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -43,7 +44,7 @@ class TraDinhScreen extends ConsumerWidget {
     final sessions = ref.watch(practiceSessionsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Trà Đình')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: const Text('Trà Đình')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _newSession(context),
         icon: const Icon(Icons.add),

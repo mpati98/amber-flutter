@@ -12,6 +12,7 @@ import '../providers/training_log_provider.dart';
 import '../services/training_log_api.dart';
 import '../widgets/outcome_tag.dart';
 import 'training_logs_screen.dart' show formatLogTime;
+import '../../../shared/widgets/app_bar_back.dart';
 
 const _pretty = JsonEncoder.withIndent('  ');
 
@@ -50,7 +51,7 @@ class _TrainingLogDetailScreenState extends ConsumerState<TrainingLogDetailScree
   Widget build(BuildContext context) {
     final detail = ref.watch(trainingLogDetailProvider(widget.logId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Chi tiết nhật ký')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tang-kinh-cac/du-lieu-huan-luyen'), title: const Text('Chi tiết nhật ký')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),

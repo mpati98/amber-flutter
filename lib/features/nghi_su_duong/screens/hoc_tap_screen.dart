@@ -10,6 +10,7 @@ import '../../../shared/widgets/tag.dart';
 import '../models/course.dart';
 import '../providers/learn_provider.dart';
 import '../widgets/add_course_modal.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -57,7 +58,7 @@ class _HocTapScreenState extends ConsumerState<HocTapScreen> {
     final courses = ref.watch(coursesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Học tập')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/nghi-su-duong'), title: const Text('Học tập')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showAddCourseModal(context),
         icon: const Icon(Icons.add),

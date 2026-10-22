@@ -9,6 +9,7 @@ import '../../../shared/widgets/scroll_card.dart';
 import '../models/reading_goal.dart';
 import '../providers/tang_kinh_cac_provider.dart';
 import '../services/reading_goal_api.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 /// Port /tang-kinh-cac/ke-hoach-doc: thẻ tiến độ năm hiện tại + form mục tiêu.
 /// Form chỉ có đúng 2 ô như web (số sách, ghi chú) — web không có ô
@@ -69,7 +70,7 @@ class _KeHoachDocScreenState extends ConsumerState<KeHoachDocScreen> {
     final goal = ref.watch(readingGoalProvider(_year));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Kế hoạch đọc')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tang-kinh-cac'), title: const Text('Kế hoạch đọc')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),

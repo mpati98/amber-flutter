@@ -15,6 +15,7 @@ import '../widgets/project_transaction_form.dart';
 import '../widgets/task_board.dart';
 import '../widgets/task_detail_sheet.dart';
 import '../widgets/task_timeline.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 /// Các tab của màn: thêm tab (Thu-chi...) = thêm một giá trị ở đây và một nhánh ở [_TabContent].
 enum _DetailTab { board, calendar, finance }
@@ -58,7 +59,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(project?.name ?? 'Dự án', maxLines: 1, overflow: TextOverflow.ellipsis)),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/du-an'), title: Text(project?.name ?? 'Dự án', maxLines: 1, overflow: TextOverflow.ellipsis)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1200),

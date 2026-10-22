@@ -9,6 +9,7 @@ import '../../../shared/widgets/tag.dart';
 import '../models/training_log.dart';
 import '../providers/training_log_provider.dart';
 import '../widgets/outcome_tag.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 /// "dd/MM HH:mm" theo giờ Việt Nam.
 String formatLogTime(DateTime t) {
@@ -31,7 +32,7 @@ class TrainingLogsScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dữ liệu huấn luyện')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/tang-kinh-cac'), title: const Text('Dữ liệu huấn luyện')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),

@@ -13,6 +13,7 @@ import '../providers/learn_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/learn_api.dart';
 import '../widgets/add_lesson_modal.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -157,7 +158,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(course?.name ?? 'Khóa học')),
+      appBar: AppBar(leading: const AppBarBack(fallback: '/hoc-tap'), title: Text(course?.name ?? 'Khóa học')),
       floatingActionButton: course == null
           ? null
           : FloatingActionButton.extended(

@@ -6,6 +6,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../providers/brain_chat_provider.dart';
 import '../providers/brain_status_provider.dart';
 import '../widgets/brain_cards.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 /// Màn chat với amber-brain (trợ lý tài chính): hỏi số dư, ghi giao dịch có
 /// xác nhận, hoàn tác. Lịch sử chỉ giữ trong state, không lưu.
@@ -67,6 +68,7 @@ class _AmberBrainScreenState extends ConsumerState<AmberBrainScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const AppBarBack(),
         title: Row(
           spacing: 8,
           children: [

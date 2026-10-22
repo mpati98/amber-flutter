@@ -11,6 +11,7 @@ import '../providers/publication_provider.dart';
 import '../providers/tang_kinh_cac_provider.dart';
 import '../../du_lieu_huan_luyen/providers/training_log_provider.dart';
 import '../widgets/section_card.dart';
+import '../../../shared/widgets/app_bar_back.dart';
 
 /// Port /tang-kinh-cac (trang chính của tòa): thẻ "Ôn lại" + 3 lối vào.
 /// Xếp 1 cột thay cho lưới 1-3 cột bên web.
@@ -56,7 +57,7 @@ class TangKinhCacScreen extends ConsumerWidget {
     void push(String sub) => context.push('/tang-kinh-cac/$sub');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tàng Kinh Các')),
+      appBar: AppBar(leading: const AppBarBack(), title: const Text('Tàng Kinh Các')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
