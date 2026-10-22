@@ -35,8 +35,11 @@ Dev local: chạy amber-v4 trước (`npm run dev` :3000).
 
 - Project Vercel `amber-flutter` (alias `amber.duangmai.io.vn`) **không nối Git**: `git push` KHÔNG deploy. Deploy bằng
   `API_BASE_URL=https://api.duangmai.io.vn tool/deploy_web.sh` từ `main` sạch, SAU khi backend amber-v4 đã deploy.
-- **Đang chạy** (13/10/2026): `dpl_GcdByVm5Qm17oTRWRKsyimNHwXwZ` (build từ `95162a5`, có ghi buổi tập).
-  **Mốc rollback**: `dpl_7udy1WmxgqjXqrE4YpTAMrMqEK7s` (`vercel rollback <id>` hoặc promote từ dashboard).
+- **Đang chạy** (22/10/2026): `dpl_BJRCxCkkH2tYGjkjc5pfE6kqY27P` (build từ `9d93d24`: Trà Đình học tập + tin nhắn/ô nhập của chat Amber bằng tiếng Anh;
+  backend amber-v4 đã có migration 0008/0009 trước đó). **Mốc rollback**: `dpl_GcdByVm5Qm17oTRWRKsyimNHwXwZ` (build từ `95162a5`, bản 13/10 có ghi buổi tập;
+  trước nữa `dpl_7udy1WmxgqjXqrE4YpTAMrMqEK7s`). Rollback: `vercel rollback dpl_GcdByVm5Qm17oTRWRKsyimNHwXwZ` (hoặc promote từ dashboard).
+- Brain: `tool/deploy_web.sh` chỉ truyền `API_BASE_URL`, nên `BRAIN_BASE_URL` giữ mặc định `http://127.0.0.1:8765` (cổng dịch vụ; 8766 chỉ là cổng chạy thử
+  trên máy dev, không đưa vào bản build). Kiểm: bundle chỉ có đúng một URL brain là `127.0.0.1:8765`.
 - Kiểm sau deploy (không đăng nhập, không ghi): `https://amber.duangmai.io.vn` trả 200; `main.dart.js` chứa
   `api.duangmai.io.vn`, không chứa `localhost:3000` (chữ "localhost" đơn lẻ trong code Flutter là bình thường); chuỗi tiếng
   Việt trong bundle bị mã hoá `\uXXXX` nên đừng tìm theo chữ có dấu.
