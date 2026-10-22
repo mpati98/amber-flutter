@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
@@ -59,6 +61,36 @@ void main() {
     expect(find.byKey(const ValueKey('link-Chờ học')), findsOneWidget);
     expect(find.descendant(of: find.byKey(const ValueKey('link-Chờ học')), matching: find.text('2')), findsOneWidget);
     expect(find.descendant(of: find.byKey(const ValueKey('link-Muốn mua')), matching: find.text('1')), findsOneWidget);
+  });
+
+  testWidgets('hôm nay chưa học (0 phút): cột vẫn là thanh có viền cao ≥ 6px, không co thành hai vạch nhỏ', (tester) async {
+    final json = jsonDecode(jsonEncode(fixtureMap('overview'))) as Map<String, dynamic>;
+    final today = json['today'] as String;
+    for (final d in (json['week'] as Map<String, dynamic>)['days'] as List) {
+      if (d['date'] == today) {
+        d['minutes'] = 0;
+        d['done'] = false;
+      }
+    }
+    await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: FakeHocTapApi(overview: StudyOverview.fromJson(json)));
+
+    final todayBar = find.byKey(ValueKey('week-bar-$today'));
+    final deco = tester.widget<Container>(todayBar).decoration! as BoxDecoration;
+    expect(deco.border, isNotNull); // vẫn là cột "hôm nay" có viền
+    // viền 2px mỗi cạnh: cần ≥ 6px mới còn ruột; 2px thì chỉ còn hai vạch viền
+    expect(tester.getSize(todayBar).height, greaterThanOrEqualTo(6));
+    // ngày khác không học vẫn là vạch 2px như cũ, không viền
+    expect(tester.getSize(find.byKey(const ValueKey('week-bar-2026-10-16'))).height, 2);
+    expect((tester.widget<Container>(find.byKey(const ValueKey('week-bar-2026-10-16'))).decoration! as BoxDecoration).border, isNull);
+  });
+
+  testWidgets('hôm nay đã học: chiều cao vẫn theo tỉ lệ phút (không bị ép lên mức tối thiểu)', (tester) async {
+    await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: FakeHocTapApi());
+    final h13 = tester.getSize(find.byKey(const ValueKey('week-bar-2026-10-13'))).height; // 45 phút
+    final h14 = tester.getSize(find.byKey(const ValueKey('week-bar-2026-10-14'))).height; // 30 phút (hôm nay)
+    expect(h13, greaterThan(h14));
+    expect(h14, greaterThan(6));
+    expect(h14 / h13, closeTo(30 / 45, 0.01));
   });
 
   testWidgets('nút Ghi buổi học mở sheet cho môn đang chọn; link Chờ học điều hướng đúng', (tester) async {

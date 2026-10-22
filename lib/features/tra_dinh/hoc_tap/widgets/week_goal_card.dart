@@ -67,6 +67,7 @@ class _WeekChart extends StatelessWidget {
   final String today;
 
   static const _height = 110.0;
+  static const _todayMinHeight = 6.0; // 2px viền trên + 2px viền dưới + 2px ruột
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +109,8 @@ class _WeekChart extends StatelessWidget {
                     children: [
                       Container(
                         key: ValueKey('week-bar-${d.date}'),
-                        height: (d.minutes * scale).clamp(2.0, _height),
+                        // Tối thiểu 2px cho cột trống; hôm nay có viền 2px mỗi cạnh nên cần ≥ 6px, nếu không cột chỉ còn là hai vạch viền.
+                        height: (d.minutes * scale).clamp(d.date == today ? _todayMinHeight : 2.0, _height),
                         decoration: BoxDecoration(
                           color: d.done ? AppColors.kincha400 : AppColors.kincha400.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(3),
