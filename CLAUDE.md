@@ -6,6 +6,40 @@ Safari iPhone), ngoài ra build được Android/iOS/desktop.
 
 Comment trong code viết tiếng Việt — giữ nguyên thói quen đó.
 
+## Bàn giao cuối ngày 22/10/2026 (đọc trước)
+
+Ba repo cùng `~/Documents/My Workspace/`: `amber_flutter` (repo này), `amber-v4` (backend), `amber-brain` (Python, chạy bằng systemd).
+
+**Đã làm hôm nay**
+- amber_flutter (đã push + deploy): `9d93d24` chat Amber + ô nhập tiếng Anh · `f3b70db` `AppBarBack` cho 22 màn · `a2c3b8e` cột "hôm nay" 0 phút ở biểu đồ tuần ·
+  docs `bf5628b`, `fee9f14`. Trà Đình học tập (`3a2cf70`…`c6cab78`) cũng lên production hôm nay.
+- amber-v4 (đã push + deploy): Trà Đình học tập `3f85734`…`97fb8ad` (migration 0008) · `c7f82cb` `agent_logs.route`/`cloud_model` (0009) · `e957c71` Next 16.3.8 · docs `36e6f84`.
+- amber-brain: gemma là mặc định + Groq (chitchat/tutor) + credential guard + log mọi lượt + outbox tách dev/prod (`server_host`) + báo cổng bị chiếm + Modelfile khớp bản cài.
+  **CHƯA COMMIT**: 21 file sửa + 15 file mới (nhánh `master`, HEAD `2bd40b4`); service đang chạy thẳng từ working tree đó.
+
+**Production lúc này**
+- Web Flutter: xem "Triển khai production" (id + rollback). Backend amber-v4: `dpl_HPsMYszoLZbXzyKTv2pqiGx9v9L8` (code `e957c71`), rollback
+  `vercel rollback dpl_6XqURxEW2ak4NZxG1WUizMz8oxMM`; DB Neon production đã áp 10/10 migration (đến 0009), không có nhánh sao lưu cho 0008/0009 (dựa vào PITR).
+- amber-brain: user service `amber-brain` (bản cài `~/.config/systemd/user/amber-brain.service` = `amber-brain/systemd/amber-brain.service`), `AGENT_MODE=gemma`,
+  `LLM_MODEL=amber-gemma4` (Ollama có amber-gemma4 và qwen3:4b-instruct), cổng 8765 (`0.0.0.0`), `GROQ_API_KEY` trong `~/.config/amber-brain/secrets.env` (EnvironmentFile, 600),
+  phiên đăng nhập `~/.config/amber-brain/session-api.duangmai.io.vn.json` (600; làm lại: `cd amber-brain && .venv/bin/python -m amber_brain.login`), `.env` của repo trỏ PROD.
+  Kiểm: `curl -s 127.0.0.1:8765/v1/status` → PROD / gemma / amber-gemma4; `journalctl --user -u amber-brain | grep log-push` → đẩy log thành công (22:08, 22:20 sau khi backend lên 0009, không 401).
+
+**Việc tiếp theo (theo thứ tự)**
+1. amber-brain: `git status`, `.venv/bin/python run_tests.py` (375 test), rồi commit toàn bộ công việc hôm nay (chưa có commit nào) và push.
+2. amber-brain gửi `route`/`cloudModel` trong payload outbox (backend đã nhận từ 0009; hiện route chỉ nằm trong `tool_result`): thêm cột + `_FIELDS` + test.
+3. Kiểm `AppBarBack` trên iPhone thật (nhất là sau khi đổi tab Trà Đình). Tuỳ chọn: đổi tab sang `context.replace` để giữ lịch sử; lọc `?route=` ở màn Dữ liệu huấn luyện.
+4. Dọn: nhánh Neon `backup-truoc-workout-20261013`; 2 file `docs/*.md` chưa theo dõi ở amber-v4; terminal chat `amber_brain.chat` vẫn dùng agent legacy;
+   `scripts/export_dataset.py --local` đọc cả hai host.
+
+**Bẫy đã gặp**
+- Cổng 8765 do service giữ; chạy thử bằng tay dùng `BRAIN_PORT=8766` + backend dev (cổng bị chiếm thì server báo rõ và thoát mã 1). Không bao giờ chạy test ghi (`test:brain-logs`, e2e) với production.
+- `amber-brain/data/brain.db` dùng chung dev + prod: mỗi dòng `agent_logs` có `server_host`; outbox và sync chỉ xét host đang nối, `unknown` không bao giờ được đẩy — đừng bỏ bộ lọc này.
+- Trước MỌI lần push: `git log --oneline origin/main..main` (hôm nay đã có 8 commit Trà Đình + migration 0008 nằm chờ). amber-v4: migrate production TRƯỚC, push SAU (push tự deploy).
+  Flutter: push KHÔNG deploy, dùng `tool/deploy_web.sh` từ cây sạch.
+- Máy này không có thông tin đăng nhập GitHub và không có `neonctl`: người dùng tự `git push` và tạo/xoá nhánh Neon; `vercel` CLI đã đăng nhập.
+- `python` không có trong PATH: dùng `amber-brain/.venv/bin/python`. Không bao giờ in giá trị `.env`/`secrets.env`/token.
+
 ## Lệnh
 
 ```bash
