@@ -35,9 +35,9 @@ Dev local: chạy amber-v4 trước (`npm run dev` :3000).
 
 - Project Vercel `amber-flutter` (alias `amber.duangmai.io.vn`) **không nối Git**: `git push` KHÔNG deploy. Deploy bằng
   `API_BASE_URL=https://api.duangmai.io.vn tool/deploy_web.sh` từ `main` sạch, SAU khi backend amber-v4 đã deploy.
-- **Đang chạy** (22/10/2026): `dpl_BJRCxCkkH2tYGjkjc5pfE6kqY27P` (build từ `9d93d24`: Trà Đình học tập + tin nhắn/ô nhập của chat Amber bằng tiếng Anh;
-  backend amber-v4 đã có migration 0008/0009 trước đó). **Mốc rollback**: `dpl_GcdByVm5Qm17oTRWRKsyimNHwXwZ` (build từ `95162a5`, bản 13/10 có ghi buổi tập;
-  trước nữa `dpl_7udy1WmxgqjXqrE4YpTAMrMqEK7s`). Rollback: `vercel rollback dpl_GcdByVm5Qm17oTRWRKsyimNHwXwZ` (hoặc promote từ dashboard).
+- **Đang chạy** (22/10/2026): `dpl_HRmzMgqVB3Y3uwoF3CVHqJTuoa6j` (build từ `a2c3b8e`: nút quay lại chung `AppBarBack` cho mọi màn có AppBar + cột "hôm nay" 0 phút của biểu đồ tuần).
+  **Mốc rollback**: `dpl_BJRCxCkkH2tYGjkjc5pfE6kqY27P` (build từ `9d93d24`: Trà Đình học tập + chat Amber tiếng Anh); trước nữa `dpl_GcdByVm5Qm17oTRWRKsyimNHwXwZ`
+  (`95162a5`, bản 13/10) và `dpl_7udy1WmxgqjXqrE4YpTAMrMqEK7s`. Rollback: `vercel rollback dpl_BJRCxCkkH2tYGjkjc5pfE6kqY27P` (hoặc promote từ dashboard).
 - Brain: `tool/deploy_web.sh` chỉ truyền `API_BASE_URL`, nên `BRAIN_BASE_URL` giữ mặc định `http://127.0.0.1:8765` (cổng dịch vụ; 8766 chỉ là cổng chạy thử
   trên máy dev, không đưa vào bản build). Kiểm: bundle chỉ có đúng một URL brain là `127.0.0.1:8765`.
 - Kiểm sau deploy (không đăng nhập, không ghi): `https://amber.duangmai.io.vn` trả 200; `main.dart.js` chứa
@@ -91,6 +91,11 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   `/login`; lỗi mạng thì giữ token.
 
 ## Quy ước
+
+- **Mọi `Scaffold` có AppBar phải đặt `leading: const AppBarBack(...)`** (`shared/widgets/app_bar_back.dart`; `fallback` = trang cha, mặc định `/`). Flutter chỉ tự thêm mũi tên
+  khi Navigator còn trang để pop, mà `context.go` (đổi tab của Trà Đình, xoá query) thay cả stack → màn mất đường về Âm Dương Giới (lỗi trên iPhone 22/10/2026).
+  `test/shared/widgets/app_bar_back_test.dart` quét `lib/features` và fail nếu có `appBar: AppBar(` không dùng nó. URL của app là dạng hash (`/#/tra-dinh`), đường dẫn
+  thường như `/tra-dinh` luôn 404 trên Vercel — không phải lỗi.
 
 - **Form nhập liệu mở bằng `showFinanceSheet` + `FinanceSheetBody`**
   (`shared/widgets/form_bits.dart`), không dùng `showModalBottomSheet` hay
