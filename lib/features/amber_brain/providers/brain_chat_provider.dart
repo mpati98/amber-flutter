@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/utils/api_error.dart';
@@ -74,7 +74,18 @@ class BrainChatState {
 
 const _keep = Object();
 
-String kindLabel(bool income) => income ? 'thu nhập' : 'chi tiêu';
+/// Chat result lines are English, like the brain's own replies; the cards keep their Vietnamese labels.
+String recordedMessage({required bool income, required num amount, required String account, num? balance}) {
+  final what = income ? 'income of' : 'an expense of';
+  return 'Recorded $what ${formatVndEn(amount)} to $account.${_balanceSuffix(balance)}';
+}
+
+String deletedMessage({required bool income, required num amount, required String account, num? balance}) {
+  final what = income ? 'income' : 'expense';
+  return 'Deleted the $what of ${formatVndEn(amount)} ($account).${_balanceSuffix(balance)}';
+}
+
+String _balanceSuffix(num? balance) => balance == null ? '' : ' New balance: ${formatVndEn(balance)}.';
 
 String dateLabelVi(String date, String? label) {
   final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(date);
@@ -91,21 +102,22 @@ String describeBrainError(Object e, {bool web = kIsWeb}) {
   if (e is DioException) {
     final status = e.response?.statusCode;
     final code = apiErrorCode(e);
-    if (status == 404 && code == 'conversation_not_found') return 'Phiên đã hết, hãy gõ lại.';
-    if (status == 409 && code == 'busy') return 'Amber đang xử lý tin nhắn trước, thử lại sau giây lát.';
-    if (status == 409) return 'Không còn gì để xác nhận.';
-    if (status == 401) return 'Phiên đăng nhập đã hết hạn, hãy đăng nhập lại.';
-    if (status == 502) return 'Amber không nối được máy chủ dữ liệu.';
-    if (status != null) return apiErrorMessage(e, 'Amber báo lỗi ($status).');
+    if (status == 404 && code == 'conversation_not_found') return 'The session expired. Please type it again.';
+    if (status == 409 && code == 'busy') return 'Amber is still handling your previous message. Try again in a moment.';
+    if (status == 409) return 'Nothing is waiting for confirmation.';
+    if (status == 401) return 'Your login session has expired. Please sign in again.';
+    if (status == 502) return 'Amber cannot reach the data server.';
+    if (status != null) return apiErrorMessage(e, 'Amber reported an error ($status).');
     if (e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.connectionTimeout) {
-      return 'Amber trả lời quá lâu (hơn 60 giây). Thử lại sau.';
+      return 'Amber took too long to answer (over 60 seconds). Try again later.';
     }
     return web
-        ? 'Không nối được Amber. Nếu brain đang chạy, trình duyệt có thể đang chặn truy cập mạng nội bộ: '
-              'hãy cho phép trang này truy cập thiết bị trong mạng nội bộ (biểu tượng ổ khóa cạnh địa chỉ → Cài đặt trang web).'
-        : 'Không nối được Amber.';
+        ? "Can't reach Amber. If the brain is running, the browser may be blocking local-network access: "
+              'allow this page to access devices on your local network (lock icon next to the address → Site settings).'
+        : "Can't reach Amber.";
   }
-  return 'Có lỗi xảy ra: $e';
+  debugPrint('Amber brain chat error: $e'); // the cause goes to the log, never to the chat
+  return 'Something went wrong. Please try again.';
 }
 
 class BrainChatNotifier extends Notifier<BrainChatState> {
@@ -184,12 +196,11 @@ class BrainChatNotifier extends Notifier<BrainChatState> {
     final r = await _call(() => _api.confirm(id));
     if (r == null) return;
     _setCard(cardIndex, CardStatus.confirmed);
-    final balance = r.balance == null ? '' : ' Số dư mới: ${formatVnd(r.balance!)}.';
     if (card is DraftEntry) {
       final d = card.draft;
       _add(
         ResultEntry(
-          text: 'Đã ghi ${kindLabel(d.isIncome)} ${formatVnd(d.amount)} vào ví ${d.accountName}.$balance',
+          text: recordedMessage(income: d.isIncome, amount: d.amount, account: d.accountName, balance: r.balance),
           recorded: true,
         ),
       );
@@ -197,7 +208,7 @@ class BrainChatNotifier extends Notifier<BrainChatState> {
       final t = card.target;
       _add(
         ResultEntry(
-          text: 'Đã xóa giao dịch ${kindLabel(t.isIncome)} ${formatVnd(t.amount)} (ví ${t.accountName}).$balance',
+          text: deletedMessage(income: t.isIncome, amount: t.amount, account: t.accountName, balance: r.balance),
           recorded: false,
         ),
       );
@@ -213,7 +224,7 @@ class BrainChatNotifier extends Notifier<BrainChatState> {
     final r = await _call(() => _api.cancel(id));
     if (r == null) return;
     _setCard(cardIndex, CardStatus.cancelled);
-    _add(const TextEntry('Đã hủy, chưa có gì bị thay đổi.', isUser: false));
+    _add(const TextEntry('Cancelled. Nothing was changed.', isUser: false));
   }
 
   /// Hoàn tác giao dịch gần nhất do Amber ghi: brain đề nghị, người dùng xác nhận rồi mới xóa.
@@ -225,7 +236,7 @@ class BrainChatNotifier extends Notifier<BrainChatState> {
     if (r.state == BrainState.awaitingUndo && r.undoTarget != null) {
       _add(UndoEntry(r.undoTarget!));
     } else {
-      _add(const TextEntry('Không có giao dịch nào do Amber ghi để hoàn tác.', isUser: false));
+      _add(const TextEntry('There is no transaction recorded by Amber to undo.', isUser: false));
     }
   }
 

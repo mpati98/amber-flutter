@@ -82,23 +82,23 @@ class _AmberBrainScreenState extends ConsumerState<AmberBrainScreen> {
             children: [
               if (conn.offline)
                 _Banner(
-                  text: 'Amber đang ngoại tuyến',
+                  text: 'Amber is offline',
                   detail: kIsWeb
-                      ? 'Nếu brain đang chạy, trình duyệt có thể đang chặn truy cập mạng nội bộ — hãy cho phép trang này truy cập thiết bị trong mạng nội bộ.'
+                      ? 'If the brain is running, the browser may be blocking local-network access — allow this page to access devices on your local network.'
                       : null,
                   color: AppColors.shuiro500,
                   onRetry: () => ref.read(brainStatusProvider.notifier).refresh(),
                 ),
               if (conn.mismatch)
                 _Banner(
-                  text: 'Lệch môi trường: Amber đang nối ${conn.status!.serverHost}, còn app nối ${conn.apiHost}.',
-                  detail: 'Đã khóa nhập để không ghi nhầm dữ liệu.',
+                  text: 'Environment mismatch: Amber is connected to ${conn.status!.serverHost}, but the app is connected to ${conn.apiHost}.',
+                  detail: 'Input is locked so nothing is written to the wrong data.',
                   color: AppColors.kincha400,
                 ),
               Expanded(
                 child: items.isEmpty
                     ? Center(
-                        child: Text('Hỏi số dư, hoặc ghi giao dịch: "chi 45k ăn trưa bằng Momo"', style: muted(12)),
+                        child: Text('Ask for a balance, or record a transaction: "spent 45k on lunch with Momo"', style: muted(12)),
                       )
                     : ListView.separated(
                         reverse: true,
@@ -174,7 +174,7 @@ class _Banner extends StatelessWidget {
               ],
             ),
           ),
-          if (onRetry != null) TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+          if (onRetry != null) TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );
@@ -226,7 +226,7 @@ class _TypingBubble extends StatelessWidget {
           spacing: 8,
           children: [
             const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
-            Text('Amber đang trả lời...', style: muted(12)),
+            Text('Amber is replying...', style: muted(12)),
           ],
         ),
       ),
@@ -275,7 +275,7 @@ class _InputBar extends StatelessWidget {
                     onSubmitted: (_) => onSend(),
                     style: const TextStyle(fontSize: 13),
                     decoration: InputDecoration(
-                      hintText: offline ? 'Amber chưa sẵn sàng' : 'Nhập tin nhắn...',
+                      hintText: offline ? "Amber isn't ready" : 'Type a message...',
                       isDense: true,
                     ),
                   ),
@@ -285,7 +285,7 @@ class _InputBar extends StatelessWidget {
                 listenable: controller,
                 builder: (_, _) => FilledButton(
                   onPressed: enabled && controller.text.trim().isNotEmpty ? onSend : null,
-                  child: Text(busy ? '...' : 'Gửi'),
+                  child: Text(busy ? '...' : 'Send'),
                 ),
               ),
             ],

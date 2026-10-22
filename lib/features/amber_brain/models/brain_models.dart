@@ -112,8 +112,8 @@ class BrainReply {
     this.balance,
   });
 
-  /// Câu trả lời tiếng Anh của brain — chỉ dùng cho tin nhắn thường; thẻ xác nhận
-  /// và kết quả ghi/xóa được app tự viết bằng tiếng Việt từ dữ liệu có cấu trúc.
+  /// Câu trả lời tiếng Anh của brain — chỉ dùng cho tin nhắn thường; thẻ xác nhận (nhãn tiếng Việt)
+  /// và dòng kết quả ghi/xóa (tiếng Anh) được app tự viết từ dữ liệu có cấu trúc.
   final String reply;
   final String conversationId;
   final BrainState state;
