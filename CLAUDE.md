@@ -6,7 +6,7 @@ Safari iPhone), ngoài ra build được Android/iOS/desktop.
 
 Comment trong code viết tiếng Việt — giữ nguyên thói quen đó.
 
-## Bàn giao cuối ngày 22/10/2026 (đọc trước)
+## Bàn giao cuối ngày 22/10/2026 (ghi nhận lịch sử; trạng thái hybrid mới ở dưới)
 
 Ba repo cùng `~/Documents/My Workspace/`: `amber_flutter` (repo này), `amber-v4` (backend), `amber-brain` (Python, chạy bằng systemd).
 
@@ -99,6 +99,12 @@ test/                         cấu trúc song song lib/ (features/, shared/)
 ```
 
 Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau`, `tra_dinh`, `amber` (chat với amber-brain); feature `du_lieu_huan_luyen` (mục con của Tàng Kinh Các, không dùng chung model/API với sách và tài liệu).
+
+### amber-brain hybrid: trạng thái hiện tại
+
+- Màn chat và đầu màn dữ liệu huấn luyện có banner log-push dùng chung (commit `9e4b8a9`). Chỉ cảnh báo khi brain online và `lastError != null` hoặc `pending >= 5`; brain cũ không có `logPush` thì không cảnh báo. Mã lỗi được đổi sang câu thân thiện, chat dùng tiếng Anh và màn dữ liệu dùng tiếng Việt.
+- Dữ liệu huấn luyện (`/tang-kinh-cac/du-lieu-huan-luyen`): lọc Tất cả/LOCAL/CLOUD; mỗi dòng hiển thị tuyến và model khi CLOUD, có dấu đã sửa; form cấu trúc cho 9 action PATCH `correctedOutput`, có thể xoá bản sửa (commit `7f17feb`). Backend là nơi duy nhất quyết định eligibility.
+- Nợ kiểm thử: chưa có contract test với backend cho PATCH `correctedOutput` và lọc `route`.
 
 ### Route (`app_router.dart`)
 
