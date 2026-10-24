@@ -8,6 +8,7 @@ import '../../features/du_lieu_huan_luyen/screens/training_log_detail_screen.dar
 import '../../features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
+import '../../features/kieu_lau/screens/music_player_spike_screen.dart';
 import '../../features/nghi_su_duong/screens/course_detail_screen.dart';
 import '../../features/nghi_su_duong/screens/du_an_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
@@ -102,7 +103,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: _login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/', builder: (_, _) => const DuDoScreen()),
       GoRoute(path: '/amber', builder: (_, _) => const AmberBrainScreen()),
-      GoRoute(path: '/kieu-lau', builder: (_, _) => const KieuLauScreen()),
+      GoRoute(
+        path: '/kieu-lau',
+        builder: (_, _) => const KieuLauScreen(),
+        routes: [GoRoute(path: 'nhac-thu-nghiem', builder: (_, _) => const MusicPlayerSpikeScreen())],
+      ),
       GoRoute(
         path: '/tang-kinh-cac',
         builder: (_, _) => const TangKinhCacScreen(),

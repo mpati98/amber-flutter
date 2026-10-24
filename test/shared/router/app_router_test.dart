@@ -158,6 +158,12 @@ void main() {
       expect(match.last.route, isA<GoRoute>().having((r) => r.path, 'path', 'placement-test'));
     });
 
+    testWidgets('trình phát MP3 thử nghiệm là route con của Kiều Lâu', (tester) async {
+      final c = await pumpApp(tester, token: 'saved-access');
+      final match = c.read(routerProvider).configuration.findMatch(Uri.parse('/kieu-lau/nhac-thu-nghiem'));
+      expect(match.last.route, isA<GoRoute>().having((r) => r.path, 'path', 'nhac-thu-nghiem'));
+    });
+
     testWidgets('các route Học tập của Trà Đình đứng trước :sessionId', (tester) async {
       final c = await pumpApp(tester, token: 'saved-access');
       String? routePath(String location) {

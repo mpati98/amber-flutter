@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -62,8 +63,32 @@ class KieuLauScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 20,
-          children: [_AlertsCard(), _ActivityCard(), _NewsCard()],
+          children: [
+            if (kDebugMode) _MusicPlayerSpikeCard(),
+            _AlertsCard(),
+            _ActivityCard(),
+            _NewsCard(),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _MusicPlayerSpikeCard extends StatelessWidget {
+  const _MusicPlayerSpikeCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return ScrollCard(
+      glow: ScrollCardGlow.yugen,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.music_note),
+        title: const Text('Trình phát MP3 (thử nghiệm)'),
+        subtitle: const Text('Kiểm tra phát, tua và chạy nền trên iPhone'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/kieu-lau/nhac-thu-nghiem'),
       ),
     );
   }
