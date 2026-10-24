@@ -13,16 +13,32 @@ enum LogOutcome {
   final String label;
 
   /// Giá trị lạ từ server (thêm outcome mới sau này) về [unknown] thay vì làm vỡ màn hình.
-  static LogOutcome parse(Object? v) => LogOutcome.values.firstWhere((o) => o.name == v, orElse: () => LogOutcome.unknown);
+  static LogOutcome parse(Object? v) => LogOutcome.values.firstWhere(
+    (o) => o.name == v,
+    orElse: () => LogOutcome.unknown,
+  );
+}
+
+enum TrainingRoute {
+  local,
+  cloud;
+
+  String get apiValue => name.toUpperCase();
+
+  static TrainingRoute? parse(Object? value) => switch (value) {
+    'LOCAL' => local,
+    'CLOUD' => cloud,
+    _ => null,
+  };
 }
 
 /// Tên agent hiển thị; agent lạ giữ nguyên tên gốc.
 String agentLabel(String agent) => switch (agent) {
-      'expense' => 'Thu chi',
-      'web_search' => 'Tìm web',
-      'chat' => 'Trò chuyện',
-      _ => agent,
-    };
+  'expense' => 'Thu chi',
+  'web_search' => 'Tìm web',
+  'chat' => 'Trò chuyện',
+  _ => agent,
+};
 
 class TrainingLogSummary {
   const TrainingLogSummary({
@@ -37,6 +53,11 @@ class TrainingLogSummary {
     required this.parseOk,
     required this.hasCorrection,
     required this.excludeFromTraining,
+    required this.route,
+    required this.cloudModel,
+    required this.parsedOutput,
+    required this.correctedOutput,
+    required this.correctedAt,
   });
 
   final String id;
@@ -52,8 +73,14 @@ class TrainingLogSummary {
   final bool? parseOk;
   final bool hasCorrection;
   final bool excludeFromTraining;
+  final TrainingRoute? route;
+  final String? cloudModel;
+  final Object? parsedOutput;
+  final Object? correctedOutput;
+  final DateTime? correctedAt;
 
-  factory TrainingLogSummary.fromJson(Map<String, dynamic> j) => TrainingLogSummary(
+  factory TrainingLogSummary.fromJson(Map<String, dynamic> j) =>
+      TrainingLogSummary(
         id: j['id'] as String,
         createdAt: DateTime.parse(j['createdAt'] as String),
         agent: j['agent'] as String? ?? '',
@@ -65,6 +92,15 @@ class TrainingLogSummary {
         parseOk: j['parseOk'] as bool?,
         hasCorrection: j['hasCorrection'] as bool? ?? false,
         excludeFromTraining: j['excludeFromTraining'] as bool? ?? false,
+        route: TrainingRoute.parse(j['route']),
+        cloudModel: j['cloudModel'] is String
+            ? j['cloudModel'] as String
+            : null,
+        parsedOutput: j['parsedOutput'],
+        correctedOutput: j['correctedOutput'],
+        correctedAt: j['correctedAt'] is String
+            ? DateTime.tryParse(j['correctedAt'] as String)
+            : null,
       );
 }
 
@@ -75,9 +111,12 @@ class TrainingLogPage {
   final String? nextCursor;
 
   factory TrainingLogPage.fromJson(Map<String, dynamic> j) => TrainingLogPage(
-        items: [for (final i in j['items'] as List<dynamic>) TrainingLogSummary.fromJson(i as Map<String, dynamic>)],
-        nextCursor: j['nextCursor'] as String?,
-      );
+    items: [
+      for (final i in j['items'] as List<dynamic>)
+        TrainingLogSummary.fromJson(i as Map<String, dynamic>),
+    ],
+    nextCursor: j['nextCursor'] as String?,
+  );
 }
 
 class TrainingLogDetail {
@@ -120,16 +159,19 @@ class TrainingLogDetail {
   final DateTime? correctedAt;
 
   Object? get parsedOutput => json['parsedOutput'];
-  Object? get correctedOutput => json['correctedOutput'];
+  Object? get correctedOutput => summary.correctedOutput;
   Object? get messages => json['messages'];
   Object? get tools => json['tools'];
   String? get rawOutput => json['rawOutput'] as String?;
 
   factory TrainingLogDetail.fromJson(Map<String, dynamic> j) {
-    final c = j['correctedAt'] as String?;
+    final summary = TrainingLogSummary.fromJson({
+      ...j,
+      'hasCorrection': j['correctedOutput'] != null,
+    });
     return TrainingLogDetail(
       // Dòng chi tiết không có hasCorrection: suy ra từ correctedOutput.
-      summary: TrainingLogSummary.fromJson({...j, 'hasCorrection': j['correctedOutput'] != null}),
+      summary: summary,
       json: j,
       sessionId: j['sessionId'] as String?,
       turnIndex: j['turnIndex'] as int?,
@@ -143,13 +185,18 @@ class TrainingLogDetail {
       completionTokens: j['completionTokens'] as int?,
       entityType: j['entityType'] as String?,
       entityId: j['entityId'] as String?,
-      correctedAt: c == null ? null : DateTime.parse(c),
+      correctedAt: summary.correctedAt,
     );
   }
 }
 
 class AgentStat {
-  const AgentStat({required this.agent, required this.total, required this.eligible, required this.outcomes});
+  const AgentStat({
+    required this.agent,
+    required this.total,
+    required this.eligible,
+    required this.outcomes,
+  });
 
   final String agent;
   final int total;
@@ -159,23 +206,33 @@ class AgentStat {
   final Map<String, int> outcomes;
 
   factory AgentStat.fromJson(Map<String, dynamic> j) => AgentStat(
-        agent: j['agent'] as String,
-        total: (j['total'] as num).toInt(),
-        eligible: (j['eligible'] as num).toInt(),
-        outcomes: {for (final e in (j['outcomes'] as Map<String, dynamic>).entries) e.key: (e.value as num).toInt()},
-      );
+    agent: j['agent'] as String,
+    total: (j['total'] as num).toInt(),
+    eligible: (j['eligible'] as num).toInt(),
+    outcomes: {
+      for (final e in (j['outcomes'] as Map<String, dynamic>).entries)
+        e.key: (e.value as num).toInt(),
+    },
+  );
 }
 
 class TrainingStats {
-  const TrainingStats({required this.total, required this.eligible, required this.byAgent});
+  const TrainingStats({
+    required this.total,
+    required this.eligible,
+    required this.byAgent,
+  });
 
   final int total;
   final int eligible;
   final List<AgentStat> byAgent;
 
   factory TrainingStats.fromJson(Map<String, dynamic> j) => TrainingStats(
-        total: (j['total'] as num).toInt(),
-        eligible: (j['eligible'] as num).toInt(),
-        byAgent: [for (final a in j['byAgent'] as List<dynamic>) AgentStat.fromJson(a as Map<String, dynamic>)],
-      );
+    total: (j['total'] as num).toInt(),
+    eligible: (j['eligible'] as num).toInt(),
+    byAgent: [
+      for (final a in j['byAgent'] as List<dynamic>)
+        AgentStat.fromJson(a as Map<String, dynamic>),
+    ],
+  );
 }

@@ -8,25 +8,42 @@ final trainingStatsProvider = FutureProvider.autoDispose<TrainingStats>(
   (ref) => ref.watch(trainingLogApiProvider).stats(),
 );
 
-final trainingLogDetailProvider = FutureProvider.autoDispose.family<TrainingLogDetail, String>(
-  (ref, id) => ref.watch(trainingLogApiProvider).detail(id),
-);
+final trainingLogDetailProvider = FutureProvider.autoDispose
+    .family<TrainingLogDetail, String>(
+      (ref, id) => ref.watch(trainingLogApiProvider).detail(id),
+    );
 
-typedef LogFilter = ({String? agent, LogOutcome? outcome});
+typedef LogFilter = ({
+  String? agent,
+  LogOutcome? outcome,
+  TrainingRoute? route,
+});
 
 class LogFilterNotifier extends Notifier<LogFilter> {
   @override
-  LogFilter build() => (agent: null, outcome: null);
+  LogFilter build() => (agent: null, outcome: null, route: null);
 
-  void setAgent(String? agent) => state = (agent: agent, outcome: state.outcome);
-  void setOutcome(LogOutcome? outcome) => state = (agent: state.agent, outcome: outcome);
+  void setAgent(String? agent) =>
+      state = (agent: agent, outcome: state.outcome, route: state.route);
+  void setOutcome(LogOutcome? outcome) =>
+      state = (agent: state.agent, outcome: outcome, route: state.route);
+  void setRoute(TrainingRoute? route) =>
+      state = (agent: state.agent, outcome: state.outcome, route: route);
 }
 
-final logFilterProvider = NotifierProvider.autoDispose<LogFilterNotifier, LogFilter>(LogFilterNotifier.new);
+final logFilterProvider =
+    NotifierProvider.autoDispose<LogFilterNotifier, LogFilter>(
+      LogFilterNotifier.new,
+    );
 
 /// Danh sách đã tải + con trỏ trang kế. `loadingMore`/`loadMoreError` tách riêng để lỗi "tải thêm" không xóa danh sách đang xem.
 class LogListState {
-  const LogListState({this.items = const [], this.nextCursor, this.loadingMore = false, this.loadMoreError = false});
+  const LogListState({
+    this.items = const [],
+    this.nextCursor,
+    this.loadingMore = false,
+    this.loadMoreError = false,
+  });
 
   final List<TrainingLogSummary> items;
   final String? nextCursor;
@@ -41,26 +58,55 @@ class LogListNotifier extends AsyncNotifier<LogListState> {
   @override
   Future<LogListState> build() async {
     final f = ref.watch(logFilterProvider);
-    final page = await ref.watch(trainingLogApiProvider).list(agent: f.agent, outcome: f.outcome);
+    final page = await ref
+        .watch(trainingLogApiProvider)
+        .list(agent: f.agent, outcome: f.outcome, route: f.route);
     return LogListState(items: page.items, nextCursor: page.nextCursor);
   }
 
   Future<void> loadMore() async {
     final cur = state.value;
     if (cur == null || !cur.hasMore || cur.loadingMore) return;
-    state = AsyncData(LogListState(items: cur.items, nextCursor: cur.nextCursor, loadingMore: true));
+    state = AsyncData(
+      LogListState(
+        items: cur.items,
+        nextCursor: cur.nextCursor,
+        loadingMore: true,
+      ),
+    );
     final f = ref.read(logFilterProvider);
     try {
-      final page = await ref.read(trainingLogApiProvider).list(agent: f.agent, outcome: f.outcome, cursor: cur.nextCursor);
+      final page = await ref
+          .read(trainingLogApiProvider)
+          .list(
+            agent: f.agent,
+            outcome: f.outcome,
+            route: f.route,
+            cursor: cur.nextCursor,
+          );
       final seen = {for (final i in cur.items) i.id};
-      state = AsyncData(LogListState(
-        items: [...cur.items, ...page.items.where((i) => !seen.contains(i.id))],
-        nextCursor: page.nextCursor,
-      ));
+      state = AsyncData(
+        LogListState(
+          items: [
+            ...cur.items,
+            ...page.items.where((i) => !seen.contains(i.id)),
+          ],
+          nextCursor: page.nextCursor,
+        ),
+      );
     } catch (_) {
-      state = AsyncData(LogListState(items: cur.items, nextCursor: cur.nextCursor, loadMoreError: true));
+      state = AsyncData(
+        LogListState(
+          items: cur.items,
+          nextCursor: cur.nextCursor,
+          loadMoreError: true,
+        ),
+      );
     }
   }
 }
 
-final logListProvider = AsyncNotifierProvider.autoDispose<LogListNotifier, LogListState>(LogListNotifier.new);
+final logListProvider =
+    AsyncNotifierProvider.autoDispose<LogListNotifier, LogListState>(
+      LogListNotifier.new,
+    );
