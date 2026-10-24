@@ -2,6 +2,8 @@ import 'package:amber_flutter/features/du_lieu_huan_luyen/models/training_log.da
 import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
+import 'package:amber_flutter/features/amber_brain/models/brain_models.dart';
+import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'models_test.dart' show summaryJson;
+import '../amber_brain/fake_brain.dart' show FixedBrainStatus;
 
 class FakeApi extends TrainingLogApi {
   FakeApi() : super(Dio());
@@ -81,7 +84,7 @@ class FakeApi extends TrainingLogApi {
 const base = '/tang-kinh-cac/du-lieu-huan-luyen';
 
 /// Cùng cấu trúc route như app_router.dart; [at] là phần sau [base] ('' = danh sách, '/l1' = chi tiết).
-Future<void> pumpScreens(WidgetTester tester, FakeApi api, {String at = ''}) async {
+Future<void> pumpScreens(WidgetTester tester, FakeApi api, {String at = '', BrainConnection? connection}) async {
   tester.view.physicalSize = const Size(800, 2400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -91,7 +94,10 @@ Future<void> pumpScreens(WidgetTester tester, FakeApi api, {String at = ''}) asy
     ]),
   ]);
   await tester.pumpWidget(ProviderScope(
-    overrides: [trainingLogApiProvider.overrideWithValue(api)],
+    overrides: [
+      trainingLogApiProvider.overrideWithValue(api),
+      if (connection != null) brainStatusProvider.overrideWith(() => FixedBrainStatus(connection)),
+    ],
     child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),
   ));
   await tester.pumpAndSettle();
@@ -101,6 +107,48 @@ Finder inRow(String id, String text) => find.descendant(of: find.byKey(ValueKey(
 
 void main() {
   group('màn danh sách', () {
+    testWidgets('log-push auth warning is shown in Vietnamese', (tester) async {
+      await pumpScreens(
+        tester,
+        FakeApi(),
+        connection: BrainConnection(
+          link: BrainLink.online,
+          status: BrainStatus(
+            serverEnv: 'DEV',
+            serverHost: 'localhost:3000',
+            ollama: 'up',
+            model: 'amber-gemma4',
+            logPush: LogPushStatus.fromJson({'pending': 1, 'lastError': 'auth'}),
+          ),
+        ),
+      );
+      expect(find.byKey(const ValueKey('log-push-banner')), findsOneWidget);
+      expect(find.text('Vui lòng đăng nhập lại để đồng bộ nhật ký.'), findsOneWidget);
+      expect(find.text('auth'), findsNothing);
+    });
+
+    testWidgets('pending-only warning uses Vietnamese count; old status stays quiet', (tester) async {
+      await pumpScreens(
+        tester,
+        FakeApi(),
+        connection: BrainConnection(
+          link: BrainLink.online,
+          status: BrainStatus(
+            serverEnv: 'DEV',
+            serverHost: 'localhost:3000',
+            ollama: 'up',
+            model: 'amber-gemma4',
+            logPush: LogPushStatus.fromJson({'pending': 5}),
+          ),
+        ),
+      );
+      expect(find.text('Còn 5 dòng nhật ký đang chờ gửi.'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await pumpScreens(tester, FakeApi());
+      expect(find.byKey(const ValueKey('log-push-banner')), findsNothing);
+    });
+
     testWidgets('thống kê trên đầu + từng dòng: giờ VN, câu gõ, outcome, tool OK/lỗi', (tester) async {
       await pumpScreens(tester, FakeApi());
       expect(find.text('3 mẫu đủ điều kiện train · 5 dòng nhật ký'), findsOneWidget);

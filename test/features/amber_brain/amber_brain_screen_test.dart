@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:amber_flutter/features/amber_brain/models/brain_models.dart';
 import 'package:amber_flutter/features/amber_brain/providers/brain_chat_provider.dart';
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:amber_flutter/features/amber_brain/screens/amber_brain_screen.dart';
@@ -13,11 +14,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'fake_brain.dart';
 
-Future<void> _pump(WidgetTester tester, FakeBrain brain, {Dio? dio}) async {
+Future<void> _pump(WidgetTester tester, FakeBrain brain, {Dio? dio, BrainConnection? connection}) async {
   final d = dio ?? (Dio(BaseOptions(baseUrl: 'http://brain.test'))..httpClientAdapter = brain);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [brainDioProvider.overrideWithValue(d)],
+      overrides: [
+        brainDioProvider.overrideWithValue(d),
+        if (connection != null) brainStatusProvider.overrideWith(() => FixedBrainStatus(connection)),
+      ],
       child: MaterialApp(theme: ThemeData.dark(), home: const AmberBrainScreen()),
     ),
   );
@@ -65,6 +69,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Amber is offline'), findsNothing);
     expect(_inputEnabled(tester), isTrue);
+    await _unmount(tester);
+  });
+
+  testWidgets('log-push error shows a friendly English banner without the raw code', (tester) async {
+    final brain = FakeBrain()
+      ..script['/v1/status'] = [(200, statusJson(logPush: {'pending': 1, 'lastError': 'network'}))];
+    await _pump(tester, brain);
+    expect(find.text('Log sync failed. It will be retried.'), findsOneWidget);
+    expect(find.text('network'), findsNothing);
+    await _unmount(tester);
+  });
+
+  testWidgets('auth error and pending threshold use friendly English messages', (tester) async {
+    final brain = FakeBrain()
+      ..script['/v1/status'] = [(200, statusJson(logPush: {'pending': 0, 'lastError': 'auth'}))];
+    await _pump(tester, brain);
+    expect(find.text('Please sign in again to sync logs.'), findsOneWidget);
+    await _unmount(tester);
+
+    final pendingBrain = FakeBrain()
+      ..script['/v1/status'] = [(200, statusJson(logPush: {'pending': 5}))];
+    await _pump(tester, pendingBrain);
+    expect(find.text('5 log entries are waiting to sync.'), findsOneWidget);
+    await _unmount(tester);
+  });
+
+  testWidgets('four pending rows do not show a log-push banner', (tester) async {
+    final brain = FakeBrain()
+      ..script['/v1/status'] = [(200, statusJson(logPush: {'pending': 4}))];
+    await _pump(tester, brain);
+    expect(find.byKey(const Key('log-push-banner')), findsNothing);
+    await _unmount(tester);
+  });
+
+  testWidgets('offline state does not show a log-push banner even when status has pending rows', (tester) async {
+    final status = BrainStatus(
+      serverEnv: 'DEV',
+      serverHost: 'localhost:3000',
+      ollama: 'down',
+      model: 'amber-gemma4',
+      logPush: LogPushStatus.fromJson({'pending': 5}),
+    );
+    await _pump(tester, _brain(), connection: BrainConnection(link: BrainLink.offline, status: status));
+    expect(find.text('Amber is offline'), findsOneWidget);
+    expect(find.byKey(const Key('log-push-banner')), findsNothing);
     await _unmount(tester);
   });
 

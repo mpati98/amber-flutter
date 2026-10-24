@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../features/amber_brain/providers/brain_status_provider.dart';
+import '../../../features/amber_brain/widgets/log_push_banner.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/vn_time.dart';
 import '../../../shared/widgets/scroll_card.dart';
@@ -25,6 +27,7 @@ class TrainingLogsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final list = ref.watch(logListProvider);
+    final connection = ref.watch(brainStatusProvider);
     Future<void> refresh() async {
       ref.invalidate(trainingStatsProvider);
       ref.invalidate(logListProvider);
@@ -42,6 +45,8 @@ class TrainingLogsScreen extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
+                if (connection.shouldWarnLogPush)
+                  LogPushBanner(status: connection.status?.logPush, vietnamese: true),
                 const _StatsHeader(),
                 const SizedBox(height: 16),
                 const _Filters(),

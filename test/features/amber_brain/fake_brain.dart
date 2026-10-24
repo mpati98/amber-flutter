@@ -62,11 +62,16 @@ class FakeBrain implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-Map<String, Object?> statusJson({String env = 'DEV', String host = 'localhost:3000'}) => {
+Map<String, Object?> statusJson({
+  String env = 'DEV',
+  String host = 'localhost:3000',
+  Map<String, Object?>? logPush,
+}) => {
   'serverEnv': env,
   'serverHost': host,
   'ollama': 'up',
   'model': 'qwen3:4b-instruct',
+  ...?logPush == null ? null : {'logPush': logPush},
 };
 
 Map<String, Object?> replyJson({

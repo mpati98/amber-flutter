@@ -2,7 +2,7 @@
 
 // GET /v1/status.
 class BrainStatus {
-  const BrainStatus({required this.serverEnv, required this.serverHost, required this.ollama, required this.model});
+  const BrainStatus({required this.serverEnv, required this.serverHost, required this.ollama, required this.model, this.logPush});
 
   /// "DEV" hoặc "PROD" — môi trường của backend mà brain đang nối.
   final String serverEnv;
@@ -11,15 +11,45 @@ class BrainStatus {
   final String serverHost;
   final String ollama;
   final String model;
+  final LogPushStatus? logPush;
 
   bool get isProd => serverEnv == 'PROD';
 
-  factory BrainStatus.fromJson(Map<String, dynamic> json) => BrainStatus(
-    serverEnv: json['serverEnv'] as String,
-    serverHost: json['serverHost'] as String,
-    ollama: json['ollama'] as String? ?? 'down',
-    model: json['model'] as String? ?? '',
-  );
+  factory BrainStatus.fromJson(Map<String, dynamic> json) {
+    final rawLogPush = json['logPush'];
+    return BrainStatus(
+      serverEnv: json['serverEnv'] as String,
+      serverHost: json['serverHost'] as String,
+      ollama: json['ollama'] as String? ?? 'down',
+      model: json['model'] as String? ?? '',
+      logPush: rawLogPush is Map<String, dynamic> ? LogPushStatus.fromJson(rawLogPush) : null,
+    );
+  }
+}
+
+/// Log delivery state reported by newer amber-brain versions.
+class LogPushStatus {
+  const LogPushStatus({this.pending = 0, this.lastSuccessAt, this.lastErrorAt, this.lastError});
+
+  final int pending;
+  final DateTime? lastSuccessAt;
+  final DateTime? lastErrorAt;
+  final String? lastError;
+
+  bool get shouldWarn => lastError != null || pending >= 5;
+
+  factory LogPushStatus.fromJson(Map<String, dynamic> json) {
+    final rawPending = json['pending'];
+    final rawError = json['lastError'];
+    return LogPushStatus(
+      pending: rawPending is int && rawPending >= 0 ? rawPending : 0,
+      lastSuccessAt: _parseTimestamp(json['lastSuccessAt']),
+      lastErrorAt: _parseTimestamp(json['lastErrorAt']),
+      lastError: rawError is String && const {'network', 'auth', 'server', 'unknown'}.contains(rawError) ? rawError : null,
+    );
+  }
+
+  static DateTime? _parseTimestamp(Object? raw) => raw is String ? DateTime.tryParse(raw) : null;
 }
 
 enum BrainState {

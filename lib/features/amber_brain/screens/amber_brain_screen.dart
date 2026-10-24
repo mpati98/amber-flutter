@@ -6,6 +6,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../providers/brain_chat_provider.dart';
 import '../providers/brain_status_provider.dart';
 import '../widgets/brain_cards.dart';
+import '../widgets/log_push_banner.dart';
 import '../../../shared/widgets/app_bar_back.dart';
 
 /// Màn chat với amber-brain (trợ lý tài chính): hỏi số dư, ghi giao dịch có
@@ -97,6 +98,7 @@ class _AmberBrainScreenState extends ConsumerState<AmberBrainScreen> {
                   detail: 'Input is locked so nothing is written to the wrong data.',
                   color: AppColors.kincha400,
                 ),
+              if (conn.shouldWarnLogPush) LogPushBanner(status: conn.status?.logPush),
               Expanded(
                 child: items.isEmpty
                     ? Center(

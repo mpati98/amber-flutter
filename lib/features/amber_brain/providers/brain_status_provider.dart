@@ -23,6 +23,7 @@ class BrainConnection {
 
   bool get online => link == BrainLink.online;
   bool get offline => link == BrainLink.offline;
+  bool get shouldWarnLogPush => online && status?.logPush?.shouldWarn == true;
 
   /// Brain nối backend khác với app: ghi nhầm môi trường là rủi ro thật nên khóa nhập.
   bool get mismatch => online && status != null && hostKey(status!.serverHost) != hostKey(apiHost);
