@@ -159,9 +159,10 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   `just_audio`, giữ trạng thái/mini-player khi chuyển giữa các màn Kiều Lâu;
   Media Session trên web nằm sau conditional bridge (native là no-op), đồng bộ
   metadata, trạng thái, vị trí và các action điều khiển khi API được trình duyệt hỗ trợ.
-  Music release 24/10/2026: migration backend 0010 đã lên Production; backend code
-  và Flutter Music chưa deploy. Chỉ deploy Flutter sau khi backend production Ready
-  và smoke test qua.
+  Music release 24/10/2026: migration backend 0010 và backend code đã lên Production;
+  Flutter Music đã deploy Production với deployment
+  `dpl_CJiB92WeSeYdNi59umAQzB5RNMRy`. Rollback Flutter về deployment trước bằng
+  `vercel rollback dpl_heGz1HrjdSXTtK32WFfokveyCFtL`.
   Contract test `test/integration/music_backend_contract_test.dart` chỉ được
   chạy với backend DEV, cần `MUSIC_API_BASE_URL` và `MUSIC_API_TOKEN`.
 - **Upload** ảnh bìa / tệp (`image_picker`, `file_picker`) → POST
