@@ -116,7 +116,7 @@ Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau
 | Amber (chat AI) | `/amber` |
 | Nghị Sự Đường | `/nghi-su-duong`, `/du-an[/:projectId]`, `/finance[/:projectId]`, `/hoc-tap[/:courseId]` — 3 mảng ở **cấp gốc** |
 | Tàng Kinh Các | `/tang-kinh-cac`, `/tang-kinh-cac/{sach,tai-lieu,ke-hoach-doc}`, `/tang-kinh-cac/du-lieu-huan-luyen[/:logId]` (nhật ký amber-brain, feature `du_lieu_huan_luyen` riêng, gọi `/api/brain-logs` của amber-v4, không gọi brain) |
-| Kiều Lâu | `/kieu-lau`, `/kieu-lau/nhac-thu-nghiem` (trình phát MP3 tạm thời, chỉ hiện lối vào ở debug) |
+| Kiều Lâu | `/kieu-lau`, `/kieu-lau/nhac-thu-nghiem` (trình phát MP3 tạm thời) |
 | Trà Đình | `/tra-dinh` (Học tập, 3 tab `?tab=overview\|schedule\|stats`), `/tra-dinh/luyen-tap` (màn luyện AI cũ), `/tra-dinh/placement-test`, `/tra-dinh/hoc-tap/courses[?subjectId=&status=]`, `/tra-dinh/hoc-tap/courses/:courseId`, `/tra-dinh/hoc-tap/wishlist`, `/tra-dinh/:sessionId` |
 
 `alert.href` của Kiều Lâu (backend trả) dùng thẳng với `context.go` — đổi path

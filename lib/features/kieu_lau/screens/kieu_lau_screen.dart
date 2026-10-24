@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -64,7 +63,7 @@ class KieuLauScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 20,
           children: [
-            if (kDebugMode) _MusicPlayerSpikeCard(),
+            _MusicPlayerSpikeCard(),
             _AlertsCard(),
             _ActivityCard(),
             _NewsCard(),
