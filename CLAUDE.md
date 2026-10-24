@@ -153,6 +153,17 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
 - **Ghi âm** (`record`) → POST `/api/tra-dinh/transcribe`.
 - **Đọc thành tiếng** (`just_audio`) ← POST `/api/tra-dinh/speak` (WAV Groq, header
   độ dài 0xFFFFFFFF — sửa ở `tra_dinh/utils/wav_header.dart`).
+- **Nhạc Kiều Lâu** (`features/kieu_lau`) → `/api/music/*`: upload MP3 private qua
+  client token Vercel Blob, giới hạn 50 MiB; phát bằng `streamUrl` từ GET
+  `/tracks` (signed URL, làm mới sau 50 phút), không dùng `blobUrl`. Player dùng
+  `just_audio`, giữ trạng thái/mini-player khi chuyển giữa các màn Kiều Lâu;
+  Media Session trên web nằm sau conditional bridge (native là no-op), đồng bộ
+  metadata, trạng thái, vị trí và các action điều khiển khi API được trình duyệt hỗ trợ.
+  Music release 24/10/2026: migration backend 0010 đã lên Production; backend code
+  và Flutter Music chưa deploy. Chỉ deploy Flutter sau khi backend production Ready
+  và smoke test qua.
+  Contract test `test/integration/music_backend_contract_test.dart` chỉ được
+  chạy với backend DEV, cần `MUSIC_API_BASE_URL` và `MUSIC_API_TOKEN`.
 - **Upload** ảnh bìa / tệp (`image_picker`, `file_picker`) → POST
   `/api/tang-kinh-cac/upload` (backend chặn > 4 MB). Mở tệp qua `file_opener`
   (bản io / web riêng).

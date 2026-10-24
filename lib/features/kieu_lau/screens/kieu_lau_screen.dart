@@ -12,8 +12,10 @@ import '../models/alert.dart';
 import '../models/feed_article.dart';
 import '../models/feed_source.dart';
 import '../providers/kieu_lau_provider.dart';
+import '../providers/music_player_provider.dart';
 import '../services/kieu_lau_api.dart';
 import '../widgets/add_feed_source_dialog.dart';
+import '../widgets/music_mini_player.dart';
 import '../../../shared/widgets/app_bar_back.dart';
 
 // Giá trị `source` thật của activity_logs (xem logActivity bên amber-v4).
@@ -57,25 +59,32 @@ class KieuLauScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 20,
-          children: [
-            _MusicPlayerSpikeCard(),
-            _AlertsCard(),
-            _ActivityCard(),
-            _NewsCard(),
-          ],
-        ),
+      body: Column(
+        children: [
+          const Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 20,
+                children: [
+                  _MusicPlayerCard(),
+                  _AlertsCard(),
+                  _ActivityCard(),
+                  _NewsCard(),
+                ],
+              ),
+            ),
+          ),
+          MusicMiniPlayer(controller: ref.watch(musicPlayerProvider)),
+        ],
       ),
     );
   }
 }
 
-class _MusicPlayerSpikeCard extends StatelessWidget {
-  const _MusicPlayerSpikeCard();
+class _MusicPlayerCard extends StatelessWidget {
+  const _MusicPlayerCard();
 
   @override
   Widget build(BuildContext context) {
@@ -84,10 +93,10 @@ class _MusicPlayerSpikeCard extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: const Icon(Icons.music_note),
-        title: const Text('Trình phát MP3 (thử nghiệm)'),
-        subtitle: const Text('Kiểm tra phát, tua và chạy nền trên iPhone'),
+        title: const Text('Nhạc của tôi'),
+        subtitle: const Text('Tải lên và phát bộ sưu tập MP3 riêng'),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push('/kieu-lau/nhac-thu-nghiem'),
+        onTap: () => context.push('/kieu-lau/nhac'),
       ),
     );
   }
@@ -102,7 +111,11 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.kincha400),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: AppColors.kincha400,
+      ),
     );
   }
 }
@@ -114,13 +127,21 @@ class _Muted extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.4)));
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.white.withValues(alpha: 0.4),
+      ),
+    );
   }
 }
 
 Widget _loadError(Object error) => _Muted(
-      error is DioException ? 'Không tải được (${error.response?.statusCode ?? error.type.name}).' : 'Không tải được.',
-    );
+  error is DioException
+      ? 'Không tải được (${error.response?.statusCode ?? error.type.name}).'
+      : 'Không tải được.',
+);
 
 class _AlertsCard extends ConsumerWidget {
   const _AlertsCard();
@@ -134,12 +155,16 @@ class _AlertsCard extends ConsumerWidget {
         spacing: 12,
         children: [
           const _SectionTitle('Cần chú ý'),
-          ref.watch(notificationsProvider).when(
+          ref
+              .watch(notificationsProvider)
+              .when(
                 loading: () => const _Muted('Đang tải...'),
                 error: (e, _) => _loadError(e),
                 data: (n) => n.alerts.isEmpty
                     ? const _Muted('Không có gì cần chú ý — mọi thứ ổn.')
-                    : Column(children: [for (final a in n.alerts) _AlertTile(a)]),
+                    : Column(
+                        children: [for (final a in n.alerts) _AlertTile(a)],
+                      ),
               ),
         ],
       ),
@@ -178,12 +203,19 @@ class _ActivityCard extends ConsumerWidget {
         spacing: 12,
         children: [
           const _SectionTitle('Nhật ký gần đây'),
-          ref.watch(notificationsProvider).when(
+          ref
+              .watch(notificationsProvider)
+              .when(
                 loading: () => const _Muted('Đang tải...'),
                 error: (e, _) => _loadError(e),
                 data: (n) => n.recentActivity.isEmpty
                     ? const _Muted('Chưa có hoạt động nào.')
-                    : Column(spacing: 8, children: [for (final r in n.recentActivity) _ActivityRow(r)]),
+                    : Column(
+                        spacing: 8,
+                        children: [
+                          for (final r in n.recentActivity) _ActivityRow(r),
+                        ],
+                      ),
               ),
         ],
       ),
@@ -211,11 +243,17 @@ class _ActivityRow extends StatelessWidget {
                 entry.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withValues(alpha: 0.8),
+                ),
               ),
               Text(
                 _formatDate(entry.createdAt),
-                style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.3)),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.white.withValues(alpha: 0.3),
+                ),
               ),
             ],
           ),
@@ -236,13 +274,16 @@ class _NewsCardState extends ConsumerState<_NewsCard> {
   bool _refreshing = false;
 
   void _showSnack(String message) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
 
   Future<void> _refresh() async {
     setState(() => _refreshing = true);
     try {
       final result = await ref.read(kieuLauApiProvider).refreshFeeds();
-      if (result.failed.isNotEmpty) _showSnack('Không làm mới được: ${result.failed.join(', ')}');
+      if (result.failed.isNotEmpty) {
+        _showSnack('Không làm mới được: ${result.failed.join(', ')}');
+      }
       ref.invalidate(feedArticlesProvider);
       ref.invalidate(notificationsProvider); // backend vừa ghi activity log
     } on DioException {
@@ -272,7 +313,10 @@ class _NewsCardState extends ConsumerState<_NewsCard> {
   }
 
   Future<void> _openArticle(FeedArticle article) async {
-    final ok = await launchUrl(Uri.parse(article.url), mode: LaunchMode.externalApplication);
+    final ok = await launchUrl(
+      Uri.parse(article.url),
+      mode: LaunchMode.externalApplication,
+    );
     if (!ok) _showSnack('Không mở được liên kết.');
   }
 
@@ -307,17 +351,24 @@ class _NewsCardState extends ConsumerState<_NewsCard> {
             ],
           ),
           if (sources.hasError) _loadError(sources.error!),
-          ref.watch(feedArticlesProvider).when(
+          ref
+              .watch(feedArticlesProvider)
+              .when(
                 loading: () => const _Muted('Đang tải...'),
                 error: (e, _) => _loadError(e),
                 data: (articles) => articles.isEmpty
-                    ? const _Muted('Chưa có tin nào — thêm nguồn rồi bấm "Làm mới".')
+                    ? const _Muted(
+                        'Chưa có tin nào — thêm nguồn rồi bấm "Làm mới".',
+                      )
                     : ConstrainedBox(
                         constraints: const BoxConstraints(maxHeight: 320),
                         child: ListView.builder(
                           shrinkWrap: true,
                           itemCount: articles.length,
-                          itemBuilder: (_, i) => _ArticleTile(articles[i], onTap: () => _openArticle(articles[i])),
+                          itemBuilder: (_, i) => _ArticleTile(
+                            articles[i],
+                            onTap: () => _openArticle(articles[i]),
+                          ),
                         ),
                       ),
               ),
@@ -335,7 +386,9 @@ class _ArticleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = article.publishedAt == null ? '' : ' · ${_formatDate(article.publishedAt!)}';
+    final date = article.publishedAt == null
+        ? ''
+        : ' · ${_formatDate(article.publishedAt!)}';
     return ListTile(
       contentPadding: EdgeInsets.zero,
       dense: true,

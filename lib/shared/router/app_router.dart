@@ -8,7 +8,7 @@ import '../../features/du_lieu_huan_luyen/screens/training_log_detail_screen.dar
 import '../../features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
-import '../../features/kieu_lau/screens/music_player_spike_screen.dart';
+import '../../features/kieu_lau/screens/music_screen.dart';
 import '../../features/nghi_su_duong/screens/course_detail_screen.dart';
 import '../../features/nghi_su_duong/screens/du_an_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
@@ -21,7 +21,8 @@ import '../../features/tang_kinh_cac/screens/sach_screen.dart';
 import '../../features/tang_kinh_cac/screens/tai_lieu_screen.dart';
 import '../../features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
 import '../../features/tra_dinh/hoc_tap/models/study_enums.dart';
-import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart' as hoc_tap;
+import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart'
+    as hoc_tap;
 import '../../features/tra_dinh/hoc_tap/screens/course_list_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/wishlist_screen.dart';
@@ -35,12 +36,17 @@ const _splash = '/splash';
 
 /// Đích sau khi đăng nhập lấy từ `?from=` — chỉ nhận đường dẫn nội bộ.
 String? _safeFrom(String? from) {
-  if (from == null || !from.startsWith('/') || from.startsWith('//')) return null;
-  if (from.startsWith(_login) || from.startsWith(_splash)) return null;
+  if (from == null || !from.startsWith('/') || from.startsWith('//')) {
+    return null;
+  }
+  if (from.startsWith(_login) || from.startsWith(_splash)) {
+    return null;
+  }
   return from;
 }
 
-String _withFrom(String path, String target) => target == '/' ? path : '$path?from=${Uri.encodeComponent(target)}';
+String _withFrom(String path, String target) =>
+    target == '/' ? path : '$path?from=${Uri.encodeComponent(target)}';
 
 /// Quyết định chuyển hướng theo trạng thái đăng nhập. Tách ra để test được.
 ///
@@ -66,7 +72,10 @@ String? authRedirect(AsyncValue<AuthState> auth, Uri location) {
   final signedIn = value is Authenticated || value is AuthInitial;
   if (!signedIn) {
     if (atLogin) return null;
-    return _withFrom(_login, atSplash ? (_safeFrom(from) ?? '/') : uri.toString());
+    return _withFrom(
+      _login,
+      atSplash ? (_safeFrom(from) ?? '/') : uri.toString(),
+    );
   }
   if (atLogin || atSplash) return _safeFrom(from) ?? '/';
   return null;
@@ -94,8 +103,12 @@ final routerProvider = Provider<GoRouter>((ref) {
   router = GoRouter(
     initialLocation: '/',
     refreshListenable: authChanged,
-    redirect: (context, state) => authRedirect(ref.read(authControllerProvider), _location(router, state)),
-    errorBuilder: (context, state) => _NotFoundScreen(location: state.uri.toString()),
+    redirect: (context, state) => authRedirect(
+      ref.read(authControllerProvider),
+      _location(router, state),
+    ),
+    errorBuilder: (context, state) =>
+        _NotFoundScreen(location: state.uri.toString()),
     // Đường dẫn khớp trang web (src/app/**/page.tsx) — alert.href của Kiều Lâu
     // (/du-an, /finance/<id>, /hoc-tap/<id>) dùng được thẳng với context.go.
     routes: [
@@ -106,7 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/kieu-lau',
         builder: (_, _) => const KieuLauScreen(),
-        routes: [GoRoute(path: 'nhac-thu-nghiem', builder: (_, _) => const MusicPlayerSpikeScreen())],
+        routes: [GoRoute(path: 'nhac', builder: (_, _) => const MusicScreen())],
       ),
       GoRoute(
         path: '/tang-kinh-cac',
@@ -114,7 +127,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: 'sach', builder: (_, _) => const SachScreen()),
           GoRoute(path: 'tai-lieu', builder: (_, _) => const TaiLieuScreen()),
-          GoRoute(path: 'ke-hoach-doc', builder: (_, _) => const KeHoachDocScreen()),
+          GoRoute(
+            path: 'ke-hoach-doc',
+            builder: (_, _) => const KeHoachDocScreen(),
+          ),
           // Nhật ký lượt gọi mô hình của amber-brain (dataset fine-tune): tách riêng khỏi sách/tài liệu.
           GoRoute(
             path: 'du-lieu-huan-luyen',
@@ -122,13 +138,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: ':logId',
-                builder: (_, state) => TrainingLogDetailScreen(logId: state.pathParameters['logId']!),
+                builder: (_, state) => TrainingLogDetailScreen(
+                  logId: state.pathParameters['logId']!,
+                ),
               ),
             ],
           ),
         ],
       ),
-      GoRoute(path: '/nghi-su-duong', builder: (_, _) => const NghiSuDuongScreen()),
+      GoRoute(
+        path: '/nghi-su-duong',
+        builder: (_, _) => const NghiSuDuongScreen(),
+      ),
       // 3 mảng của Nghị Sự Đường nằm ở CẤP GỐC như web, không dưới /nghi-su-duong.
       GoRoute(
         path: '/du-an',
@@ -150,7 +171,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: ':projectId',
-            builder: (_, state) => FinanceMonthScreen(projectId: state.pathParameters['projectId']!),
+            builder: (_, state) => FinanceMonthScreen(
+              projectId: state.pathParameters['projectId']!,
+            ),
           ),
         ],
       ),
@@ -160,7 +183,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: ':courseId',
-            builder: (_, state) => CourseDetailScreen(courseId: state.pathParameters['courseId']!),
+            builder: (_, state) =>
+                CourseDetailScreen(courseId: state.pathParameters['courseId']!),
           ),
         ],
       ),
@@ -178,22 +202,39 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.
           GoRoute(path: 'luyen-tap', builder: (_, _) => const TraDinhScreen()),
-          GoRoute(path: 'placement-test', builder: (_, _) => const PlacementTestScreen()),
+          GoRoute(
+            path: 'placement-test',
+            builder: (_, _) => const PlacementTestScreen(),
+          ),
           GoRoute(
             path: 'hoc-tap/courses',
             builder: (_, state) => CourseListScreen(
               subjectId: state.uri.queryParameters['subjectId'],
-              statuses: [for (final s in state.uri.queryParametersAll['status'] ?? const <String>[]) CourseStatus.fromApi(s)].where((s) => s != CourseStatus.unknown).toList(),
+              statuses: [
+                for (final s
+                    in state.uri.queryParametersAll['status'] ??
+                        const <String>[])
+                  CourseStatus.fromApi(s),
+              ].where((s) => s != CourseStatus.unknown).toList(),
             ),
           ),
           GoRoute(
             path: 'hoc-tap/courses/:courseId',
-            builder: (_, state) => hoc_tap.CourseDetailScreen(courseId: state.pathParameters['courseId']!),
+            builder: (_, state) => hoc_tap.CourseDetailScreen(
+              courseId: state.pathParameters['courseId']!,
+            ),
           ),
-          GoRoute(path: 'hoc-tap/wishlist', builder: (_, state) => WishlistScreen(subjectId: state.uri.queryParameters['subjectId'])),
+          GoRoute(
+            path: 'hoc-tap/wishlist',
+            builder: (_, state) => WishlistScreen(
+              subjectId: state.uri.queryParameters['subjectId'],
+            ),
+          ),
           GoRoute(
             path: ':sessionId',
-            builder: (_, state) => PracticeChatScreen(sessionId: state.pathParameters['sessionId']!),
+            builder: (_, state) => PracticeChatScreen(
+              sessionId: state.pathParameters['sessionId']!,
+            ),
           ),
         ],
       ),
@@ -210,7 +251,8 @@ class _SplashScreen extends StatelessWidget {
   const _SplashScreen();
 
   @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: CircularProgressIndicator()));
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: CircularProgressIndicator()));
 }
 
 class _NotFoundScreen extends StatelessWidget {
@@ -227,8 +269,14 @@ class _NotFoundScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 12,
           children: [
-            Text(location, style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
-            FilledButton(onPressed: () => context.go('/'), child: const Text('Về trang chủ')),
+            Text(
+              location,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            ),
+            FilledButton(
+              onPressed: () => context.go('/'),
+              child: const Text('Về trang chủ'),
+            ),
           ],
         ),
       ),
