@@ -1,0 +1,84 @@
+{
+  "from": "2026-10-31",
+  "to": "2026-11-06",
+  "totalMinutes": 35,
+  "logCount": 2,
+  "avgPerDay": 5,
+  "goalDays": {
+    "met": 0,
+    "total": 0
+  },
+  "bucket": "day",
+  "series": [
+    {
+      "start": "2026-10-31",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-01",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-02",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-03",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-04",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-05",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-06",
+      "minutes": 35,
+      "goalMinutes": 60
+    }
+  ],
+  "byCourse": [
+    {
+      "courseId": null,
+      "title": "Ôn tập",
+      "minutes": 20,
+      "logCount": 1
+    },
+    {
+      "courseId": null,
+      "title": "Ôn thẻ",
+      "minutes": 15,
+      "logCount": 1
+    }
+  ],
+  "vsPlan": [],
+  "overallDeltaDays": [
+    {
+      "subjectId": "ec59229a-4d93-4942-98db-d332bf8a00f0",
+      "deltaDays": null
+    }
+  ],
+  "longestDay": {
+    "date": "2026-11-06",
+    "minutes": 35
+  },
+  "topWeekday": {
+    "weekday": 5,
+    "minutes": 35
+  },
+  "reasonCounts": {
+    "BUSY": 0,
+    "TIRED": 0,
+    "AWAY": 0,
+    "OTHER": 0
+  }
+}

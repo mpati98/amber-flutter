@@ -326,4 +326,61 @@ void main() {
       expect(_router.state.uri.queryParameters['tab'], 'stats');
     });
   });
+
+  group('byCourse có hai mục không khóa: "Ôn tập" và "Ôn thẻ"', () {
+    StudyStats both() => _stats('stats_card_review');
+
+    test('JSON thật của backend: hai mục courseId null, khác title', () {
+      final s = both();
+      expect(s.byCourse.length, 2);
+      expect(s.byCourse.every((c) => c.courseId == null), isTrue);
+      expect(s.byCourse.map((c) => c.title).toSet(), {'Ôn tập', 'Ôn thẻ'});
+      expect(s.byCourse.firstWhere((c) => c.title == 'Ôn thẻ').minutes, 15);
+    });
+
+    test('statsCourseKeys: duy nhất, "review" / "cards" cho mục không khóa, id cho mục có khóa', () {
+      expect(statsCourseKeys(both().byCourse).toSet().length, 2);
+      expect(statsCourseKeys(both().byCourse), unorderedEquals(['review', 'cards']));
+      const course = StatsCourse(courseId: 'c1', title: 'Khóa 1', minutes: 5, logCount: 1);
+      const review = StatsCourse(title: 'Ôn tập', minutes: 5, logCount: 1);
+      const cards = StatsCourse(title: 'Ôn thẻ', minutes: 5, logCount: 1);
+      expect(statsCourseKeys([course, review, cards]), ['c1', 'review', 'cards']);
+    });
+
+    test('statsCourseKeys: hai mục không khóa trùng khoá (title lạ) vẫn không trùng', () {
+      const a = StatsCourse(title: 'Ôn tập', minutes: 1, logCount: 1);
+      const b = StatsCourse(title: 'Cái gì đó', minutes: 1, logCount: 1);
+      final keys = statsCourseKeys([a, b, a]);
+      expect(keys.toSet().length, 3);
+      expect(keys.first, 'review');
+      expect(statsCourseKeys(const []), isEmpty);
+    });
+
+    testWidgets('màn Thống kê hiện "Ôn thẻ" thành một dòng riêng cạnh "Ôn tập" và dòng của khóa — không trùng khoá, không lỗi', (tester) async {
+      final json = Map<String, dynamic>.from(fixtureMap('stats_card_review'));
+      json['byCourse'] = [
+        {'courseId': 'c-1', 'title': 'English Tenses 101', 'minutes': 60, 'logCount': 2},
+        ...(json['byCourse'] as List),
+      ];
+      final api = FakeHocTapApi()..statsResponses['7|one'] = StudyStats.fromJson(json);
+      await _pump(tester, api: api, location: '/tra-dinh?tab=stats&range=7');
+      expect(tester.takeException(), isNull, reason: 'khoá trùng sẽ ném lỗi ở đây');
+      expect(_k('by-course-review'), findsOneWidget);
+      expect(_k('by-course-cards'), findsOneWidget);
+      expect(_k('by-course-c-1'), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-cards'), matching: find.text('Ôn thẻ')), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-cards'), matching: find.text('Ôn tập')), findsNothing);
+      expect(find.descendant(of: _k('by-course-cards'), matching: find.text('15p · 1 buổi')), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-review'), matching: find.text('Ôn tập')), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-review'), matching: find.text('20p · 1 buổi')), findsOneWidget);
+      expect(find.text('Ôn thẻ'), findsOneWidget, reason: 'đúng một dòng "Ôn thẻ"');
+    });
+
+    testWidgets('backend cũ chỉ có mục "Ôn tập" (courseId null) vẫn hiện như trước', (tester) async {
+      await _pump(tester);
+      expect(_k('by-course-review'), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-review'), matching: find.text('Ôn tập')), findsOneWidget);
+      expect(_k('by-course-cards'), findsNothing);
+    });
+  });
 }

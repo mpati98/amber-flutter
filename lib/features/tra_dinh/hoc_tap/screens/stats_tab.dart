@@ -136,6 +136,7 @@ class _StatsBody extends StatelessWidget {
     final rangeText = _ranges[range] ?? range;
     final summary = '$rangeText, trung bình ${s.avgPerDay} phút mỗi ngày, đạt mục tiêu ${s.goalDaysMet}/${s.goalDaysTotal} ngày';
     final maxCourse = s.byCourse.fold<int>(0, (m, c) => c.minutes > m ? c.minutes : m);
+    final courseKeys = statsCourseKeys(s.byCourse);
     final reasons = [for (final e in reasonChoices.entries) if (s.reasonCounts.of(e.key) > 0) '${e.value} ${s.reasonCounts.of(e.key)}'];
     final deltas = [
       for (final d in s.overallDeltaDays)
@@ -191,15 +192,15 @@ class _StatsBody extends StatelessWidget {
               spacing: 10,
               children: [
                 const HocTapSectionTitle('Theo khóa'),
-                for (final c in s.byCourse)
+                for (final (i, c) in s.byCourse.indexed)
                   Column(
-                    key: ValueKey('by-course-${c.courseId ?? 'review'}'),
+                    key: ValueKey('by-course-${courseKeys[i]}'),
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     spacing: 4,
                     children: [
                       Row(
                         children: [
-                          Expanded(child: Text(c.courseId == null ? 'Ôn tập' : c.title, style: const TextStyle(fontSize: 14))),
+                          Expanded(child: Text(c.title.isEmpty ? 'Ôn tập' : c.title, style: const TextStyle(fontSize: 14))),
                           Text('${formatDuration(c.minutes)} · ${c.logCount} buổi', style: TextStyle(fontSize: 12, color: theme.textMuted)),
                         ],
                       ),

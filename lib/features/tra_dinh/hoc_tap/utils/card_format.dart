@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../../shared/utils/api_error.dart';
 import '../../../../shared/utils/date_format.dart';
 import '../../../../shared/utils/vn_time.dart';
+import '../../../nghi_su_duong/models/routine.dart' show weekdayShort;
 import '../models/study_card.dart';
 import '../models/study_card_queue.dart';
 import 'hoc_tap_errors.dart';
@@ -86,11 +87,6 @@ Map<String, dynamic>? _fieldErrors(Object error) {
   }
   return null;
 }
-
-const _weekdayShort = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-
-/// Thứ viết tắt theo ISO (1 = thứ Hai … 7 = Chủ nhật): T2..T7, CN.
-String weekdayShort(int isoWeekday) => _weekdayShort[(isoWeekday - 1).clamp(0, 6)];
 
 /// Dòng nhỏ dưới nút đánh giá, từ kết quả [next] của mức đó (server tính sẵn):
 /// - đúng giai đoạn và hạn như bây giờ (ôn thêm giữ lịch) → "Giữ lịch";

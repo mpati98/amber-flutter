@@ -58,6 +58,9 @@ class FakeHocTapApi extends HocTapApi {
   final reasonPuts = <({String subjectId, String date, ReasonCode code, String? text})>[];
   Object? reasonError;
   Object? logError;
+
+  /// Lỗi khi tải danh sách buổi học (getLogs).
+  Object? logsError;
   late StudyLogResult logResult = StudyLogResult.fromJson(fixtureMap('log_created'));
   /// Lịch trả về cho getSchedule: khớp theo (from, to) nếu có trong [schedules], không thì [defaultSchedule] (hoặc tự dựng).
   final schedules = <String, StudySchedule>{};
@@ -79,10 +82,13 @@ class FakeHocTapApi extends HocTapApi {
   Object? overviewError;
 
   @override
-  Future<List<StudyLog>> getLogs({required String from, required String to, String? subjectId}) async => [
-    for (final l in logs)
-      if ((subjectId == null || l.subjectId == subjectId) && l.logDate.compareTo(from) >= 0 && l.logDate.compareTo(to) <= 0) l,
-  ];
+  Future<List<StudyLog>> getLogs({required String from, required String to, String? subjectId}) async {
+    if (logsError case final e?) throw e;
+    return [
+      for (final l in logs)
+        if ((subjectId == null || l.subjectId == subjectId) && l.logDate.compareTo(from) >= 0 && l.logDate.compareTo(to) <= 0) l,
+    ];
+  }
 
   @override
   Future<StudyLogResult> createLog(Map<String, Object?> body) async {
@@ -262,6 +268,7 @@ class FakeHocTapApi extends HocTapApi {
   final cardDeletes = <String>[];
   final cardParseTexts = <String>[];
   final cardImports = <List<Map<String, Object?>>>[];
+  final cardImportLogIds = <String?>[];
   Object? cardsError;
   Object? cardsMoreError;
   Object? cardCreateError;
@@ -373,6 +380,7 @@ class FakeHocTapApi extends HocTapApi {
   @override
   Future<ImportResult> importCards(String subjectId, List<Map<String, Object?>> cards, {String? logId}) async {
     cardImports.add(cards);
+    cardImportLogIds.add(logId);
     if (cardImportError case final e?) throw e;
     return importResult;
   }

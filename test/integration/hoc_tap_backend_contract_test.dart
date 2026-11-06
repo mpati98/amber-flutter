@@ -7,6 +7,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.da
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/providers/card_review_provider.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/log_labels.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -522,6 +523,73 @@ void main() {
         await expectLater(api.getCardQueue('00000000-0000-4000-8000-000000000000'), _apiError(404, 'subject_not_found'));
       } finally {
         if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá thẻ, lượt ôn, kế hoạch, buổi học
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
+    skip: missing ? 'thiếu --dart-define=NSD_API_BASE_URL / NSD_API_TOKEN' : false,
+  );
+
+  test(
+    'Buổi ôn thẻ (CARD_REVIEW): tạo → đọc lại activity → sửa phút → xoá; không gắn khóa / phần; hiện "Ôn thẻ" (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = HocTapApi(dio);
+      String? subjectId;
+
+      try {
+        subjectId = (await api.createSubject({'name': 'TEST Buổi ôn thẻ ${DateTime.now().millisecondsSinceEpoch}', 'dailyGoalMinutes': 60})).id;
+        final sid = subjectId;
+        final today = vnToday();
+
+        // 1. Tạo: server trả activity CARD_REVIEW, không khóa, không phần; phút cộng vào ngày.
+        final created = await api.createLog({'subjectId': sid, 'activity': 'CARD_REVIEW', 'minutes': 15, 'note': 'ôn 10 thẻ'});
+        expect(created.log.activity, LogActivity.cardReview);
+        expect(created.log.courseId, isNull);
+        expect(created.log.sections, isEmpty);
+        expect((created.log.minutes, created.log.note), (15, 'ôn 10 thẻ'));
+        expect(created.today.minutes, 15);
+        expect(created.course, isNull);
+        expect(logTitle(activity: created.log.activity, courseTitle: created.log.courseTitle), 'Ôn thẻ');
+
+        // 2. Đọc lại bằng GET /logs: vẫn là CARD_REVIEW; một buổi học bài (không gửi activity) đi cùng thì là LESSON.
+        final lesson = await api.createLog({'subjectId': sid, 'minutes': 30});
+        expect(lesson.log.activity, LogActivity.lesson);
+        final logs = await api.getLogs(from: today, to: today, subjectId: sid);
+        expect(logs.length, 2);
+        expect(logs.firstWhere((l) => l.id == created.log.id).activity, LogActivity.cardReview);
+        expect(logs.firstWhere((l) => l.id == lesson.log.id).activity, LogActivity.lesson);
+        expect(logTitle(activity: logs.firstWhere((l) => l.id == lesson.log.id).activity, courseTitle: null), 'Ôn tập');
+
+        // 3. Lịch của ngày hôm nay cũng mang activity (để dòng lịch hiện "Ôn thẻ").
+        final schedule = await api.getSchedule(subjectId: sid, from: today, to: today);
+        final todayLogs = schedule.days.single.logs;
+        expect(todayLogs.firstWhere((l) => l.id == created.log.id).activity, LogActivity.cardReview);
+        expect(todayLogs.firstWhere((l) => l.id == lesson.log.id).activity, LogActivity.lesson);
+
+        // 4. Sửa phút và ghi chú (chỉ hai trường này); tổng ngày đổi theo; activity không đổi.
+        final patched = await api.patchLog(created.log.id, {'minutes': 25, 'note': null});
+        expect(patched.log.minutes, 25);
+        expect(patched.log.note, isNull);
+        expect(patched.log.activity, LogActivity.cardReview);
+        expect((patched.today.minutes, patched.today.done), (55, false));
+
+        // 5. Server từ chối gắn khóa / phần / đổi loại vào buổi ôn thẻ (app không bao giờ gửi, nhưng hợp đồng phải chặn).
+        Matcher bad(String code) => throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 400).having((e) => (e.response?.data as Map)['error'], 'error', code));
+        await expectLater(api.patchLog(created.log.id, {'minutes': 5, 'courseId': '00000000-0000-4000-8000-000000000000'}), bad('card_review_no_course'));
+        await expectLater(api.patchLog(created.log.id, {'sections': <Object>[]}), bad('card_review_no_sections'));
+        await expectLater(api.patchLog(created.log.id, {'activity': 'LESSON', 'minutes': 5}), bad('activity_locked'));
+        await expectLater(api.createLog({'subjectId': sid, 'activity': 'CARD_REVIEW', 'minutes': 5, 'courseId': '00000000-0000-4000-8000-000000000000'}), bad('card_review_no_course'));
+        await expectLater(api.patchLog(created.log.id, {'minutes': 0}), throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 400)));
+        expect((await api.getLogs(from: today, to: today, subjectId: sid)).firstWhere((l) => l.id == created.log.id).minutes, 25, reason: 'các yêu cầu bị từ chối không đổi gì');
+
+        // 6. Xoá buổi ôn thẻ (hôm nay): biến mất, tổng ngày trừ phút của nó.
+        final after = await api.deleteLog(created.log.id);
+        expect(after.minutes, 30);
+        final left = await api.getLogs(from: today, to: today, subjectId: sid);
+        expect(left.map((l) => l.id), [lesson.log.id]);
+        await expectLater(api.deleteLog(created.log.id), throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 404)));
+      } finally {
+        if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá buổi học
       }
     },
     timeout: const Timeout(Duration(minutes: 5)),

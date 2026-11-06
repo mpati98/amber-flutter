@@ -8,6 +8,7 @@ import '../models/study_card.dart';
 import '../providers/card_provider.dart';
 import '../utils/card_format.dart';
 import '../utils/card_prompt.dart';
+import '../utils/log_labels.dart';
 import '../widgets/card_widgets.dart';
 import '../widgets/hoc_tap_common.dart';
 
@@ -34,6 +35,7 @@ class _Import extends ConsumerStatefulWidget {
 class _ImportState extends ConsumerState<_Import> {
   final _text = TextEditingController();
   ParsedCards? _parsed;
+  String? _logId; // buổi học gắn vào thẻ (không chọn = null)
   bool _parsing = false;
   bool _saving = false;
   String? _error;
@@ -76,7 +78,7 @@ class _ImportState extends ConsumerState<_Import> {
       _error = null;
     });
     try {
-      final result = await ref.read(cardActionsProvider).import(widget.subjectId, parsed.cards);
+      final result = await ref.read(cardActionsProvider).import(widget.subjectId, parsed.cards, logId: _logId);
       if (!mounted) return;
       // Thẻ đã có và thẻ lặp đã được bỏ ở bước xem trước; cộng vào số "bỏ qua" cho người dùng thấy đủ.
       final skipped = result.skipped + parsed.existing.length + parsed.duplicates.length;
@@ -137,6 +139,7 @@ class _ImportState extends ConsumerState<_Import> {
               decoration: const InputDecoration(hintText: '[{"phrase": "look forward to", "meaning": "...", "example": "...", "kind": "PHRASAL_VERB", "topics": ["daily life"]}]', border: OutlineInputBorder()),
               onChanged: _onTextChanged,
             ),
+            _LessonPicker(subjectId: widget.subjectId, selected: _logId, onChanged: (id) => setState(() => _logId = id)),
             const SizedBox(height: 10),
             FilledButton.tonal(
               key: const ValueKey('import-preview'),
@@ -242,6 +245,36 @@ class _PreviewCard extends StatelessWidget {
         const SizedBox(height: 2),
         ChipScrollRow(children: [KindTag(item.kind), for (final t in item.topics) TopicTag(t)]),
       ],
+    );
+  }
+}
+
+/// "Gắn vào buổi học" (không bắt buộc): các buổi học bài 14 ngày gần nhất của môn. Chưa tải xong, tải lỗi hoặc không có
+/// buổi nào → ẩn hẳn, không chặn việc nhập thẻ.
+class _LessonPicker extends ConsumerWidget {
+  const _LessonPicker({required this.subjectId, required this.selected, required this.onChanged});
+
+  final String subjectId;
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logs = ref.watch(recentLessonLogsProvider(subjectId)).value;
+    if (logs == null || logs.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: DropdownButtonFormField<String?>(
+        key: ValueKey('import-lesson-${logs.any((l) => l.id == selected) ? selected : null}'),
+        initialValue: logs.any((l) => l.id == selected) ? selected : null,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Gắn vào buổi học (không bắt buộc)'),
+        items: [
+          const DropdownMenuItem<String?>(value: null, child: Text('Không gắn buổi học')),
+          for (final l in logs) DropdownMenuItem<String?>(value: l.id, child: Text(lessonPickLabel(l), overflow: TextOverflow.ellipsis)),
+        ],
+        onChanged: onChanged,
+      ),
     );
   }
 }

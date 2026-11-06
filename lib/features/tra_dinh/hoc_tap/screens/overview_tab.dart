@@ -7,6 +7,7 @@ import '../../../../shared/widgets/scroll_card.dart';
 import '../models/study_overview.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../utils/async_view.dart';
+import '../widgets/cards_today_block.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/log_sheet.dart';
@@ -70,12 +71,7 @@ class _Loaded extends ConsumerWidget {
           icon: const Icon(Icons.add),
           label: const Text('Khóa học'),
         ),
-        OutlinedButton.icon(
-          key: const ValueKey('open-card-library'),
-          onPressed: () => context.push('/tra-dinh/hoc-tap/the?subjectId=${subject.subjectId}'),
-          icon: const Icon(Icons.style_outlined),
-          label: const Text('Kho thẻ'),
-        ),
+        CardsTodayBlock(subject: subject),
       ],
     );
   }

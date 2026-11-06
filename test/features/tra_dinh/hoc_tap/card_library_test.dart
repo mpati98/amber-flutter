@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/card_library_screen.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -413,14 +412,5 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Cụm từ phải có ít nhất 2 từ (kho không nhận từ đơn)'), findsOneWidget);
     });
-  });
-
-  testWidgets('Tổng quan có nút "Kho thẻ" dẫn tới kho của môn đang chọn', (tester) async {
-    final api = FakeHocTapApi();
-    await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
-    await tester.scrollUntilVisible(_k('open-card-library'), 300, scrollable: find.byType(Scrollable).first);
-    await tester.tap(_k('open-card-library'));
-    await tester.pumpAndSettle();
-    expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=${api.overview.subjects.first.subjectId}');
   });
 }

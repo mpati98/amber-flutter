@@ -72,6 +72,7 @@ class _CardSessionEndScreenState extends ConsumerState<CardSessionEndScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final s = widget.session;
+    final noneThisSession = s.reviewedThisSession == 0;
     final goal = ref.watch(studyOverviewProvider).value?.subjects.where((x) => x.subjectId == widget.subjectId).map((x) => x.goalMinutes).firstOrNull;
     final logs = ref.watch(studyTodayLogsProvider(widget.subjectId)).value;
     final lesson = logs?.where((l) => l.activity == LogActivity.lesson).fold<int>(0, (n, l) => n + l.minutes) ?? 0;
@@ -85,15 +86,18 @@ class _CardSessionEndScreenState extends ConsumerState<CardSessionEndScreen> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
           children: [
-            Text('Hôm nay đã ôn ${s.progress.finished} / ${s.progress.planned} thẻ', key: const ValueKey('end-title'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25)),
-            const SizedBox(height: 14),
-            ChipScrollRow(
-              children: [
-                _CountChip(key: const ValueKey('end-chip-notYet'), label: 'Chưa nhớ ${s.notYet}', color: theme.colorScheme.error),
-                _CountChip(key: const ValueKey('end-chip-again'), label: 'Cần ôn lại ${s.again}', color: theme.brightness == Brightness.dark ? Colors.amber.shade300 : Colors.amber.shade800),
-                _CountChip(key: const ValueKey('end-chip-remembered'), label: 'Đã nhớ ${s.remembered}', color: theme.success),
-              ],
-            ),
+            // Mở lại màn khi hôm nay đã ôn xong từ trước (phiên này chưa ôn thẻ nào): không có số liệu phiên để báo.
+            Text(noneThisSession ? 'Hôm nay đã ôn xong' : 'Hôm nay đã ôn ${s.progress.finished} / ${s.progress.planned} thẻ', key: const ValueKey('end-title'), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25)),
+            if (!noneThisSession) ...[
+              const SizedBox(height: 14),
+              ChipScrollRow(
+                children: [
+                  _CountChip(key: const ValueKey('end-chip-notYet'), label: 'Chưa nhớ ${s.notYet}', color: theme.colorScheme.error),
+                  _CountChip(key: const ValueKey('end-chip-again'), label: 'Cần ôn lại ${s.again}', color: theme.brightness == Brightness.dark ? Colors.amber.shade300 : Colors.amber.shade800),
+                  _CountChip(key: const ValueKey('end-chip-remembered'), label: 'Đã nhớ ${s.remembered}', color: theme.success),
+                ],
+              ),
+            ],
             const SizedBox(height: 28),
             const Text('Số phút bạn đã ôn thẻ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),

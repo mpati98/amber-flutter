@@ -26,13 +26,14 @@ class ScheduleLogSection {
 
 /// Một buổi học trong ngày của lịch (rút gọn so với StudyLog).
 class ScheduleLog {
-  const ScheduleLog({required this.id, this.courseTitle, required this.minutes, this.sections = const []});
+  const ScheduleLog({required this.id, this.courseTitle, required this.minutes, this.sections = const [], this.activity = LogActivity.lesson});
 
   factory ScheduleLog.fromJson(Map<String, dynamic> json) => ScheduleLog(
     id: json['id'] as String,
     courseTitle: json['courseTitle'] as String?,
     minutes: json['minutes'] as int,
     sections: [for (final s in (json['sections'] as List? ?? const [])) ScheduleLogSection.fromJson(s as Map<String, dynamic>)],
+    activity: LogActivity.fromApi(json['activity']),
   );
 
   final String id;
@@ -41,6 +42,9 @@ class ScheduleLog {
   final String? courseTitle;
   final int minutes;
   final List<ScheduleLogSection> sections;
+
+  /// LESSON (mặc định) hoặc CARD_REVIEW (phút ôn thẻ).
+  final LogActivity activity;
 }
 
 class PlannedItem {

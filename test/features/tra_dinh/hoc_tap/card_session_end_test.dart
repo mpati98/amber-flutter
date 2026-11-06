@@ -59,6 +59,45 @@ void main() {
     expect(find.text('Số phút bạn đã ôn thẻ'), findsOneWidget);
   });
 
+  group('mở lại khi hôm nay đã ôn xong từ trước (phiên này chưa ôn thẻ nào)', () {
+    const none = CardReviewState(phase: ReviewPhase.done, progress: CardProgress(planned: 12, finished: 12));
+
+    testWidgets('tiêu đề "Hôm nay đã ôn xong", ẩn ba chip của phiên, vẫn có ô số phút và các nút', (tester) async {
+      final t = _api(logs: [(30, LogActivity.lesson)]);
+      await pumpHocTap(tester, CardSessionEndScreen(subjectId: t.withGoal, subjectName: 'Tiếng Anh', session: none), api: t.api, height: 1400);
+      expect(tester.widget<Text>(_k('end-title')).data, 'Hôm nay đã ôn xong');
+      expect(_k('end-chip-notYet'), findsNothing);
+      expect(_k('end-chip-again'), findsNothing);
+      expect(_k('end-chip-remembered'), findsNothing);
+      expect(find.text('Chưa nhớ 0'), findsNothing);
+      expect(_k('end-minutes'), findsOneWidget);
+      expect(_k('end-quick-15'), findsOneWidget);
+      expect(_k('end-save'), findsOneWidget);
+      expect(_k('end-skip'), findsOneWidget);
+      expect(_k('end-goal-bar'), findsOneWidget);
+      expect(find.byType(BackButton), findsOneWidget);
+    });
+
+    testWidgets('vẫn lưu được số phút như bình thường', (tester) async {
+      final t = _api();
+      await pumpHocTap(tester, CardSessionEndScreen(subjectId: t.withGoal, subjectName: 'Tiếng Anh', session: none), api: t.api, height: 1400);
+      await tester.tap(_k('end-quick-10'));
+      await tester.pump();
+      await tester.tap(_k('end-save'));
+      await tester.pumpAndSettle();
+      expect(t.api.logCreates.single, {'subjectId': t.withGoal, 'activity': 'CARD_REVIEW', 'minutes': 10});
+      expect(visited.last, '/tra-dinh');
+    });
+
+    testWidgets('chỉ cần ôn một thẻ trong phiên là có lại tiêu đề đếm và các chip', (tester) async {
+      final t = _api();
+      const one = CardReviewState(phase: ReviewPhase.done, progress: CardProgress(planned: 12, finished: 12), remembered: 1);
+      await pumpHocTap(tester, CardSessionEndScreen(subjectId: t.withGoal, subjectName: 'Tiếng Anh', session: one), api: t.api, height: 1400);
+      expect(tester.widget<Text>(_k('end-title')).data, 'Hôm nay đã ôn 12 / 12 thẻ');
+      expect(find.text('Đã nhớ 1'), findsOneWidget);
+    });
+  });
+
   group('ô nhập số phút', () {
     testWidgets('trống mặc định, Lưu bị khoá; 4 chip nhanh 10 / 15 / 20 / 30 điền vào ô', (tester) async {
       final t = _api();

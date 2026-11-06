@@ -12,6 +12,7 @@ import '../models/course.dart';
 import '../models/study_log.dart';
 import '../models/study_overview.dart';
 import '../providers/hoc_tap_provider.dart';
+import '../utils/log_labels.dart';
 import 'hoc_tap_common.dart';
 import 'log_sheet.dart';
 
@@ -127,7 +128,7 @@ class _LogRow extends StatelessWidget {
             SizedBox(width: 44, child: Text('${log.minutes}p', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
             Expanded(
               child: Text(
-                [log.courseTitle ?? 'Ôn tập', if (sections.isNotEmpty) sections].join(' · '),
+                [logTitle(activity: log.activity, courseTitle: log.courseTitle), if (sections.isNotEmpty) sections].join(' · '),
                 style: TextStyle(fontSize: 12, color: theme.textMuted),
               ),
             ),

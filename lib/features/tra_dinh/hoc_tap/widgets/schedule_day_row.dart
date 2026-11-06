@@ -8,6 +8,7 @@ import '../../../../shared/widgets/tag.dart';
 import '../../../nghi_su_duong/models/routine.dart' show weekdayShort;
 import '../models/study_schedule.dart';
 import '../models/study_subject.dart';
+import '../utils/log_labels.dart';
 import '../utils/schedule_range.dart';
 import 'dashed_border.dart';
 import 'log_sheet.dart';
@@ -64,7 +65,7 @@ class ScheduleDayRow extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    [l.courseTitle ?? 'Ôn tập', if (l.sections.isNotEmpty) l.sections.map((s) => s.markedDone ? '${s.title} ✓' : s.title).join(', ')].join(' · '),
+                    [logTitle(activity: l.activity, courseTitle: l.courseTitle), if (l.sections.isNotEmpty) l.sections.map((s) => s.markedDone ? '${s.title} ✓' : s.title).join(', ')].join(' · '),
                     style: const TextStyle(fontSize: 13),
                   ),
                 ),

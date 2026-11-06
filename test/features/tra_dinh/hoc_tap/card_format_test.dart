@@ -1,3 +1,4 @@
+import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart' show weekdayShort;
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_queue.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';

@@ -345,7 +345,9 @@ void main() {
       await tester.tap(_k('review-finish'));
       await tester.pumpAndSettle();
       expect(find.text('Xong phiên ôn'), findsOneWidget);
-      expect(tester.widget<Text>(_k('end-title')).data, 'Hôm nay đã ôn 1 / 3 thẻ');
+      // Phiên này chưa đánh giá thẻ nào (1 thẻ đã xong từ trước): không có số liệu phiên để báo.
+      expect(tester.widget<Text>(_k('end-title')).data, 'Hôm nay đã ôn xong');
+      expect(_k('end-chip-notYet'), findsNothing);
     });
   });
 

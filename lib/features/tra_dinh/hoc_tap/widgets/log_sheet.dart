@@ -95,6 +95,10 @@ class LogSheet extends ConsumerStatefulWidget {
 class _LogSheetState extends ConsumerState<LogSheet> {
   static const _sectionPage = 10;
 
+  /// Học bài (mặc định) hoặc Ôn thẻ. Sửa buổi có sẵn thì cố định theo buổi đó; thêm tay thì chọn bằng công tắc "Loại".
+  late LogActivity _activity = widget.editing?.activity ?? LogActivity.lesson;
+  bool get _cardReview => _activity == LogActivity.cardReview;
+
   late final _minutes = TextEditingController(text: widget.editing?.minutes.toString() ?? '');
   late final _note = TextEditingController(text: widget.editing?.note ?? '');
   final _reasonText = TextEditingController();
@@ -192,12 +196,108 @@ class _LogSheetState extends ConsumerState<LogSheet> {
     }
   }
 
+  /// Buổi ôn thẻ: chỉ gửi phút và ghi chú — KHÔNG BAO GIỜ gửi courseId / sections (server từ chối).
+  Future<void> _saveCardReview(StudySubject subject) async {
+    if (_busy) return;
+    final note = _note.text.trim();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final actions = ref.read(hocTapActionsProvider);
+      final result = _editing
+          ? await actions.patchLog(widget.editing!.id, {'minutes': _input, 'note': note.isEmpty ? null : note})
+          : await actions.createLog({'subjectId': subject.id, 'activity': LogActivity.cardReview.api, 'minutes': _input, if (note.isNotEmpty) 'note': note});
+      final t = result.today;
+      final todayText = t.goalMinutes == null ? '${t.minutes} phút' : '${t.minutes}/${t.goalMinutes}';
+      if (mounted) Navigator.of(context).pop(_editing ? 'Đã cập nhật buổi ôn thẻ · hôm nay $todayText' : 'Đã ghi $_input phút ôn thẻ · hôm nay $todayText');
+    } catch (e) {
+      if (mounted) setState(() => (_busy = false, _error = hocTapErrorMessage(e)));
+    }
+  }
+
+  /// Chip chọn môn (chỉ khi có nhiều môn và đang thêm mới); dùng chung cho form học bài và form ôn thẻ.
+  Widget _subjectChips(List<StudySubject> subjects, StudySubject subject) => Wrap(
+    spacing: 6,
+    runSpacing: 6,
+    children: [
+      for (final s in subjects)
+        ChoiceChip(
+          key: ValueKey('log-subject-${s.id}'),
+          label: Text(s.name),
+          selected: s.id == subject.id,
+          showCheckmark: false,
+          selectedColor: AppColors.kincha400,
+          labelStyle: TextStyle(fontSize: 13, color: s.id == subject.id ? AppColors.ink950 : null),
+          onSelected: (_) => _pickSubject(s.id),
+        ),
+    ],
+  );
+
+  /// Công tắc "Loại: Học bài / Ôn thẻ" ở form thêm tay.
+  Widget _activitySwitch() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    spacing: 6,
+    children: [
+      const Text('Loại', style: TextStyle(fontSize: 12)),
+      SegmentedButton<LogActivity>(
+        key: const ValueKey('log-activity'),
+        showSelectedIcon: false,
+        segments: const [
+          ButtonSegment(value: LogActivity.lesson, label: Text('Học bài')),
+          ButtonSegment(value: LogActivity.cardReview, label: Text('Ôn thẻ')),
+        ],
+        selected: {_activity},
+        onSelectionChanged: (v) => setState(() {
+          _activity = v.first;
+          _error = null;
+        }),
+      ),
+    ],
+  );
+
+  /// Form buổi ôn thẻ: chỉ số phút (1–1440) và ghi chú; sửa thì có thêm xoá (chỉ hôm nay, như buổi học).
+  Widget _cardReviewForm(BuildContext context, List<StudySubject> subjects, StudySubject subject) {
+    final theme = Theme.of(context);
+    final canSave = !_busy && _input >= 1 && _input <= 1440;
+    return FinanceSheetBody(
+      title: _editing ? 'Ôn thẻ' : 'Ghi buổi học',
+      children: [
+        Text('Hôm nay · ${viDayLabel()}. Chỉ ghi cho hôm nay.', key: const ValueKey('log-header'), style: TextStyle(fontSize: 13, color: theme.textMuted)),
+        if (!_editing) _activitySwitch(),
+        if (subjects.length > 1 && !_editing) _subjectChips(subjects, subject),
+        if (_editing) Text('Môn: ${subject.name} · Ôn thẻ', key: const ValueKey('log-subject-line'), style: const TextStyle(fontSize: 13)),
+        TextField(
+          key: const ValueKey('log-minutes'),
+          controller: _minutes,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Số phút ôn thẻ', suffixText: 'phút'),
+        ),
+        Wrap(
+          spacing: 6,
+          children: [for (final m in const [10, 15, 20, 30]) ActionChip(key: ValueKey('quick-$m'), label: Text('$m'), onPressed: () => _minutes.text = '$m')],
+        ),
+        TextField(key: const ValueKey('log-note'), controller: _note, minLines: 1, maxLines: 3, maxLength: 2000, decoration: const InputDecoration(labelText: 'Ghi chú (tuỳ chọn)', counterText: '')),
+        sheetError(context, _error),
+        FilledButton(key: const ValueKey('log-save'), onPressed: canSave ? () => _saveCardReview(subject) : null, child: Text(_editing ? 'Lưu' : 'Ghi phút ôn thẻ')),
+        if (_editing)
+          TextButton(
+            key: const ValueKey('log-delete'),
+            onPressed: _busy ? null : _delete,
+            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            child: const Text('Xoá buổi ôn thẻ'),
+          ),
+      ],
+    );
+  }
+
   Future<void> _delete() async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xoá buổi học?'),
-        content: const Text('Xoá buổi học này khỏi hôm nay? Phần đã đánh dấu xong vẫn giữ nguyên.'),
+        title: Text(_cardReview ? 'Xoá buổi ôn thẻ?' : 'Xoá buổi học?'),
+        content: Text(_cardReview ? 'Xoá buổi ôn thẻ này khỏi hôm nay?' : 'Xoá buổi học này khỏi hôm nay? Phần đã đánh dấu xong vẫn giữ nguyên.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
           TextButton(
@@ -215,7 +315,7 @@ class _LogSheetState extends ConsumerState<LogSheet> {
     });
     try {
       await ref.read(hocTapActionsProvider).deleteLog(widget.editing!.id);
-      if (mounted) Navigator.of(context).pop('Đã xoá buổi học');
+      if (mounted) Navigator.of(context).pop(_cardReview ? 'Đã xoá buổi ôn thẻ' : 'Đã xoá buổi học');
     } catch (e) {
       if (mounted) setState(() => (_busy = false, _error = hocTapErrorMessage(e)));
     }
@@ -234,6 +334,7 @@ class _LogSheetState extends ConsumerState<LogSheet> {
     }
     _subjectId = subjects.any((s) => s.id == _subjectId) ? _subjectId : (ref.watch(selectedSubjectIdProvider) ?? subjects.first.id);
     final subject = subjects.firstWhere((s) => s.id == _subjectId, orElse: () => subjects.first);
+    if (_cardReview) return _cardReviewForm(context, subjects, subject);
 
     final courses = ref.watch(studyCoursesProvider(CourseQuery(subjectId: subject.id, statuses: const [CourseStatus.active, CourseStatus.queued]))).value ?? const <CourseView>[];
     if (!_courseInit && ref.read(studyCoursesProvider(CourseQuery(subjectId: subject.id, statuses: const [CourseStatus.active, CourseStatus.queued]))).hasValue) {
@@ -293,23 +394,8 @@ class _LogSheetState extends ConsumerState<LogSheet> {
       title: title,
       children: [
         Text('Hôm nay · ${viDayLabel()}. Chỉ ghi cho hôm nay.', key: const ValueKey('log-header'), style: TextStyle(fontSize: 13, color: theme.textMuted)),
-        if (subjects.length > 1 && !_editing)
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final s in subjects)
-                ChoiceChip(
-                  key: ValueKey('log-subject-${s.id}'),
-                  label: Text(s.name),
-                  selected: s.id == subject.id,
-                  showCheckmark: false,
-                  selectedColor: AppColors.kincha400,
-                  labelStyle: TextStyle(fontSize: 13, color: s.id == subject.id ? AppColors.ink950 : null),
-                  onSelected: (_) => _pickSubject(s.id),
-                ),
-            ],
-          ),
+        if (!_editing) _activitySwitch(),
+        if (subjects.length > 1 && !_editing) _subjectChips(subjects, subject),
         if (_editing)
           Text('Môn: ${subject.name} · Khóa: ${widget.editing!.courseTitle ?? 'Ôn tập (không gắn khóa)'}', style: const TextStyle(fontSize: 13))
         else

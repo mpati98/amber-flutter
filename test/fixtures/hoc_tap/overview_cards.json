@@ -1,0 +1,184 @@
+{
+  "today": "2026-11-06",
+  "week": {
+    "start": "2026-11-02",
+    "end": "2026-11-08",
+    "goalMinutes": 1050,
+    "minutes": 0,
+    "remainingMinutes": 1050,
+    "remainingDays": 3,
+    "suggestedPerDay": 350,
+    "days": [
+      {
+        "date": "2026-11-02",
+        "minutes": 0,
+        "goalMinutes": 150,
+        "done": false
+      },
+      {
+        "date": "2026-11-03",
+        "minutes": 0,
+        "goalMinutes": 150,
+        "done": false
+      },
+      {
+        "date": "2026-11-04",
+        "minutes": 0,
+        "goalMinutes": 150,
+        "done": false
+      },
+      {
+        "date": "2026-11-05",
+        "minutes": 0,
+        "goalMinutes": 150,
+        "done": false
+      },
+      {
+        "date": "2026-11-06",
+        "minutes": 0,
+        "goalMinutes": 150,
+        "done": false
+      },
+      {
+        "date": "2026-11-07",
+        "minutes": 0,
+        "goalMinutes": 150,
+        "done": false
+      },
+      {
+        "date": "2026-11-08",
+        "minutes": 0,
+        "goalMinutes": 150,
+        "done": false
+      }
+    ],
+    "bySubject": [
+      {
+        "subjectId": "6fa92c6b-5cd3-4766-bbdb-315a41472443",
+        "name": "Môn A",
+        "goalMinutes": 420,
+        "minutes": 0,
+        "remainingMinutes": 420,
+        "suggestedPerDay": 140
+      },
+      {
+        "subjectId": "0ec2a33b-4319-4b1e-976b-bd31a9a264ad",
+        "name": "Môn C",
+        "goalMinutes": 210,
+        "minutes": 0,
+        "remainingMinutes": 210,
+        "suggestedPerDay": 70
+      },
+      {
+        "subjectId": "ec59229a-4d93-4942-98db-d332bf8a00f0",
+        "name": "Môn D",
+        "goalMinutes": 420,
+        "minutes": 0,
+        "remainingMinutes": 420,
+        "suggestedPerDay": 140
+      }
+    ]
+  },
+  "subjects": [
+    {
+      "subjectId": "6fa92c6b-5cd3-4766-bbdb-315a41472443",
+      "name": "Môn A",
+      "goalMinutes": 60,
+      "today": {
+        "minutes": 0,
+        "logCount": 0,
+        "done": false,
+        "reason": null
+      },
+      "next": null,
+      "activeCourse": null,
+      "counts": {
+        "QUEUED": 0,
+        "DONE": 0,
+        "WISHLIST": 0
+      },
+      "vsBaseline": null,
+      "cards": {
+        "planned": 3,
+        "finished": 0,
+        "quota": 20,
+        "nextReviewDay": "2026-11-08"
+      }
+    },
+    {
+      "subjectId": "9c6faa7b-4bf0-443f-8d6f-78dc3ff894cf",
+      "name": "Môn B",
+      "goalMinutes": null,
+      "today": {
+        "minutes": 0,
+        "logCount": 0,
+        "done": false,
+        "reason": null
+      },
+      "next": null,
+      "activeCourse": null,
+      "counts": {
+        "QUEUED": 0,
+        "DONE": 0,
+        "WISHLIST": 0
+      },
+      "vsBaseline": null,
+      "cards": {
+        "planned": 0,
+        "finished": 0,
+        "quota": 20,
+        "nextReviewDay": "2026-11-08"
+      }
+    },
+    {
+      "subjectId": "0ec2a33b-4319-4b1e-976b-bd31a9a264ad",
+      "name": "Môn C",
+      "goalMinutes": 30,
+      "today": {
+        "minutes": 0,
+        "logCount": 0,
+        "done": false,
+        "reason": null
+      },
+      "next": null,
+      "activeCourse": null,
+      "counts": {
+        "QUEUED": 0,
+        "DONE": 0,
+        "WISHLIST": 0
+      },
+      "vsBaseline": null,
+      "cards": {
+        "planned": 2,
+        "finished": 2,
+        "quota": 20,
+        "nextReviewDay": "2026-11-08"
+      }
+    },
+    {
+      "subjectId": "ec59229a-4d93-4942-98db-d332bf8a00f0",
+      "name": "Môn D",
+      "goalMinutes": 60,
+      "today": {
+        "minutes": 0,
+        "logCount": 0,
+        "done": false,
+        "reason": null
+      },
+      "next": null,
+      "activeCourse": null,
+      "counts": {
+        "QUEUED": 0,
+        "DONE": 0,
+        "WISHLIST": 0
+      },
+      "vsBaseline": null,
+      "cards": {
+        "planned": 3,
+        "finished": 1,
+        "quota": 20,
+        "nextReviewDay": "2026-11-08"
+      }
+    }
+  ]
+}

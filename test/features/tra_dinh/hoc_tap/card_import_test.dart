@@ -1,8 +1,13 @@
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/providers/card_provider.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/card_import_screen.dart';
+import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:amber_flutter/shared/widgets/tag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'hoc_tap_test_support.dart';
@@ -211,4 +216,121 @@ void main() {
       expect(text, contains('none yet'));
     });
   });
+
+  group('"Gắn vào buổi học"', () {
+    String ago(int days) => vnToday(DateTime.now().subtract(Duration(days: days)));
+    StudyLog log(String id, int daysAgo, int minutes, {String? course, LogActivity activity = LogActivity.lesson, int hour = 8}) => StudyLog(
+      id: id,
+      subjectId: _subject,
+      courseId: course == null ? null : 'c-$course',
+      courseTitle: course,
+      logDate: ago(daysAgo),
+      minutes: minutes,
+      createdAt: DateTime.now().subtract(Duration(days: daysAgo)).copyWith(hour: hour),
+      activity: activity,
+    );
+
+    FakeHocTapApi withLogs() => FakeHocTapApi()
+      ..parsedResult = _fixtureParsed(errors: false, existing: false, duplicates: false)
+      ..logs = [
+        log('old', 3, 45, course: 'English Tenses 101'),
+        log('today', 0, 30),
+        log('card', 1, 15, activity: LogActivity.cardReview),
+        log('ancient', 20, 60, course: 'Quá cũ'),
+        log('mid', 3, 20, hour: 21),
+      ];
+
+    Future<void> pickLesson(WidgetTester tester, String label) async {
+      await tester.ensureVisible(_k('import-lesson-null'));
+      await tester.tap(_k('import-lesson-null'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('provider: chỉ buổi HỌC BÀI trong 14 ngày, mới nhất trước (bỏ buổi ôn thẻ và buổi quá cũ)', (tester) async {
+      final api = withLogs();
+      await _pump(tester, api);
+      final container = ProviderScope.containerOf(tester.element(find.byType(CardImportScreen)));
+      final list = await container.read(recentLessonLogsProvider(_subject).future);
+      expect(list.map((l) => l.id), ['today', 'mid', 'old'], reason: 'cùng ngày thì buổi muộn hơn trước');
+    });
+
+    testWidgets('mặc định không gắn buổi nào; ô chọn có dòng "dd/MM · khóa · N phút"', (tester) async {
+      final api = withLogs();
+      await _pump(tester, api);
+      expect(find.text('Gắn vào buổi học (không bắt buộc)'), findsOneWidget);
+      expect(find.text('Không gắn buổi học'), findsOneWidget);
+      await tester.tap(_k('import-lesson-null'));
+      await tester.pumpAndSettle();
+      expect(find.text('${formatDM(ago(3))} · English Tenses 101 · 45 phút'), findsOneWidget);
+      expect(find.text('${formatDM(ago(0))} · Ôn tập · 30 phút'), findsOneWidget, reason: 'buổi không khóa ghi "Ôn tập"');
+      expect(find.textContaining('Quá cũ'), findsNothing);
+      expect(find.textContaining('15 phút'), findsNothing, reason: 'buổi ôn thẻ không có trong danh sách');
+    });
+
+    testWidgets('chọn một buổi: lưu gửi đúng logId kèm các thẻ', (tester) async {
+      final api = withLogs();
+      await _pump(tester, api);
+      await pickLesson(tester, '${formatDM(ago(3))} · English Tenses 101 · 45 phút');
+      await _preview(tester);
+      await tester.tap(_k('import-save'));
+      await tester.pumpAndSettle();
+      expect(api.cardImportLogIds, ['old']);
+      expect(api.cardImports.single.map((c) => c['phrase']), ['pick up on', 'come across']);
+    });
+
+    testWidgets('không chọn: logId null', (tester) async {
+      final api = withLogs();
+      await _pump(tester, api);
+      await _preview(tester);
+      await tester.tap(_k('import-save'));
+      await tester.pumpAndSettle();
+      expect(api.cardImportLogIds, [null]);
+    });
+
+    testWidgets('chọn rồi quay về "Không gắn buổi học": logId null', (tester) async {
+      final api = withLogs();
+      await _pump(tester, api);
+      await pickLesson(tester, '${formatDM(ago(0))} · Ôn tập · 30 phút');
+      await tester.ensureVisible(_k('import-lesson-today'));
+      await tester.tap(_k('import-lesson-today'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Không gắn buổi học').last);
+      await tester.pumpAndSettle();
+      await _preview(tester);
+      await tester.tap(_k('import-save'));
+      await tester.pumpAndSettle();
+      expect(api.cardImportLogIds, [null]);
+    });
+
+    testWidgets('chọn buổi không làm mất kết quả xem trước', (tester) async {
+      final api = withLogs();
+      await _pump(tester, api);
+      await _preview(tester);
+      await pickLesson(tester, '${formatDM(ago(3))} · English Tenses 101 · 45 phút');
+      expect(_k('preview-summary'), findsOneWidget);
+      expect(_save(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('tải danh sách buổi học lỗi: ẩn ô chọn, vẫn nhập thẻ được (logId null)', (tester) async {
+      final api = withLogs()..logsError = apiError(500, {'error': 'x'});
+      await _pump(tester, api);
+      expect(find.text('Gắn vào buổi học (không bắt buộc)'), findsNothing);
+      expect(find.byType(DropdownButtonFormField<String?>), findsNothing);
+      await _preview(tester);
+      await tester.tap(_k('import-save'));
+      await tester.pumpAndSettle();
+      expect(api.cardImportLogIds, [null]);
+      expect(find.textContaining('Đã lưu 2 thẻ'), findsOneWidget);
+    });
+
+    testWidgets('không có buổi học nào trong 14 ngày: ẩn ô chọn', (tester) async {
+      await _pump(tester, FakeHocTapApi()..logs = [log('ancient', 20, 60, course: 'Quá cũ')]);
+      expect(find.text('Gắn vào buổi học (không bắt buộc)'), findsNothing);
+    });
+  });
 }
+
+/// "2026-11-03" → "03/11" (như nhãn trong ô chọn buổi học).
+String formatDM(String iso) => '${iso.substring(8, 10)}/${iso.substring(5, 7)}';

@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/utils/vn_time.dart';
 import '../models/study_card.dart';
+import '../models/study_enums.dart';
+import '../models/study_log.dart';
 import '../services/hoc_tap_api.dart';
 
 // Kho thẻ từ vựng. autoDispose như phần còn lại của Học tập: rời màn là bỏ cache.
@@ -190,3 +193,14 @@ class CardActions {
 }
 
 final cardActionsProvider = Provider<CardActions>(CardActions.new);
+
+/// Số ngày nhìn lại khi chọn buổi học để gắn thẻ (tính cả hôm nay).
+const lessonPickerDays = 14;
+
+/// Buổi HỌC BÀI (không tính buổi ôn thẻ) của môn trong 14 ngày gần nhất, kể cả hôm nay, mới nhất trước.
+/// Dùng cho ô "Gắn vào buổi học" ở màn Nhập thẻ.
+final recentLessonLogsProvider = FutureProvider.autoDispose.family<List<StudyLog>, String>((ref, subjectId) async {
+  final now = DateTime.now();
+  final logs = await ref.watch(hocTapApiProvider).getLogs(from: vnToday(now.subtract(const Duration(days: lessonPickerDays - 1))), to: vnToday(now), subjectId: subjectId);
+  return [for (final l in logs) if (l.activity == LogActivity.lesson) l]..sort((a, b) => b.logDate != a.logDate ? b.logDate.compareTo(a.logDate) : b.createdAt.compareTo(a.createdAt));
+});

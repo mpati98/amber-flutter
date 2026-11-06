@@ -1,0 +1,59 @@
+{
+  "days": [
+    {
+      "date": "2026-11-05",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-06",
+      "kind": "today",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 35,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [
+        {
+          "id": "f063a1f9-54e6-4b25-98f9-25a6e40f4f79",
+          "courseTitle": null,
+          "minutes": 15,
+          "activity": "CARD_REVIEW",
+          "sections": []
+        },
+        {
+          "id": "067839c6-def1-441f-9d31-b2cf386cfa46",
+          "courseTitle": null,
+          "minutes": 20,
+          "activity": "LESSON",
+          "sections": []
+        }
+      ],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-07",
+      "kind": "planned",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "needsReason": false,
+      "plannedItems": [],
+      "milestones": []
+    }
+  ],
+  "summary": {
+    "minutes": 35,
+    "plannedMinutes": 0,
+    "vsBaseline": []
+  }
+}

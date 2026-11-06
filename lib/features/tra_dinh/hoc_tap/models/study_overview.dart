@@ -137,6 +137,25 @@ class CourseCounts {
   final int wishlist;
 }
 
+/// Khối thẻ từ vựng của một môn trong Tổng quan (`cards`): số thẻ trong kế hoạch hôm nay, đã ôn xong, hạn mức, ngày ôn tập kế tiếp.
+class CardsToday {
+  const CardsToday({this.planned = 0, this.finished = 0, this.quota = 20, this.nextReviewDay});
+
+  factory CardsToday.fromJson(Map<String, dynamic> json) => CardsToday(
+    planned: (json['planned'] as num?)?.toInt() ?? 0,
+    finished: (json['finished'] as num?)?.toInt() ?? 0,
+    quota: (json['quota'] as num?)?.toInt() ?? 20,
+    nextReviewDay: json['nextReviewDay'] as String?,
+  );
+
+  final int planned;
+  final int finished;
+  final int quota;
+
+  /// "YYYY-MM-DD" của ngày ôn tập kế tiếp (sau hôm nay); null nếu server không trả.
+  final String? nextReviewDay;
+}
+
 class SubjectOverview {
   const SubjectOverview({
     required this.subjectId,
@@ -147,6 +166,7 @@ class SubjectOverview {
     this.activeCourse,
     this.counts = const CourseCounts(),
     this.vsBaseline,
+    this.cards,
   });
 
   factory SubjectOverview.fromJson(Map<String, dynamic> json) => SubjectOverview(
@@ -158,6 +178,7 @@ class SubjectOverview {
     activeCourse: json['activeCourse'] == null ? null : CourseView.fromJson(json['activeCourse'] as Map<String, dynamic>),
     counts: json['counts'] == null ? const CourseCounts() : CourseCounts.fromJson(json['counts'] as Map<String, dynamic>),
     vsBaseline: json['vsBaseline'] as int?,
+    cards: json['cards'] is Map<String, dynamic> ? CardsToday.fromJson(json['cards'] as Map<String, dynamic>) : null,
   );
 
   final String subjectId;
@@ -170,6 +191,9 @@ class SubjectOverview {
 
   /// Lệch ngày so với kế hoạch của khóa cuối hàng học (âm = sớm).
   final int? vsBaseline;
+
+  /// Khối thẻ từ vựng; null = backend cũ chưa có (không hiện gì).
+  final CardsToday? cards;
 }
 
 /// GET /api/tra-dinh/hoc-tap/overview.
