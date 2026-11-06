@@ -6,6 +6,7 @@ import '../models/course.dart';
 import '../models/parsed_sections.dart';
 import '../models/study_enums.dart';
 import '../models/study_card.dart';
+import '../models/study_card_insights.dart';
 import '../models/study_card_queue.dart';
 import '../models/study_log.dart';
 import '../models/study_overview.dart';
@@ -230,6 +231,13 @@ class HocTapApi {
   Future<ReviewResult> reviewCard(String id, CardRating rating) async {
     final res = await _dio.post<Map<String, dynamic>>('$_base/cards/$id/review', data: {'rating': rating.api});
     return ReviewResult.fromJson(res.data!);
+  }
+
+  /// Thống kê nhóm khó của môn. [days] ∈ {7, 30, 90} (khác → 400 `invalid_days`): chỉ `totals` tính theo kỳ này, các nhóm và
+  /// thẻ hay quên tích luỹ suốt đời thẻ. 404 `subject_not_found`.
+  Future<CardInsights> getCardInsights(String subjectId, {int days = 30}) async {
+    final res = await _dio.get<Map<String, dynamic>>('$_base/cards/insights', queryParameters: {'subjectId': subjectId, 'days': days});
+    return CardInsights.fromJson(res.data!);
   }
 
   Future<StudyOverview> getOverview() async {

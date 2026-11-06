@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_insights.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_queue.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
@@ -432,5 +433,22 @@ class FakeHocTapApi extends HocTapApi {
     final soonest = notYet ? DateTime.now().add(const Duration(minutes: 5)) : cardQueue.soonestDueAt;
     cardQueue = CardQueue(date: cardQueue.date, quota: cardQueue.quota, cards: [for (final x in cardQueue.cards) if (x.id != id) x], progress: progress, counts: cardQueue.counts, soonestDueAt: soonest);
     return ReviewResult(card: c, progress: progress, soonestDueAt: soonest);
+  }
+
+  // ---- Thống kê nhóm khó ----
+
+  /// Kết quả mặc định của getCardInsights (JSON thật `card_insights_seeded`); [insightsByDays] trả riêng theo kỳ nếu có.
+  CardInsights cardInsights = CardInsights.fromJson(fixtureMap('card_insights_seeded'));
+  CardInsights Function(int days)? insightsByDays;
+  final insightsCalls = <({String subjectId, int days})>[];
+  Object? insightsError;
+  Completer<void>? insightsGate;
+
+  @override
+  Future<CardInsights> getCardInsights(String subjectId, {int days = 30}) async {
+    insightsCalls.add((subjectId: subjectId, days: days));
+    await insightsGate?.future;
+    if (insightsError case final e?) throw e;
+    return insightsByDays?.call(days) ?? cardInsights;
   }
 }

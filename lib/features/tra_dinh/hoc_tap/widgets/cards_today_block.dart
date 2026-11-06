@@ -62,11 +62,24 @@ class CardsTodayBlock extends ConsumerWidget {
               onPressed: () => _open(context, ref, '/tra-dinh/hoc-tap/the/on?subjectId=$id'),
               child: Text(started ? 'Tiếp tục ôn' : 'Bắt đầu ôn'),
             ),
-          OutlinedButton.icon(
-            key: const ValueKey('open-card-library'),
-            onPressed: () => _open(context, ref, '/tra-dinh/hoc-tap/the?subjectId=$id'),
-            icon: const Icon(Icons.style_outlined),
-            label: const Text('Kho thẻ'),
+          // Hai nút phụ cạnh nhau; máy hẹp / chữ lớn thì tự xuống dòng thay vì tràn.
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                key: const ValueKey('open-card-library'),
+                onPressed: () => _open(context, ref, '/tra-dinh/hoc-tap/the?subjectId=$id'),
+                icon: const Icon(Icons.style_outlined),
+                label: const Text('Kho thẻ'),
+              ),
+              OutlinedButton.icon(
+                key: const ValueKey('open-card-insights'),
+                onPressed: () => _open(context, ref, '/tra-dinh/hoc-tap/the/thong-ke?subjectId=$id'),
+                icon: const Icon(Icons.insights_outlined),
+                label: const Text('Thống kê thẻ'),
+              ),
+            ],
           ),
         ],
       ),

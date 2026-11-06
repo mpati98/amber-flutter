@@ -1,0 +1,21 @@
+{
+  "days": 30,
+  "minCards": 10,
+  "totals": {
+    "reviews": 0,
+    "notYetRate": 0,
+    "promotedToWeekly": 0
+  },
+  "byKind": [
+    {
+      "key": "COLLOCATION",
+      "label": "COLLOCATION",
+      "totalCards": 11,
+      "everNotYetCards": 10,
+      "rate": 0.9090909090909091
+    }
+  ],
+  "byTopic": [],
+  "byLesson": [],
+  "hardestCards": []
+}

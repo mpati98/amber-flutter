@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/utils/vn_time.dart';
 import '../models/study_card.dart';
+import '../models/study_card_insights.dart';
 import '../models/study_enums.dart';
 import '../models/study_log.dart';
 import '../services/hoc_tap_api.dart';
@@ -204,3 +205,57 @@ final recentLessonLogsProvider = FutureProvider.autoDispose.family<List<StudyLog
   final logs = await ref.watch(hocTapApiProvider).getLogs(from: vnToday(now.subtract(const Duration(days: lessonPickerDays - 1))), to: vnToday(now), subjectId: subjectId);
   return [for (final l in logs) if (l.activity == LogActivity.lesson) l]..sort((a, b) => b.logDate != a.logDate ? b.logDate.compareTo(a.logDate) : b.createdAt.compareTo(a.createdAt));
 });
+
+/// Các kỳ thống kê nhóm khó (ngày); mặc định 30.
+const insightPeriods = [7, 30, 90];
+
+/// Màn "Nhóm khó": kỳ đang chọn, dữ liệu của kỳ đó, và cờ đang tải lại kỳ mới. Đổi kỳ GIỮ dữ liệu cũ cho tới khi có dữ liệu mới
+/// (không nháy về trống). Mỗi lần tải tăng [_seq] để bỏ kết quả của yêu cầu cũ (đổi kỳ liên tục).
+class CardInsightsState {
+  const CardInsightsState({this.days = 30, this.insights, this.loading = false, this.error});
+
+  final int days;
+  final CardInsights? insights;
+  final bool loading;
+
+  /// Lỗi tải kỳ [days]; có lỗi thì không hiện dữ liệu cũ (nó thuộc kỳ khác) mà hiện nút Thử lại.
+  final Object? error;
+}
+
+class CardInsightsNotifier extends AsyncNotifier<CardInsightsState> {
+  CardInsightsNotifier(this.subjectId);
+
+  final String subjectId;
+  int _seq = 0;
+
+  @override
+  Future<CardInsightsState> build() async => CardInsightsState(insights: await ref.watch(hocTapApiProvider).getCardInsights(subjectId));
+
+  /// Đổi kỳ và tải lại; dữ liệu cũ vẫn hiện (loading = true) tới khi xong.
+  Future<void> setDays(int days) async {
+    final prev = state.value;
+    if (prev == null || (prev.days == days && prev.error == null)) return;
+    await _load(days, prev.insights);
+  }
+
+  /// Tải lại kỳ hiện tại (nút Thử lại, kéo để làm mới).
+  Future<void> reload() async {
+    final prev = state.value;
+    if (prev != null) await _load(prev.days, prev.insights);
+  }
+
+  Future<void> _load(int days, CardInsights? keep) async {
+    final seq = ++_seq;
+    state = AsyncData(CardInsightsState(days: days, insights: keep, loading: true));
+    try {
+      final data = await ref.read(hocTapApiProvider).getCardInsights(subjectId, days: days);
+      if (!ref.mounted || seq != _seq) return;
+      state = AsyncData(CardInsightsState(days: days, insights: data));
+    } catch (e) {
+      if (!ref.mounted || seq != _seq) return;
+      state = AsyncData(CardInsightsState(days: days, error: e));
+    }
+  }
+}
+
+final cardInsightsProvider = AsyncNotifierProvider.autoDispose.family<CardInsightsNotifier, CardInsightsState, String>(CardInsightsNotifier.new);

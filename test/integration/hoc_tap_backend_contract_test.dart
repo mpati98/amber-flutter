@@ -7,6 +7,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.da
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/providers/card_review_provider.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_insights_prompt.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/log_labels.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
@@ -590,6 +591,60 @@ void main() {
         await expectLater(api.deleteLog(created.log.id), throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 404)));
       } finally {
         if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá buổi học
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
+    skip: missing ? 'thiếu --dart-define=NSD_API_BASE_URL / NSD_API_TOKEN' : false,
+  );
+
+  test(
+    'Thống kê nhóm khó: môn mới → số 0 và mảng rỗng ở 7 / 30 / 90 ngày; một lượt Chưa nhớ → có số tổng nhưng nhóm chưa đủ ngưỡng; mã lỗi (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = HocTapApi(dio);
+      String? subjectId;
+
+      try {
+        subjectId = (await api.createSubject({'name': 'TEST Nhóm khó ${DateTime.now().millisecondsSinceEpoch}', 'dailyGoalMinutes': 60})).id;
+        final sid = subjectId;
+
+        // 1. Môn mới, chưa có thẻ: số 0, mọi danh sách rỗng, ngưỡng 10; kỳ trả về đúng kỳ đã hỏi.
+        for (final days in [7, 30, 90]) {
+          final i = await api.getCardInsights(sid, days: days);
+          expect(i.days, days);
+          expect(i.minCards, 10);
+          expect((i.totals.reviews, i.totals.notYetRate, i.totals.promotedToWeekly), (0, 0.0, 0));
+          expect([i.byKind.length, i.byTopic.length, i.byLesson.length, i.hardestCards.length], [0, 0, 0, 0]);
+          expect(i.hasGroups, isFalse);
+        }
+        expect((await api.getCardInsights(sid)).days, 30, reason: 'mặc định 30 ngày');
+        final emptyPrompt = buildInsightsPrompt(insights: await api.getCardInsights(sid), topics: await api.getCardTopics(sid).then((t) => [for (final x in t) x.topic]));
+        expect(emptyPrompt, contains('Topics I already use: none yet.'));
+
+        // 2. Một thẻ bị đánh Chưa nhớ: số tổng có (cả ba kỳ), nhóm vẫn rỗng vì dưới ngưỡng 10 thẻ, chưa có thẻ hay quên (< 3 lượt).
+        final card = await api.createCard({'subjectId': sid, 'phrase': 'look forward to', 'meaning': 'to be excited', 'example': 'I look forward to it.', 'kind': 'PHRASAL_VERB', 'topics': ['work']});
+        expect((await api.getCardQueue(sid)).cards.single.id, card.id);
+        await api.reviewCard(card.id, CardRating.notYet);
+        for (final days in [7, 30, 90]) {
+          final i = await api.getCardInsights(sid, days: days);
+          expect(i.totals.reviews, 1, reason: '$days ngày');
+          expect(i.totals.notYetRate, 1.0);
+          expect(i.totals.notYetPercent, 100);
+          expect(i.totals.promotedToWeekly, 0);
+          expect(i.hasGroups, isFalse, reason: '1 thẻ từng Chưa nhớ < ngưỡng 10');
+          expect(i.hardestCards, isEmpty);
+        }
+        // chủ đề của môn (cho lời nhắc): đã có "work"
+        expect([for (final t in await api.getCardTopics(sid)) t.topic], ['work']);
+
+        // 3. Mã lỗi: kỳ không hợp lệ → 400 invalid_days; môn lạ → 404 subject_not_found.
+        Matcher status(int code, String error) => throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', code).having((e) => (e.response?.data as Map)['error'], 'error', error));
+        for (final bad in [0, 14, 365, -7]) {
+          await expectLater(api.getCardInsights(sid, days: bad), status(400, 'invalid_days'));
+        }
+        await expectLater(api.getCardInsights('00000000-0000-4000-8000-000000000000'), status(404, 'subject_not_found'));
+      } finally {
+        if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá thẻ, lượt ôn
       }
     },
     timeout: const Timeout(Duration(minutes: 5)),

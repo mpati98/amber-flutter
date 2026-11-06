@@ -5,6 +5,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.da
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/log_labels.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/overview_cards.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/cards_today_block.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/schedule_day_row.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
@@ -19,15 +20,7 @@ import 'hoc_tap_widget_support.dart';
 
 Finder _k(String key) => find.byKey(ValueKey(key));
 
-/// JSON thật của backend dev; riêng phần `today` của mỗi môn được gán 20 phút / 1 buổi để thẻ "Hôm nay" có chữ ngắn
-/// (font của test rộng hơn font thật nên dòng "0 / 60 phút · Chưa có buổi nào" của thẻ cũ sẽ tràn chỉ trong test).
-StudyOverview _overview() {
-  final j = Map<String, dynamic>.from(fixtureMap('overview_cards'));
-  j['subjects'] = [
-    for (final s in j['subjects'] as List) {...Map<String, dynamic>.from(s as Map), 'today': {'minutes': 20, 'logCount': 1, 'done': false, 'reason': null}},
-  ];
-  return StudyOverview.fromJson(j);
-}
+StudyOverview _overview() => StudyOverview.fromJson(fixtureMap('overview_cards'));
 SubjectOverview _subject(StudyOverview o, String name) => o.subjects.firstWhere((s) => s.name == name);
 
 Future<FakeHocTapApi> _pump(WidgetTester tester, {StudyOverview? overview, String? select, FakeHocTapApi? fake}) async {
@@ -152,6 +145,31 @@ void main() {
       expect(visited.last, '/tra-dinh/hoc-tap/the/on?subjectId=$id');
     });
 
+    testWidgets('"Thống kê thẻ" cạnh "Kho thẻ" mở màn Nhóm khó của môn đang chọn (cả khi đã ôn xong, không có nút chính)', (tester) async {
+      final o = _overview();
+      final id = _subject(o, 'Môn C').subjectId;
+      await _pump(tester, overview: o, select: 'Môn C');
+      expect(find.text('Thống kê thẻ'), findsOneWidget);
+      expect(_k('open-card-library'), findsOneWidget);
+      expect(find.byType(Wrap), findsWidgets, reason: 'hai nút phụ trong Wrap: cạnh nhau khi đủ chỗ, xuống dòng khi hẹp (font test rộng hơn font thật nên không kiểm vị trí)');
+      await tester.tap(_k('open-card-insights'));
+      await tester.pumpAndSettle();
+      expect(visited.last, '/tra-dinh/hoc-tap/the/thong-ke?subjectId=$id');
+    });
+
+    testWidgets('hai nút phụ không tràn ở 320 px, chữ x2.0 (xuống dòng)', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: CardsTodayBlock(subject: _subject(_overview(), 'Môn C')))), api: FakeHocTapApi(), width: 320);
+      expect(tester.takeException(), isNull);
+      expect(_k('open-card-insights'), findsOneWidget);
+    });
+
+    testWidgets('backend cũ (không có khối cards): không có nút "Thống kê thẻ"', (tester) async {
+      await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: FakeHocTapApi());
+      expect(_k('open-card-insights'), findsNothing);
+    });
+
     testWidgets('"Kho thẻ" mở kho thẻ của môn đang chọn', (tester) async {
       final o = _overview();
       final id = _subject(o, 'Môn C').subjectId;
@@ -222,6 +240,34 @@ void main() {
       expect(find.text('Ôn thẻ'), findsOneWidget);
       expect(find.text('Ôn tập'), findsOneWidget);
       expect(find.text('15p'), findsOneWidget);
+    });
+  });
+
+  group('thẻ "Hôm nay" (TodayCard): dòng phút không tràn', () {
+    SubjectOverview subject({int minutes = 0, int logCount = 0, int? goal = 60}) => SubjectOverview(
+      subjectId: 's',
+      name: 'Tiếng Anh',
+      goalMinutes: goal,
+      today: TodayInfo(minutes: minutes, logCount: logCount, done: false),
+    );
+
+    for (final (width, scale) in [(390.0, 1.0), (320.0, 1.0), (320.0, 2.0), (390.0, 2.0)]) {
+      testWidgets('bề rộng $width, chữ x$scale: "0 / 60 phút" và "Chưa có buổi nào" xuống dòng thay vì tràn', (tester) async {
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        for (final s in [subject(), subject(goal: null), subject(minutes: 1440, logCount: 12, goal: 1440), subject(minutes: 20, logCount: 1)]) {
+          await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: TodayCard(subject: s, onLog: () {}))), api: FakeHocTapApi(), width: width);
+          expect(tester.takeException(), isNull, reason: '${s.goalMinutes} / ${s.today.minutes} / ${s.today.logCount}');
+          expect(find.byKey(const ValueKey('today-minutes')), findsOneWidget);
+        }
+      });
+    }
+
+    testWidgets('chữ vẫn đủ: số phút, mục tiêu và số buổi đều có mặt', (tester) async {
+      await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: TodayCard(subject: subject(), onLog: () {}))), api: FakeHocTapApi(), width: 320);
+      expect(find.text('0'), findsOneWidget);
+      expect(find.text(' / 60 phút'), findsOneWidget);
+      expect(find.text('Chưa có buổi nào'), findsOneWidget);
     });
   });
 }

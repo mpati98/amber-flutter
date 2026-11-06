@@ -121,6 +121,14 @@ void main() {
       expect(visited.last, '/tra-dinh/hoc-tap/the/on?subjectId=$_subject');
     });
 
+    testWidgets('thanh trên có nút "Thống kê" mở màn Nhóm khó của môn', (tester) async {
+      await _pump(tester, _api());
+      expect(find.byTooltip('Thống kê'), findsOneWidget);
+      await tester.tap(_k('card-stats'));
+      await tester.pumpAndSettle();
+      expect(visited.last, '/tra-dinh/hoc-tap/the/thong-ke?subjectId=$_subject');
+    });
+
     testWidgets('nút "+ Thêm thẻ từ Claude" mở màn nhập', (tester) async {
       await _pump(tester, _api());
       expect(find.text('+ Thêm thẻ từ Claude'), findsOneWidget);

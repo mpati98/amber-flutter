@@ -22,6 +22,7 @@ import '../../features/tang_kinh_cac/screens/tai_lieu_screen.dart';
 import '../../features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
 import '../../features/tra_dinh/hoc_tap/models/study_enums.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_import_screen.dart';
+import '../../features/tra_dinh/hoc_tap/screens/card_insights_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_library_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_review_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart'
@@ -241,6 +242,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'hoc-tap/the/on',
             builder: (_, state) => CardReviewScreen(subjectId: state.uri.queryParameters['subjectId']),
+          ),
+          GoRoute(
+            path: 'hoc-tap/the/thong-ke',
+            builder: (_, state) => CardInsightsScreen(subjectId: state.uri.queryParameters['subjectId']),
           ),
           GoRoute(
             path: 'hoc-tap/the/them',

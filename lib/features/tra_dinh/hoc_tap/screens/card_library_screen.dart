@@ -121,7 +121,10 @@ class _LibraryState extends ConsumerState<_Library> {
             if (state != null) Text('${state.counts.total} thẻ${widget.subjectName == null ? '' : ' · ${widget.subjectName}'}', key: const ValueKey('library-total'), style: TextStyle(fontSize: 12, color: theme.textMuted)),
           ],
         ),
-        actions: [IconButton(key: const ValueKey('card-add'), tooltip: 'Thêm một thẻ', icon: const Icon(Icons.add), onPressed: () => _openCard(null))],
+        actions: [
+          IconButton(key: const ValueKey('card-stats'), tooltip: 'Thống kê', icon: const Icon(Icons.insights_outlined), onPressed: () => context.push('/tra-dinh/hoc-tap/the/thong-ke?subjectId=${widget.subjectId}')),
+          IconButton(key: const ValueKey('card-add'), tooltip: 'Thêm một thẻ', icon: const Icon(Icons.add), onPressed: () => _openCard(null)),
+        ],
       ),
       bottomNavigationBar: SafeArea(
         child: Center(

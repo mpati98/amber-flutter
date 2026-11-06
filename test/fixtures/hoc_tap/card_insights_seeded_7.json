@@ -1,0 +1,80 @@
+{
+  "days": 7,
+  "minCards": 10,
+  "totals": {
+    "reviews": 3,
+    "notYetRate": 0.3333333333333333,
+    "promotedToWeekly": 2
+  },
+  "byKind": [
+    {
+      "key": "IDIOM",
+      "label": "IDIOM",
+      "totalCards": 12,
+      "everNotYetCards": 10,
+      "rate": 0.8333333333333334
+    }
+  ],
+  "byTopic": [
+    {
+      "key": "work",
+      "label": "work",
+      "totalCards": 12,
+      "everNotYetCards": 10,
+      "rate": 0.8333333333333334
+    }
+  ],
+  "byLesson": [
+    {
+      "key": "3e479741-5938-4439-9fa7-934991247304",
+      "label": "04/11 · English Tenses 101",
+      "totalCards": 12,
+      "everNotYetCards": 10,
+      "rate": 0.8333333333333334
+    }
+  ],
+  "hardestCards": [
+    {
+      "id": "21d4ce16-e0d0-4e53-8dda-b77204e21488",
+      "phrase": "idiom phrase 0",
+      "meaning": "meaning 0",
+      "example": "Example sentence number 0.",
+      "note": "note 0",
+      "kind": "IDIOM",
+      "topics": [
+        "work",
+        "daily life"
+      ],
+      "notYetCount": 5,
+      "reviewCount": 7
+    },
+    {
+      "id": "043fe7f9-0ab8-478c-8e9e-8b9ac6bcfc36",
+      "phrase": "idiom phrase 1",
+      "meaning": "meaning 1",
+      "example": "Example sentence number 1.",
+      "note": null,
+      "kind": "IDIOM",
+      "topics": [
+        "work",
+        "daily life"
+      ],
+      "notYetCount": 4,
+      "reviewCount": 6
+    },
+    {
+      "id": "7982db51-75b2-481d-96a5-d9b77daec842",
+      "phrase": "idiom phrase 2",
+      "meaning": "meaning 2",
+      "example": "Example sentence number 2.",
+      "note": null,
+      "kind": "IDIOM",
+      "topics": [
+        "work",
+        "daily life"
+      ],
+      "notYetCount": 3,
+      "reviewCount": 5
+    }
+  ]
+}

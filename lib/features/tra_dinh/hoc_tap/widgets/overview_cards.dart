@@ -65,16 +65,21 @@ class TodayCard extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
-                goal == null ? ' phút' : ' / $goal phút',
-                style: TextStyle(fontSize: 14, color: theme.textMuted),
+              // Flexible / Expanded: máy hẹp hoặc chữ lớn thì hai đoạn chữ này xuống dòng thay vì tràn.
+              Flexible(
+                child: Text(
+                  goal == null ? ' phút' : ' / $goal phút',
+                  style: TextStyle(fontSize: 14, color: theme.textMuted),
+                ),
               ),
-              const Spacer(),
-              Text(
-                today.logCount == 0
-                    ? 'Chưa có buổi nào'
-                    : '${today.logCount} buổi',
-                style: TextStyle(fontSize: 12, color: theme.textMuted),
+              Expanded(
+                child: Text(
+                  today.logCount == 0
+                      ? 'Chưa có buổi nào'
+                      : '${today.logCount} buổi',
+                  textAlign: TextAlign.end,
+                  style: TextStyle(fontSize: 12, color: theme.textMuted),
+                ),
               ),
             ],
           ),

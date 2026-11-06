@@ -1,0 +1,13 @@
+{
+  "days": 30,
+  "minCards": 10,
+  "totals": {
+    "reviews": 0,
+    "notYetRate": 0,
+    "promotedToWeekly": 0
+  },
+  "byKind": [],
+  "byTopic": [],
+  "byLesson": [],
+  "hardestCards": []
+}
