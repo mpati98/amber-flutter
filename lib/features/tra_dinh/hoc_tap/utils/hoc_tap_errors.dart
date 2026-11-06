@@ -34,6 +34,11 @@ const _messages = {
   'invalid_cursor': 'Không tải được trang kế tiếp, kéo xuống để thử lại',
   'invalid_kind': 'Loại thẻ không hợp lệ',
   'empty_patch': 'Chưa có gì để lưu',
+  // Ôn thẻ
+  'already_finished_today': 'Thẻ này đã ôn xong hôm nay',
+  'not_due_yet': 'Thẻ này chưa đến lúc ôn lại',
+  'not_in_today_plan': 'Thẻ này không có trong kế hoạch hôm nay',
+  'card_suspended': 'Thẻ này đang tạm dừng',
 };
 
 /// Mã lỗi backend → câu tiếng Việt cho người dùng; mã lạ / lỗi mạng → "Có lỗi, thử lại".

@@ -259,6 +259,7 @@ void main() {
       expect(routePath('/tra-dinh/hoc-tap/the'), 'hoc-tap/the');
       expect(routePath('/tra-dinh/hoc-tap/the?subjectId=s'), 'hoc-tap/the');
       expect(routePath('/tra-dinh/hoc-tap/the/them?subjectId=s'), 'hoc-tap/the/them');
+      expect(routePath('/tra-dinh/hoc-tap/the/on?subjectId=s'), 'hoc-tap/the/on');
       expect(routePath('/tra-dinh/placement-test'), 'placement-test');
       expect(routePath('/tra-dinh/một-id-buổi-luyện'), ':sessionId');
     });

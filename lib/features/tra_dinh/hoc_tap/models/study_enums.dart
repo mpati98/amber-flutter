@@ -29,3 +29,15 @@ enum ReasonCode {
 
   static ReasonCode fromApi(Object? value) => values.firstWhere((r) => r.api == value && r != unknown, orElse: () => unknown);
 }
+
+/// Loại buổi học (study_log_activity): học bài hay phút ôn thẻ. Thiếu / lạ → [lesson] (app và server cũ không có trường này).
+enum LogActivity {
+  lesson('LESSON'),
+  cardReview('CARD_REVIEW');
+
+  const LogActivity(this.api);
+
+  final String api;
+
+  static LogActivity fromApi(Object? value) => values.firstWhere((a) => a.api == value, orElse: () => lesson);
+}

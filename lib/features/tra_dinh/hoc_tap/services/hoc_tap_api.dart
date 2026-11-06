@@ -6,6 +6,7 @@ import '../models/course.dart';
 import '../models/parsed_sections.dart';
 import '../models/study_enums.dart';
 import '../models/study_card.dart';
+import '../models/study_card_queue.dart';
 import '../models/study_log.dart';
 import '../models/study_overview.dart';
 import '../models/study_schedule.dart';
@@ -215,6 +216,20 @@ class HocTapApi {
   Future<List<TopicCount>> getCardTopics(String subjectId) async {
     final res = await _dio.get<Map<String, dynamic>>('$_base/cards/topics', queryParameters: {'subjectId': subjectId});
     return [for (final t in (res.data!['topics'] as List? ?? const [])) TopicCount.fromJson(t as Map<String, dynamic>)];
+  }
+
+  /// Hàng ôn hôm nay của môn. Lần gọi đầu trong ngày TẠO kế hoạch (tối đa 20 thẻ); gọi lại không đổi kế hoạch
+  /// (chỉ bù thêm nếu còn chỗ). 404 `subject_not_found`.
+  Future<CardQueue> getCardQueue(String subjectId) async {
+    final res = await _dio.get<Map<String, dynamic>>('$_base/cards/queue', queryParameters: {'subjectId': subjectId});
+    return CardQueue.fromJson(res.data!);
+  }
+
+  /// Ghi một lượt ôn (server trả 201). 409: `already_finished_today`, `not_due_yet`, `not_in_today_plan`, `card_suspended`;
+  /// 404 `card_not_found`.
+  Future<ReviewResult> reviewCard(String id, CardRating rating) async {
+    final res = await _dio.post<Map<String, dynamic>>('$_base/cards/$id/review', data: {'rating': rating.api});
+    return ReviewResult.fromJson(res.data!);
   }
 
   Future<StudyOverview> getOverview() async {

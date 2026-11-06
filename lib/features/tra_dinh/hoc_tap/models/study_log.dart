@@ -28,6 +28,7 @@ class StudyLog {
     this.note,
     required this.createdAt,
     this.sections = const [],
+    this.activity = LogActivity.lesson,
   });
 
   factory StudyLog.fromJson(Map<String, dynamic> json) => StudyLog(
@@ -40,6 +41,7 @@ class StudyLog {
     note: json['note'] as String?,
     createdAt: DateTime.parse(json['createdAt'] as String),
     sections: [for (final s in (json['sections'] as List? ?? const [])) StudyLogSection.fromJson(s as Map<String, dynamic>)],
+    activity: LogActivity.fromApi(json['activity']),
   );
 
   final String id;
@@ -51,6 +53,9 @@ class StudyLog {
   final String? note;
   final DateTime createdAt;
   final List<StudyLogSection> sections;
+
+  /// LESSON (mặc định) hoặc CARD_REVIEW (phút ôn thẻ, không khóa, không phần).
+  final LogActivity activity;
 }
 
 /// `today` trong response POST / PATCH / DELETE log: tổng hôm nay của môn.

@@ -1,0 +1,61 @@
+{
+  "card": {
+    "id": "098d5a4d-1156-4d6e-b06a-483f59c80186",
+    "subjectId": "ebdda0b7-7193-4593-b358-19d3a5cf38d7",
+    "sourceLogId": null,
+    "phrase": "break the ice",
+    "meaning": "to make people feel relaxed at the start",
+    "example": "He told a joke to break the ice.",
+    "note": null,
+    "kind": "IDIOM",
+    "topics": [
+      "work"
+    ],
+    "stage": "LEARNING",
+    "dueAt": "2026-11-06T15:14:30.339Z",
+    "reviewCount": 1,
+    "notYetCount": 1,
+    "lastReviewedAt": "2026-11-06T15:09:30.339Z",
+    "suspended": false,
+    "createdAt": "2026-11-06T15:09:27.350Z",
+    "bucket": "NEW",
+    "next": {
+      "NOT_YET": {
+        "stage": "LEARNING",
+        "dueAt": "2026-11-06T15:14:30.339Z"
+      },
+      "REVIEW_AGAIN": {
+        "stage": "LEARNING",
+        "dueAt": "2026-11-06T17:00:00.000Z"
+      },
+      "REMEMBERED": {
+        "stage": "WEEKLY",
+        "dueAt": "2026-11-07T17:00:00.000Z"
+      }
+    }
+  },
+  "progress": {
+    "planned": 3,
+    "finished": 1,
+    "remaining": 2,
+    "byBucket": {
+      "DUE": {
+        "planned": 0,
+        "finished": 0
+      },
+      "NEW": {
+        "planned": 3,
+        "finished": 1
+      },
+      "HARD": {
+        "planned": 0,
+        "finished": 0
+      },
+      "RANDOM": {
+        "planned": 0,
+        "finished": 0
+      }
+    }
+  },
+  "soonestDueAt": "2026-11-06T15:14:30.339Z"
+}

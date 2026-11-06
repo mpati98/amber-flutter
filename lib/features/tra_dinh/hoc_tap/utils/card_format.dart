@@ -4,6 +4,7 @@ import '../../../../shared/utils/api_error.dart';
 import '../../../../shared/utils/date_format.dart';
 import '../../../../shared/utils/vn_time.dart';
 import '../models/study_card.dart';
+import '../models/study_card_queue.dart';
 import 'hoc_tap_errors.dart';
 
 /// Nhãn hạn ôn trên dòng thẻ: "Tạm dừng", "Mới", "Hôm nay" (đến hạn hoặc quá hạn), "Mai", hoặc dd/MM. Ngày theo giờ VN.
@@ -84,4 +85,56 @@ Map<String, dynamic>? _fieldErrors(Object error) {
     return ((data['error'] as Map)['fieldErrors'] as Map).cast<String, dynamic>();
   }
   return null;
+}
+
+const _weekdayShort = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+
+/// Thứ viết tắt theo ISO (1 = thứ Hai … 7 = Chủ nhật): T2..T7, CN.
+String weekdayShort(int isoWeekday) => _weekdayShort[(isoWeekday - 1).clamp(0, 6)];
+
+/// Dòng nhỏ dưới nút đánh giá, từ kết quả [next] của mức đó (server tính sẵn):
+/// - đúng giai đoạn và hạn như bây giờ (ôn thêm giữ lịch) → "Giữ lịch";
+/// - Đang học: ngày khác → "Ngày mai" (hoặc dd/MM nếu xa hơn); trong hôm nay dưới 1 giờ → "N phút";
+/// - Hàng tuần → "CN 08/11"; Hàng tháng → "Tháng 12"; Hàng quý → "Quý 1/2027". Ngày theo giờ VN.
+/// Kiểm "ngày khác" trước "dưới 1 giờ": "Cần ôn lại" lúc 23:30 hẹn 00:00 ngày mai là "Ngày mai", không phải "30 phút"
+/// (server coi thẻ hẹn sang ngày khác là xong cho hôm nay, nó không quay lại trong hôm nay).
+String ratingDueLabel({required StudyCard card, required CardRating rating, required NextSchedule next, DateTime? now}) {
+  final due = next.dueAt;
+  final sameSchedule = next.stage == card.stage && ((due == null && card.dueAt == null) || (due != null && card.dueAt != null && due.isAtSameMomentAs(card.dueAt!)));
+  if (rating == CardRating.remembered && sameSchedule) return 'Giữ lịch';
+  if (due == null) return '';
+  final now0 = now ?? DateTime.now();
+  final vn = vnNow(due);
+  switch (next.stage) {
+    case CardStage.learning:
+      final dueDay = vnToday(due);
+      final today = vnToday(now0);
+      if (dueDay.compareTo(today) > 0) return dueDay == vnToday(now0.add(const Duration(days: 1))) ? 'Ngày mai' : formatDayMonth(dueDay);
+      final left = due.difference(now0);
+      if (left < const Duration(hours: 1)) return '${waitMinutes(left)} phút';
+      return 'Hôm nay';
+    case CardStage.weekly:
+      return '${weekdayShort(vn.weekday)} ${formatDayMonth(vnToday(due))}';
+    case CardStage.monthly:
+      return 'Tháng ${vn.month}';
+    case CardStage.quarterly:
+      return 'Quý ${(vn.month - 1) ~/ 3 + 1}/${vn.year}';
+    case CardStage.newCard:
+    case CardStage.unknown:
+      return '';
+  }
+}
+
+/// Số phút làm tròn LÊN của khoảng còn lại, tối thiểu 1 ("quay lại sau N phút").
+int waitMinutes(Duration left) {
+  final seconds = left.inSeconds;
+  return seconds <= 60 ? 1 : (seconds + 59) ~/ 60;
+}
+
+/// Đồng hồ đếm ngược "m:ss" (hoặc "h:mm:ss" khi từ 1 giờ); âm → "0:00".
+String countdownLabel(Duration left) {
+  final total = left.isNegative ? 0 : left.inSeconds;
+  final h = total ~/ 3600, m = (total % 3600) ~/ 60, s = total % 60;
+  final ss = s.toString().padLeft(2, '0');
+  return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$ss' : '$m:$ss';
 }

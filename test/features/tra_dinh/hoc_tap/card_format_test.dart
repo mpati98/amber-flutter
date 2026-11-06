@@ -1,4 +1,5 @@
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_queue.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_prompt.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -120,5 +121,78 @@ void main() {
       expect(cardPrompt(const []), contains('topics when they fit: none yet.'));
       expect(cardPrompt(['', '  ']), contains('none yet'));
     });
+  });
+
+  group('ratingDueLabel: dòng nhỏ dưới nút đánh giá', () {
+    // Bây giờ: 14:00 giờ VN thứ Sáu 06/11/2026.
+    NextSchedule next(CardStage stage, String? dueAt) => NextSchedule(stage: stage, dueAt: dueAt == null ? null : DateTime.parse(dueAt));
+    String label(CardRating r, NextSchedule n, {StudyCard? card, DateTime? now}) => ratingDueLabel(card: card ?? _card(stage: CardStage.newCard), rating: r, next: n, now: now ?? _now);
+
+    test('Đang học dưới 1 giờ → "N phút" (làm tròn lên, tối thiểu 1)', () {
+      expect(label(CardRating.notYet, next(CardStage.learning, '2026-11-06T14:05:00+07:00')), '5 phút');
+      expect(label(CardRating.notYet, next(CardStage.learning, '2026-11-06T14:04:01+07:00')), '5 phút');
+      expect(label(CardRating.notYet, next(CardStage.learning, '2026-11-06T14:00:20+07:00')), '1 phút');
+      expect(label(CardRating.notYet, next(CardStage.learning, '2026-11-06T14:59:00+07:00')), '59 phút');
+    });
+
+    test('Đang học sang ngày hôm sau → "Ngày mai"; xa hơn → dd/MM; còn trong hôm nay từ 1 giờ → "Hôm nay"', () {
+      expect(label(CardRating.reviewAgain, next(CardStage.learning, '2026-11-07T00:00:00+07:00')), 'Ngày mai');
+      expect(label(CardRating.reviewAgain, next(CardStage.learning, '2026-11-09T00:00:00+07:00')), '09/11');
+      expect(label(CardRating.notYet, next(CardStage.learning, '2026-11-06T18:00:00+07:00')), 'Hôm nay');
+    });
+
+    test('"Cần ôn lại" lúc 23:30 hẹn 00:00 ngày mai là "Ngày mai" (không phải "30 phút")', () {
+      final late = DateTime.parse('2026-11-06T23:30:00+07:00');
+      expect(label(CardRating.reviewAgain, next(CardStage.learning, '2026-11-07T00:00:00+07:00'), now: late), 'Ngày mai');
+      expect(label(CardRating.notYet, next(CardStage.learning, '2026-11-06T23:35:00+07:00'), now: late), '5 phút');
+    });
+
+    test('Hàng tuần → thứ + ngày giờ VN (T2..T7, CN)', () {
+      expect(label(CardRating.remembered, next(CardStage.weekly, '2026-11-08T00:00:00+07:00')), 'CN 08/11');
+      expect(label(CardRating.remembered, next(CardStage.weekly, '2026-11-09T00:00:00+07:00')), 'T2 09/11');
+      expect(label(CardRating.remembered, next(CardStage.weekly, '2026-11-14T00:00:00+07:00')), 'T7 14/11');
+      expect(label(CardRating.remembered, next(CardStage.weekly, '2026-11-13T00:00:00+07:00')), 'T6 13/11');
+    });
+
+    test('đầu ngày VN là 17:00Z hôm trước nhưng nhãn theo ngày VN: 2026-11-07T17:00Z → "CN 08/11"', () {
+      expect(label(CardRating.remembered, next(CardStage.weekly, '2026-11-07T17:00:00Z')), 'CN 08/11');
+    });
+
+    test('Hàng tháng → "Tháng 12"; Hàng quý → "Quý 1/2027" (quý theo tháng VN, kể cả ranh giới năm)', () {
+      expect(label(CardRating.remembered, next(CardStage.monthly, '2026-12-06T00:00:00+07:00')), 'Tháng 12');
+      expect(label(CardRating.remembered, next(CardStage.quarterly, '2027-01-03T00:00:00+07:00')), 'Quý 1/2027');
+      expect(label(CardRating.remembered, next(CardStage.quarterly, '2027-04-04T00:00:00+07:00')), 'Quý 2/2027');
+      expect(label(CardRating.remembered, next(CardStage.quarterly, '2026-12-31T17:30:00Z')), 'Quý 1/2027', reason: '00:30 ngày 01/01 giờ VN');
+      expect(label(CardRating.remembered, next(CardStage.quarterly, '2026-10-04T00:00:00+07:00')), 'Quý 4/2026');
+    });
+
+    test('"Đã nhớ" của thẻ ôn thêm giữ nguyên giai đoạn và hạn → "Giữ lịch"', () {
+      final card = _card(stage: CardStage.weekly, dueAt: '2026-11-16T22:09:34.931Z');
+      expect(label(CardRating.remembered, next(CardStage.weekly, '2026-11-16T22:09:34.931Z'), card: card), 'Giữ lịch');
+      expect(label(CardRating.notYet, next(CardStage.learning, '2026-11-06T14:05:00+07:00'), card: card), '5 phút', reason: 'chỉ mức "Đã nhớ" mới giữ lịch');
+      expect(label(CardRating.remembered, next(CardStage.weekly, '2026-11-17T00:00:00+07:00'), card: card), 'T3 17/11', reason: 'khác hạn cũ thì không phải "Giữ lịch"');
+      expect(label(CardRating.remembered, next(CardStage.monthly, '2026-11-16T22:09:34.931Z'), card: card), 'Tháng 11', reason: 'khác giai đoạn');
+    });
+
+    test('thiếu hạn / giai đoạn mới → chuỗi rỗng, không ném lỗi', () {
+      expect(label(CardRating.notYet, next(CardStage.learning, null)), '');
+      expect(label(CardRating.remembered, next(CardStage.unknown, '2026-11-08T00:00:00+07:00')), '');
+    });
+  });
+
+  test('weekdayShort: 1..7 → T2..T7, CN', () {
+    expect([for (var d = 1; d <= 7; d++) weekdayShort(d)], ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']);
+  });
+
+  test('waitMinutes làm tròn lên, tối thiểu 1; countdownLabel m:ss / h:mm:ss, âm → 0:00', () {
+    expect(waitMinutes(const Duration(seconds: 1)), 1);
+    expect(waitMinutes(const Duration(seconds: 60)), 1);
+    expect(waitMinutes(const Duration(seconds: 61)), 2);
+    expect(waitMinutes(const Duration(minutes: 5)), 5);
+    expect(waitMinutes(Duration.zero), 1);
+    expect(countdownLabel(const Duration(minutes: 4, seconds: 32)), '4:32');
+    expect(countdownLabel(const Duration(seconds: 7)), '0:07');
+    expect(countdownLabel(const Duration(hours: 1, minutes: 2, seconds: 3)), '1:02:03');
+    expect(countdownLabel(const Duration(seconds: -5)), '0:00');
   });
 }

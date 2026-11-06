@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_queue.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
@@ -380,5 +381,48 @@ class FakeHocTapApi extends HocTapApi {
   Future<List<TopicCount>> getCardTopics(String subjectId) async {
     if (topicsError case final e?) throw e;
     return topics;
+  }
+
+  // ---- Hàng ôn thẻ ----
+
+  /// Hàng ôn của server giả (mặc định: fixture thật `card_queue`, 3 thẻ mới). [reviewCard] mô phỏng server: bỏ thẻ khỏi hàng,
+  /// tăng finished (trừ NOT_YET: thẻ ra khỏi hàng và hẹn quay lại sau 5 phút).
+  CardQueue cardQueue = CardQueue.fromJson(fixtureMap('card_queue'));
+  final queueCalls = <String>[];
+  final reviewCalls = <({String id, CardRating rating})>[];
+  Object? queueError;
+  Object? reviewError;
+  Completer<void>? queueGate;
+  Completer<void>? reviewGate;
+
+  /// Thay cách trả lời của [reviewCard] (vd dựng 409 theo từng lần gọi).
+  Future<ReviewResult> Function(String id, CardRating rating)? reviewHandler;
+
+  @override
+  Future<CardQueue> getCardQueue(String subjectId) async {
+    queueCalls.add(subjectId);
+    await queueGate?.future;
+    if (queueError case final e?) throw e;
+    return cardQueue;
+  }
+
+  @override
+  Future<ReviewResult> reviewCard(String id, CardRating rating) async {
+    reviewCalls.add((id: id, rating: rating));
+    await reviewGate?.future;
+    if (reviewError case final e?) throw e;
+    if (reviewHandler case final h?) return h(id, rating);
+    final c = cardQueue.cards.firstWhere((c) => c.id == id);
+    final notYet = rating == CardRating.notYet;
+    final p = cardQueue.progress;
+    final finished = p.finished + (notYet ? 0 : 1);
+    final by = {
+      for (final e in p.byBucket.entries)
+        e.key: BucketProgress(planned: e.value.planned, finished: e.value.finished + (e.key == c.bucket && !notYet ? 1 : 0)),
+    };
+    final progress = CardProgress(planned: p.planned, finished: finished, remaining: p.planned - finished, byBucket: by);
+    final soonest = notYet ? DateTime.now().add(const Duration(minutes: 5)) : cardQueue.soonestDueAt;
+    cardQueue = CardQueue(date: cardQueue.date, quota: cardQueue.quota, cards: [for (final x in cardQueue.cards) if (x.id != id) x], progress: progress, counts: cardQueue.counts, soonestDueAt: soonest);
+    return ReviewResult(card: c, progress: progress, soonestDueAt: soonest);
   }
 }

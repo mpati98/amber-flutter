@@ -43,6 +43,7 @@ class _LibraryState extends ConsumerState<_Library> {
   Timer? _debounce;
 
   CardLibraryNotifier get _notifier => ref.read(cardLibraryProvider(widget.subjectId).notifier);
+  String get _reviewPath => '/tra-dinh/hoc-tap/the/on?subjectId=${widget.subjectId}';
   String get _importPath => '/tra-dinh/hoc-tap/the/them?subjectId=${widget.subjectId}';
 
   @override
@@ -88,6 +89,11 @@ class _LibraryState extends ConsumerState<_Library> {
   Future<void> _openFilters(CardFilter current) async {
     final next = await showCardFilterSheet(context, subjectId: widget.subjectId, current: current);
     if (next != null && mounted) await _notifier.setFilter(next);
+  }
+
+  Future<void> _openReview() async {
+    await context.push(_reviewPath);
+    if (mounted) await _notifier.reload(); // có thể vừa ôn: lịch hạn của thẻ đã đổi
   }
 
   Future<void> _openImport() async {
@@ -145,6 +151,10 @@ class _LibraryState extends ConsumerState<_Library> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: FilledButton.icon(key: const ValueKey('card-review-start'), onPressed: _openReview, icon: const Icon(Icons.play_arrow), label: const Text('Ôn thẻ hôm nay')),
+        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(

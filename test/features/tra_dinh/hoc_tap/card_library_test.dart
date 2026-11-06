@@ -112,6 +112,16 @@ void main() {
       expect(visited.last, '/tra-dinh/hoc-tap/the/them?subjectId=$_subject');
     });
 
+    testWidgets('nút chính "Ôn thẻ hôm nay" ở đầu màn mở màn ôn thẻ của môn', (tester) async {
+      await _pump(tester, _api());
+      expect(find.text('Ôn thẻ hôm nay'), findsOneWidget);
+      // nằm trên ô tìm kiếm
+      expect(tester.getTopLeft(_k('card-review-start')).dy, lessThan(tester.getTopLeft(_k('card-search')).dy));
+      await tester.tap(_k('card-review-start'));
+      await tester.pumpAndSettle();
+      expect(visited.last, '/tra-dinh/hoc-tap/the/on?subjectId=$_subject');
+    });
+
     testWidgets('nút "+ Thêm thẻ từ Claude" mở màn nhập', (tester) async {
       await _pump(tester, _api());
       expect(find.text('+ Thêm thẻ từ Claude'), findsOneWidget);

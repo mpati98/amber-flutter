@@ -1,0 +1,61 @@
+{
+  "card": {
+    "id": "dc464522-7155-40c5-ac8b-773929cf533e",
+    "subjectId": "33f5957c-55eb-42fc-8fb7-662a98f21c06",
+    "sourceLogId": null,
+    "phrase": "come across",
+    "meaning": "to find by chance",
+    "example": "I came across an old photo.",
+    "note": null,
+    "kind": "PHRASAL_VERB",
+    "topics": [
+      "travel"
+    ],
+    "stage": "WEEKLY",
+    "dueAt": "2026-11-16T15:09:35.036Z",
+    "reviewCount": 5,
+    "notYetCount": 2,
+    "lastReviewedAt": "2026-11-06T15:09:36.287Z",
+    "suspended": false,
+    "createdAt": "2026-11-06T15:09:34.444Z",
+    "bucket": "HARD",
+    "next": {
+      "NOT_YET": {
+        "stage": "LEARNING",
+        "dueAt": "2026-11-06T15:14:36.287Z"
+      },
+      "REVIEW_AGAIN": {
+        "stage": "LEARNING",
+        "dueAt": "2026-11-06T17:00:00.000Z"
+      },
+      "REMEMBERED": {
+        "stage": "MONTHLY",
+        "dueAt": "2026-12-05T17:00:00.000Z"
+      }
+    }
+  },
+  "progress": {
+    "planned": 4,
+    "finished": 1,
+    "remaining": 3,
+    "byBucket": {
+      "DUE": {
+        "planned": 1,
+        "finished": 0
+      },
+      "NEW": {
+        "planned": 1,
+        "finished": 0
+      },
+      "HARD": {
+        "planned": 1,
+        "finished": 1
+      },
+      "RANDOM": {
+        "planned": 1,
+        "finished": 0
+      }
+    }
+  },
+  "soonestDueAt": null
+}

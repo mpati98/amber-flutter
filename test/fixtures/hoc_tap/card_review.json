@@ -1,0 +1,62 @@
+{
+  "card": {
+    "id": "6350ac29-6613-497c-9801-c6d182597f8f",
+    "subjectId": "ebdda0b7-7193-4593-b358-19d3a5cf38d7",
+    "sourceLogId": null,
+    "phrase": "look forward to",
+    "meaning": "to be excited about something in the future",
+    "example": "I look forward to meeting you next week.",
+    "note": "followed by V-ing",
+    "kind": "PHRASAL_VERB",
+    "topics": [
+      "daily life",
+      "work"
+    ],
+    "stage": "WEEKLY",
+    "dueAt": "2026-11-07T17:00:00.000Z",
+    "reviewCount": 1,
+    "notYetCount": 0,
+    "lastReviewedAt": "2026-11-06T15:09:29.484Z",
+    "suspended": false,
+    "createdAt": "2026-11-06T15:09:27.126Z",
+    "bucket": "NEW",
+    "next": {
+      "NOT_YET": {
+        "stage": "LEARNING",
+        "dueAt": "2026-11-06T15:14:29.484Z"
+      },
+      "REVIEW_AGAIN": {
+        "stage": "LEARNING",
+        "dueAt": "2026-11-06T17:00:00.000Z"
+      },
+      "REMEMBERED": {
+        "stage": "MONTHLY",
+        "dueAt": "2026-12-05T17:00:00.000Z"
+      }
+    }
+  },
+  "progress": {
+    "planned": 3,
+    "finished": 1,
+    "remaining": 2,
+    "byBucket": {
+      "DUE": {
+        "planned": 0,
+        "finished": 0
+      },
+      "NEW": {
+        "planned": 3,
+        "finished": 1
+      },
+      "HARD": {
+        "planned": 0,
+        "finished": 0
+      },
+      "RANDOM": {
+        "planned": 0,
+        "finished": 0
+      }
+    }
+  },
+  "soonestDueAt": null
+}

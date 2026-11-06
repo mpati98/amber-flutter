@@ -1,8 +1,10 @@
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_queue.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/providers/card_review_provider.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
@@ -400,6 +402,126 @@ void main() {
         await expectLater(api.getCards(subjectId: '00000000-0000-4000-8000-000000000000'), _apiError(404, 'subject_not_found'));
       } finally {
         if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá thẻ, lượt ôn
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
+    skip: missing ? 'thiếu --dart-define=NSD_API_BASE_URL / NSD_API_TOKEN' : false,
+  );
+
+  test(
+    'Ôn thẻ: hàng ôn → đánh giá → 409 → chờ thẻ quay lại → buổi CARD_REVIEW cộng vào ngày (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = HocTapApi(dio);
+      String? subjectId;
+      // NOT_YET hẹn quay lại sau 5 phút TRONG hôm nay: quá 23:50 giờ VN thì hạn rơi sang ngày mai (server coi là xong hôm nay).
+      final vn = vnNow();
+      if (vn.hour == 23 && vn.minute >= 50) {
+        markTestSkipped('gần nửa đêm giờ VN: chạy lại sau 00:00');
+        return;
+      }
+
+      try {
+        subjectId = (await api.createSubject({'name': 'TEST Ôn thẻ ${DateTime.now().millisecondsSinceEpoch}', 'dailyGoalMinutes': 60})).id;
+        final sid = subjectId;
+        Future<StudyCard> mk(String phrase, String example) => api.createCard({'subjectId': sid, 'phrase': phrase, 'meaning': 'meaning of $phrase', 'example': example, 'kind': 'PHRASAL_VERB'});
+        final c1 = await mk('look forward to', 'I look forward to meeting you.');
+        final c2 = await mk('break the ice', 'A joke can break the ice.');
+        final c3 = await mk('pick up on', 'She picks up on small things.');
+
+        // 1. Hàng ôn: lần gọi đầu tạo kế hoạch (3 thẻ mới, theo thứ tự tạo); gọi lại không đổi.
+        final q1 = await api.getCardQueue(sid);
+        expect(q1.date, vnToday());
+        expect(q1.quota, 20);
+        expect(q1.cards.map((c) => c.id), [c1.id, c2.id, c3.id]);
+        expect(q1.cards.every((c) => c.bucket == CardBucket.newCard), isTrue);
+        expect((q1.progress.planned, q1.progress.finished, q1.progress.remaining), (3, 0, 3));
+        expect(q1.progress.byBucket[CardBucket.newCard]!.planned, 3);
+        expect(q1.soonestDueAt, isNull);
+        expect(q1.counts.total, 3);
+        for (final c in q1.cards) {
+          expect(c.next.keys.toSet(), CardRating.values.toSet());
+          expect(c.next[CardRating.notYet]!.stage, CardStage.learning);
+          expect(c.next[CardRating.remembered]!.stage, CardStage.weekly);
+          // thẻ MỚI (không phải ôn thêm) thì "Đã nhớ" tiến lên, không phải "Giữ lịch"
+          expect(ratingDueLabel(card: c.card, rating: CardRating.remembered, next: c.next[CardRating.remembered]!), isNot('Giữ lịch'));
+        }
+        expect((await api.getCardQueue(sid)).cards.map((c) => c.id), [c1.id, c2.id, c3.id]);
+
+        // 2. Đánh giá "Đã nhớ" (201): thẻ lên Hàng tuần, tiến độ tăng; ôn lại ngay → 409 already_finished_today.
+        final r1 = await api.reviewCard(c1.id, CardRating.remembered);
+        expect(r1.card.card.stage, CardStage.weekly);
+        expect(r1.card.card.reviewCount, 1);
+        expect(r1.card.card.dueAt, isNotNull);
+        expect((r1.progress.finished, r1.progress.remaining), (1, 2));
+        expect(r1.soonestDueAt, isNull);
+        await expectLater(api.reviewCard(c1.id, CardRating.remembered), _apiError(409, 'already_finished_today'));
+
+        // 3. "Chưa nhớ": về Đang học, hẹn ~5 phút; chưa tới hạn thì 409 not_due_yet; ra khỏi hàng, vào soonestDueAt.
+        final r2 = await api.reviewCard(c2.id, CardRating.notYet);
+        expect(r2.card.card.stage, CardStage.learning);
+        expect(r2.card.card.notYetCount, 1);
+        expect(r2.soonestDueAt, isNotNull);
+        final waitMin = r2.soonestDueAt!.difference(DateTime.now()).inSeconds / 60;
+        expect(waitMin, inInclusiveRange(3.5, 5.5), reason: 'hẹn quay lại sau 5 phút');
+        expect(r2.progress.finished, 1, reason: 'Chưa nhớ chưa tính là xong');
+        await expectLater(api.reviewCard(c2.id, CardRating.remembered), _apiError(409, 'not_due_yet'));
+        final q2 = await api.getCardQueue(sid);
+        expect(q2.cards.map((c) => c.id), [c3.id]);
+        expect(q2.soonestDueAt, r2.soonestDueAt);
+        expect((q2.progress.finished, q2.progress.remaining), (1, 2));
+
+        // 4. "Cần ôn lại": tính là xong hôm nay, hạn sang đầu ngày mai giờ VN; nhãn nút là "Ngày mai".
+        final r3 = await api.reviewCard(c3.id, CardRating.reviewAgain);
+        expect(r3.card.card.stage, CardStage.learning);
+        expect(r3.progress.finished, 2);
+        final tomorrowStart = DateTime.parse('${_dayBefore(vnToday(), -1)}T00:00:00+07:00');
+        expect(r3.card.card.dueAt!.isAtSameMomentAs(tomorrowStart), isTrue);
+        expect(r3.card.card.notYetCount, 0);
+
+        // 5. Hết thẻ hiện ngay mà còn thẻ đợi → trạng thái "chờ" của màn ôn.
+        final q3 = await api.getCardQueue(sid);
+        expect(q3.cards, isEmpty);
+        expect(q3.soonestDueAt, isNotNull);
+        expect(reviewPhaseFor(queue: q3.cards, progress: q3.progress, soonestDueAt: q3.soonestDueAt), ReviewPhase.waiting);
+        expect(q3.progress.remaining - q3.cards.length, 1, reason: 'số thẻ đang đợi quay lại');
+
+        // 6. Thẻ tạm dừng: bị loại khỏi tiến độ và hàng ôn; ôn nó → 409 card_suspended. Thẻ ngoài kế hoạch → 409 not_in_today_plan.
+        final c4 = await mk('get along with', 'I get along with my coworkers.');
+        final q4 = await api.getCardQueue(sid); // bù thêm c4 vào kế hoạch
+        expect(q4.cards.map((c) => c.id), [c4.id]);
+        expect(q4.progress.planned, 4);
+        await api.patchCard(c4.id, {'suspended': true});
+        await expectLater(api.reviewCard(c4.id, CardRating.remembered), _apiError(409, 'card_suspended'));
+        final q5 = await api.getCardQueue(sid);
+        expect(q5.cards, isEmpty);
+        expect(q5.progress.planned, 3, reason: 'thẻ tạm dừng không tính vào kế hoạch');
+        final c5 = await mk('come across', 'I came across an old photo.');
+        await expectLater(api.reviewCard(c5.id, CardRating.remembered), _apiError(409, 'not_in_today_plan'));
+        await expectLater(api.reviewCard('00000000-0000-4000-8000-000000000000', CardRating.remembered), _apiError(404, 'card_not_found'));
+
+        // 7. Kết thúc phiên: lưu số phút thành buổi CARD_REVIEW (không khóa, không phần), cộng vào ngày; app đọc được activity.
+        final logged = await api.createLog({'subjectId': sid, 'activity': 'CARD_REVIEW', 'minutes': 15});
+        expect(logged.log.activity, LogActivity.cardReview);
+        expect(logged.log.courseId, isNull);
+        expect(logged.log.courseTitle, isNull);
+        expect(logged.log.sections, isEmpty);
+        expect(logged.log.minutes, 15);
+        expect((logged.today.minutes, logged.today.goalMinutes, logged.today.done), (15, 60, false));
+        final lesson = await api.createLog({'subjectId': sid, 'minutes': 45});
+        expect(lesson.log.activity, LogActivity.lesson, reason: 'không gửi activity (như app cũ) = học bài');
+        expect((lesson.today.minutes, lesson.today.done), (60, true), reason: '45 học bài + 15 ôn thẻ = đủ mục tiêu 60');
+        final today = vnToday();
+        final logs = await api.getLogs(from: today, to: today, subjectId: sid);
+        expect(logs.where((l) => l.activity == LogActivity.cardReview).fold<int>(0, (n, l) => n + l.minutes), 15);
+        expect(logs.where((l) => l.activity == LogActivity.lesson).fold<int>(0, (n, l) => n + l.minutes), 45);
+        final ov = (await api.getOverview()).subjects.firstWhere((x) => x.subjectId == sid);
+        expect((ov.today.minutes, ov.today.done), (60, true));
+        await expectLater(api.createLog({'subjectId': sid, 'activity': 'CARD_REVIEW', 'minutes': 0}), throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 400)));
+        await expectLater(api.createLog({'subjectId': sid, 'activity': 'CARD_REVIEW', 'minutes': 1441}), throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', 400)));
+        await expectLater(api.getCardQueue('00000000-0000-4000-8000-000000000000'), _apiError(404, 'subject_not_found'));
+      } finally {
+        if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá thẻ, lượt ôn, kế hoạch, buổi học
       }
     },
     timeout: const Timeout(Duration(minutes: 5)),

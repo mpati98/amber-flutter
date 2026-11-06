@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-06",
+  "quota": 20,
+  "cards": [],
+  "progress": {
+    "planned": 0,
+    "finished": 0,
+    "remaining": 0,
+    "byBucket": {
+      "DUE": {
+        "planned": 0,
+        "finished": 0
+      },
+      "NEW": {
+        "planned": 0,
+        "finished": 0
+      },
+      "HARD": {
+        "planned": 0,
+        "finished": 0
+      },
+      "RANDOM": {
+        "planned": 0,
+        "finished": 0
+      }
+    }
+  },
+  "soonestDueAt": null,
+  "counts": {
+    "NEW": 0,
+    "LEARNING": 0,
+    "WEEKLY": 0,
+    "MONTHLY": 0,
+    "QUARTERLY": 0,
+    "total": 0,
+    "suspended": 0
+  }
+}
