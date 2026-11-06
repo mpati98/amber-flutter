@@ -1,0 +1,73 @@
+{
+  "cards": [
+    {
+      "id": "76bb26eb-6d4d-4dba-8e25-eaf5ad5284c3",
+      "subjectId": "68ce2ee3-638d-44d5-8a81-ff4cb6e68b21",
+      "sourceLogId": null,
+      "phrase": "make a decision",
+      "meaning": "to choose after thinking",
+      "example": "We need to make a decision today.",
+      "note": null,
+      "kind": "COLLOCATION",
+      "topics": [],
+      "stage": "NEW",
+      "dueAt": null,
+      "reviewCount": 0,
+      "notYetCount": 0,
+      "lastReviewedAt": null,
+      "suspended": true,
+      "createdAt": "2026-11-06T14:42:01.761Z"
+    },
+    {
+      "id": "efa16ad4-a4a0-4991-b1bc-748b5d1305bd",
+      "subjectId": "68ce2ee3-638d-44d5-8a81-ff4cb6e68b21",
+      "sourceLogId": null,
+      "phrase": "break the ice",
+      "meaning": "to make people feel more relaxed at the start",
+      "example": "He told a joke to break the ice.",
+      "note": null,
+      "kind": "IDIOM",
+      "topics": [
+        "work"
+      ],
+      "stage": "WEEKLY",
+      "dueAt": "2026-11-14T17:00:00.000Z",
+      "reviewCount": 4,
+      "notYetCount": 1,
+      "lastReviewedAt": "2026-11-08T03:00:00.000Z",
+      "suspended": false,
+      "createdAt": "2026-11-06T14:42:01.550Z"
+    },
+    {
+      "id": "5e0e5c26-c6ec-4be6-86f6-b9793993d606",
+      "subjectId": "68ce2ee3-638d-44d5-8a81-ff4cb6e68b21",
+      "sourceLogId": null,
+      "phrase": "look forward to",
+      "meaning": "to be excited about something that is going to happen",
+      "example": "I look forward to meeting you next week.",
+      "note": "followed by V-ing",
+      "kind": "PHRASAL_VERB",
+      "topics": [
+        "daily life",
+        "work"
+      ],
+      "stage": "NEW",
+      "dueAt": null,
+      "reviewCount": 0,
+      "notYetCount": 0,
+      "lastReviewedAt": null,
+      "suspended": false,
+      "createdAt": "2026-11-06T14:42:01.322Z"
+    }
+  ],
+  "counts": {
+    "NEW": 2,
+    "LEARNING": 0,
+    "WEEKLY": 1,
+    "MONTHLY": 0,
+    "QUARTERLY": 0,
+    "total": 3,
+    "suspended": 1
+  },
+  "nextCursor": null
+}

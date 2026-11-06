@@ -1,0 +1,10 @@
+{
+  "error": {
+    "formErrors": [],
+    "fieldErrors": {
+      "phrase": [
+        "single_word"
+      ]
+    }
+  }
+}

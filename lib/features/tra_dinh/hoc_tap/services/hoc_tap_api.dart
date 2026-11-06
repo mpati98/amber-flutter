@@ -5,6 +5,7 @@ import '../../../../shared/services/api_client.dart';
 import '../models/course.dart';
 import '../models/parsed_sections.dart';
 import '../models/study_enums.dart';
+import '../models/study_card.dart';
 import '../models/study_log.dart';
 import '../models/study_overview.dart';
 import '../models/study_schedule.dart';
@@ -150,6 +151,70 @@ class HocTapApi {
   Future<StudyStats> getStats({String? subjectId, String range = '30'}) async {
     final res = await _dio.get<Map<String, dynamic>>('$_base/stats', queryParameters: {'subjectId': ?subjectId, 'range': range});
     return StudyStats.fromJson(res.data!);
+  }
+
+  /// Kho thẻ của một môn, mới nhất trước. Lọc theo [stage], [kind], [topic], [q] (cụm hoặc nghĩa); phân trang bằng [cursor]
+  /// (lấy từ nextCursor của trang trước). `counts` luôn là số của cả môn.
+  Future<CardListPage> getCards({
+    required String subjectId,
+    CardStage? stage,
+    CardKind? kind,
+    String? topic,
+    String? q,
+    int limit = 50,
+    String? cursor,
+  }) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '$_base/cards',
+      queryParameters: {
+        'subjectId': subjectId,
+        if (stage != null && stage != CardStage.unknown) 'stage': stage.api,
+        if (kind != null && kind != CardKind.unknown) 'kind': kind.api,
+        if (topic != null && topic.isNotEmpty) 'topic': topic,
+        if (q != null && q.trim().isNotEmpty) 'q': q.trim(),
+        'limit': limit,
+        'cursor': ?cursor,
+      },
+    );
+    return CardListPage.fromJson(res.data!);
+  }
+
+  /// [body]: subjectId, phrase, meaning, example, note, kind, topics, logId. 409 `duplicate_phrase`; 400 theo từng trường.
+  Future<StudyCard> createCard(Map<String, Object?> body) async {
+    final res = await _dio.post<Map<String, dynamic>>('$_base/cards', data: body);
+    return StudyCard.fromJson(res.data!);
+  }
+
+  Future<StudyCard> getCard(String id) async {
+    final res = await _dio.get<Map<String, dynamic>>('$_base/cards/$id');
+    return StudyCard.fromJson(res.data!);
+  }
+
+  /// [patch] chỉ chứa trường cần đổi: phrase, meaning, example, note, kind, topics, suspended.
+  Future<StudyCard> patchCard(String id, Map<String, Object?> patch) async {
+    final res = await _dio.patch<Map<String, dynamic>>('$_base/cards/$id', data: patch);
+    return StudyCard.fromJson(res.data!);
+  }
+
+  /// Xoá thẻ cùng các lượt ôn và mục kế hoạch của nó.
+  Future<void> deleteCard(String id) => _dio.delete<void>('$_base/cards/$id');
+
+  /// Xem trước nhập thẻ từ JSON dán vào; KHÔNG lưu gì.
+  Future<ParsedCards> parseCards(String subjectId, String text) async {
+    final res = await _dio.post<Map<String, dynamic>>('$_base/cards/parse', data: {'subjectId': subjectId, 'text': text});
+    return ParsedCards.fromJson(res.data!);
+  }
+
+  /// Nhập tối đa 100 thẻ; thẻ lặp hoặc đã có thì bỏ qua. 400 `invalid_cards` (kèm errors) nếu có thẻ lỗi — không lưu gì.
+  Future<ImportResult> importCards(String subjectId, List<Map<String, Object?>> cards, {String? logId}) async {
+    final res = await _dio.post<Map<String, dynamic>>('$_base/cards/import', data: {'subjectId': subjectId, 'logId': ?logId, 'cards': cards});
+    return ImportResult.fromJson(res.data!);
+  }
+
+  /// Các chủ đề đang có trong môn (nhiều thẻ trước), kể cả thẻ tạm dừng.
+  Future<List<TopicCount>> getCardTopics(String subjectId) async {
+    final res = await _dio.get<Map<String, dynamic>>('$_base/cards/topics', queryParameters: {'subjectId': subjectId});
+    return [for (final t in (res.data!['topics'] as List? ?? const [])) TopicCount.fromJson(t as Map<String, dynamic>)];
   }
 
   Future<StudyOverview> getOverview() async {

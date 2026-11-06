@@ -70,6 +70,12 @@ class _Loaded extends ConsumerWidget {
           icon: const Icon(Icons.add),
           label: const Text('Khóa học'),
         ),
+        OutlinedButton.icon(
+          key: const ValueKey('open-card-library'),
+          onPressed: () => context.push('/tra-dinh/hoc-tap/the?subjectId=${subject.subjectId}'),
+          icon: const Icon(Icons.style_outlined),
+          label: const Text('Kho thẻ'),
+        ),
       ],
     );
   }

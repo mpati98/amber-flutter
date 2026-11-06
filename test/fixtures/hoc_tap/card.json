@@ -1,0 +1,21 @@
+{
+  "id": "5e0e5c26-c6ec-4be6-86f6-b9793993d606",
+  "subjectId": "68ce2ee3-638d-44d5-8a81-ff4cb6e68b21",
+  "sourceLogId": null,
+  "phrase": "look forward to",
+  "meaning": "to be excited about something that is going to happen",
+  "example": "I look forward to meeting you next week.",
+  "note": "followed by V-ing",
+  "kind": "PHRASAL_VERB",
+  "topics": [
+    "daily life",
+    "work"
+  ],
+  "stage": "NEW",
+  "dueAt": null,
+  "reviewCount": 0,
+  "notYetCount": 0,
+  "lastReviewedAt": null,
+  "suspended": false,
+  "createdAt": "2026-11-06T14:42:01.322Z"
+}

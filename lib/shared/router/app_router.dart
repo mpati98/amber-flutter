@@ -21,6 +21,8 @@ import '../../features/tang_kinh_cac/screens/sach_screen.dart';
 import '../../features/tang_kinh_cac/screens/tai_lieu_screen.dart';
 import '../../features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
 import '../../features/tra_dinh/hoc_tap/models/study_enums.dart';
+import '../../features/tra_dinh/hoc_tap/screens/card_import_screen.dart';
+import '../../features/tra_dinh/hoc_tap/screens/card_library_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart'
     as hoc_tap;
 import '../../features/tra_dinh/hoc_tap/screens/course_list_screen.dart';
@@ -229,6 +231,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, state) => WishlistScreen(
               subjectId: state.uri.queryParameters['subjectId'],
             ),
+          ),
+          // Kho thẻ từ vựng: hai route tĩnh, đứng trước ':sessionId'.
+          GoRoute(
+            path: 'hoc-tap/the',
+            builder: (_, state) => CardLibraryScreen(subjectId: state.uri.queryParameters['subjectId']),
+          ),
+          GoRoute(
+            path: 'hoc-tap/the/them',
+            builder: (_, state) => CardImportScreen(subjectId: state.uri.queryParameters['subjectId']),
           ),
           GoRoute(
             path: ':sessionId',

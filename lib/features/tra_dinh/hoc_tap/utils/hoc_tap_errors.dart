@@ -26,6 +26,14 @@ const _messages = {
   'goal_met': 'Ngày đó đã đủ mục tiêu, không cần lý do',
   'study_routine_auto': 'Việc học tập tự tính từ buổi học, không tick tay',
   'invalid_date': 'Ngày không hợp lệ',
+  // Kho thẻ từ vựng
+  'duplicate_phrase': 'Cụm từ này đã có trong kho của môn',
+  'card_not_found': 'Không tìm thấy thẻ, có thể đã bị xoá',
+  'log_subject_mismatch': 'Buổi học này thuộc môn khác',
+  'invalid_cards': 'Có thẻ chưa hợp lệ, sửa các lỗi rồi thử lại',
+  'invalid_cursor': 'Không tải được trang kế tiếp, kéo xuống để thử lại',
+  'invalid_kind': 'Loại thẻ không hợp lệ',
+  'empty_patch': 'Chưa có gì để lưu',
 };
 
 /// Mã lỗi backend → câu tiếng Việt cho người dùng; mã lạ / lỗi mạng → "Có lỗi, thử lại".

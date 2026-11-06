@@ -16,10 +16,12 @@ Future<void> pumpHocTap(
   required HocTapApi api,
   NghiSuDuongApi? routinesApi,
   double width = 390,
+  double height = 2600,
   List<Override> overrides = const [],
+  bool settle = true,
 }) async {
   visited.clear();
-  tester.view.physicalSize = Size(width, 2600);
+  tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final router = GoRouter(
@@ -47,7 +49,11 @@ Future<void> pumpHocTap(
       child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 Override? routinesApiOverride(NghiSuDuongApi? api) => api == null ? null : nghiSuDuongApiProvider.overrideWithValue(api);

@@ -1,0 +1,53 @@
+{
+  "cards": [
+    {
+      "phrase": "pick up on",
+      "phraseKey": "pick up on",
+      "meaning": "to notice",
+      "example": "She picked up on his mood.",
+      "note": null,
+      "kind": "PHRASAL_VERB",
+      "topics": [
+        "daily life"
+      ],
+      "index": 1
+    },
+    {
+      "phrase": "come across",
+      "phraseKey": "come across",
+      "meaning": "to find by chance",
+      "example": "I came across an old photo.",
+      "note": "inseparable",
+      "kind": "PHRASAL_VERB",
+      "topics": [
+        "travel"
+      ],
+      "index": 4
+    }
+  ],
+  "errors": [
+    {
+      "index": 3,
+      "field": "phrase",
+      "reason": "single_word"
+    },
+    {
+      "index": 3,
+      "field": "kind",
+      "reason": "invalid"
+    }
+  ],
+  "duplicates": [
+    {
+      "index": 2,
+      "phrase": "PICK  UP on",
+      "firstIndex": 1
+    }
+  ],
+  "existing": [
+    {
+      "index": 0,
+      "phrase": "Break the ice"
+    }
+  ]
+}

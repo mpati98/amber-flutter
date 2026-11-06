@@ -25,3 +25,6 @@ String? apiErrorCode(Object error) {
   }
   return null;
 }
+
+/// Phần thân JSON của lỗi HTTP (để đọc lỗi kiểm tra theo từng trường); null nếu không phải lỗi có response.
+Object? apiErrorData(Object error) => error is DioException ? error.response?.data : null;

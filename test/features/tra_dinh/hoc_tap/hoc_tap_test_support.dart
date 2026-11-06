@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
@@ -247,5 +248,137 @@ class FakeHocTapApi extends HocTapApi {
   Future<List<CourseView>> rebaseline(String subjectId) async {
     rebaselines++;
     return courses;
+  }
+
+  // ---- Kho thẻ từ vựng ----
+
+  /// Thẻ của server giả (mặc định: fixture thật `cards_list`). Thêm / sửa / xoá tác động lên danh sách này.
+  List<StudyCard> cards = [for (final c in fixtureMap('cards_list')['cards'] as List) StudyCard.fromJson(c as Map<String, dynamic>)];
+  List<TopicCount> topics = [for (final t in fixtureMap('cards_topics')['topics'] as List) TopicCount.fromJson(t as Map<String, dynamic>)];
+  final cardQueries = <({String subjectId, CardStage? stage, CardKind? kind, String? topic, String? q, String? cursor})>[];
+  final cardCreates = <Map<String, Object?>>[];
+  final cardPatches = <Map<String, Object?>>[];
+  final cardDeletes = <String>[];
+  final cardParseTexts = <String>[];
+  final cardImports = <List<Map<String, Object?>>>[];
+  Object? cardsError;
+  Object? cardsMoreError;
+  Object? cardCreateError;
+  Object? cardPatchError;
+  Object? cardDeleteError;
+  Object? cardParseError;
+  Object? cardImportError;
+  Object? topicsError;
+  Completer<void>? cardsGate;
+
+  /// Số thẻ tối đa mỗi trang (nhỏ hơn `limit` của app) để thử cuộn vô hạn với ít thẻ.
+  int? cardPageSize;
+
+  /// Kết quả xem trước trả về (mặc định: fixture thật `cards_parse`) và kết quả nhập.
+  ParsedCards parsedResult = ParsedCards.fromJson(fixtureMap('cards_parse'));
+  ImportResult importResult = const ImportResult(created: 2, skipped: 0);
+
+  @override
+  Future<CardListPage> getCards({required String subjectId, CardStage? stage, CardKind? kind, String? topic, String? q, int limit = 50, String? cursor}) async {
+    cardQueries.add((subjectId: subjectId, stage: stage, kind: kind, topic: topic, q: q, cursor: cursor));
+    await cardsGate?.future;
+    if (cardsError case final e?) throw e;
+    if (cursor != null && cardsMoreError != null) throw cardsMoreError!;
+    final mine = cards; // mọi thẻ coi như của môn được hỏi; môn được ghi lại trong cardQueries
+    final needle = q?.trim().toLowerCase();
+    final filtered = [
+      for (final c in mine)
+        if ((stage == null || c.stage == stage) &&
+            (kind == null || c.kind == kind) &&
+            (topic == null || c.topics.contains(topic)) &&
+            (needle == null || needle.isEmpty || c.phrase.toLowerCase().contains(needle) || c.meaning.toLowerCase().contains(needle)))
+          c,
+    ];
+    final start = cursor == null ? 0 : int.parse(cursor);
+    final size = cardPageSize == null ? limit : (cardPageSize! < limit ? cardPageSize! : limit);
+    final end = start + size < filtered.length ? start + size : filtered.length;
+    int n(CardStage s) => mine.where((c) => c.stage == s).length;
+    return CardListPage(
+      cards: filtered.sublist(start, end),
+      counts: CardCounts(
+        newCards: n(CardStage.newCard),
+        learning: n(CardStage.learning),
+        weekly: n(CardStage.weekly),
+        monthly: n(CardStage.monthly),
+        quarterly: n(CardStage.quarterly),
+        total: mine.length,
+        suspended: mine.where((c) => c.suspended).length,
+      ),
+      nextCursor: end < filtered.length ? '$end' : null,
+    );
+  }
+
+  @override
+  Future<StudyCard> createCard(Map<String, Object?> body) async {
+    cardCreates.add(body);
+    if (cardCreateError case final e?) throw e;
+    final c = StudyCard(
+      id: 'new-${cards.length}',
+      subjectId: body['subjectId'] as String,
+      phrase: body['phrase'] as String,
+      meaning: body['meaning'] as String,
+      example: body['example'] as String,
+      note: body['note'] as String?,
+      kind: CardKind.fromApi(body['kind']),
+      topics: [for (final t in (body['topics'] as List? ?? const [])) t as String],
+    );
+    cards = [c, ...cards];
+    return c;
+  }
+
+  @override
+  Future<StudyCard> patchCard(String id, Map<String, Object?> patch) async {
+    cardPatches.add({'id': id, ...patch});
+    if (cardPatchError case final e?) throw e;
+    final old = cards.firstWhere((c) => c.id == id);
+    final next = StudyCard(
+      id: old.id,
+      subjectId: old.subjectId,
+      phrase: patch['phrase'] as String? ?? old.phrase,
+      meaning: patch['meaning'] as String? ?? old.meaning,
+      example: patch['example'] as String? ?? old.example,
+      note: patch.containsKey('note') ? patch['note'] as String? : old.note,
+      kind: patch['kind'] == null ? old.kind : CardKind.fromApi(patch['kind']),
+      topics: patch['topics'] == null ? old.topics : [for (final t in patch['topics'] as List) t as String],
+      stage: old.stage,
+      dueAt: old.dueAt,
+      reviewCount: old.reviewCount,
+      notYetCount: old.notYetCount,
+      suspended: patch['suspended'] as bool? ?? old.suspended,
+    );
+    cards = [for (final c in cards) c.id == id ? next : c];
+    return next;
+  }
+
+  @override
+  Future<void> deleteCard(String id) async {
+    cardDeletes.add(id);
+    if (cardDeleteError case final e?) throw e;
+    cards = [for (final c in cards) if (c.id != id) c];
+  }
+
+  @override
+  Future<ParsedCards> parseCards(String subjectId, String text) async {
+    cardParseTexts.add(text);
+    if (cardParseError case final e?) throw e;
+    return parsedResult;
+  }
+
+  @override
+  Future<ImportResult> importCards(String subjectId, List<Map<String, Object?>> cards, {String? logId}) async {
+    cardImports.add(cards);
+    if (cardImportError case final e?) throw e;
+    return importResult;
+  }
+
+  @override
+  Future<List<TopicCount>> getCardTopics(String subjectId) async {
+    if (topicsError case final e?) throw e;
+    return topics;
   }
 }

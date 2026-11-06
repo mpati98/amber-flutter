@@ -1,0 +1,12 @@
+{
+  "cards": [],
+  "errors": [
+    {
+      "index": null,
+      "field": null,
+      "reason": "invalid_json"
+    }
+  ],
+  "duplicates": [],
+  "existing": []
+}

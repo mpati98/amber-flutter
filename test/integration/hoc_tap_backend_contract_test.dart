@@ -1,8 +1,10 @@
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +29,9 @@ String _dayBefore(String iso, int days) {
   final d = DateTime.parse(iso).subtract(Duration(days: days));
   return '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
+
+/// Mã lỗi chuỗi của backend (`{error: 'duplicate_phrase'}`) hoặc null.
+Matcher _apiError(int status, String code) => throwsA(isA<DioException>().having((e) => e.response?.statusCode, 'status', status).having((e) => (e.response?.data as Map)['error'], 'error', code));
 
 const _pasted = 'Basics1 lecture • 46min\nFirst English Sentences9 lectures • 1hr 31min\nPresent Tenses12 lectures • 2h 5m';
 
@@ -264,6 +269,137 @@ void main() {
         if (routineId != null) await dio.delete<void>('/api/du-an/routines/$routineId');
         if (secondSubjectId != null) await api.deleteSubject(secondSubjectId);
         if (subjectId != null) await api.deleteSubject(subjectId);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
+    skip: missing ? 'thiếu --dart-define=NSD_API_BASE_URL / NSD_API_TOKEN' : false,
+  );
+
+  test(
+    'Kho thẻ từ vựng: tạo → trùng → lọc → phân trang → sửa / tạm dừng → chủ đề → xem trước → nhập (thẻ đã có bị bỏ qua) → xoá (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = HocTapApi(dio);
+      String? subjectId;
+
+      try {
+        subjectId = (await api.createSubject({'name': 'TEST Kho thẻ ${DateTime.now().millisecondsSinceEpoch}', 'dailyGoalMinutes': 60})).id;
+        final sid = subjectId;
+
+        // 1. Tạo thẻ: chuẩn hoá khoảng trắng / chữ thường; thẻ mới chưa có hạn.
+        final c1 = await api.createCard({
+          'subjectId': sid,
+          'phrase': '  Look  Forward To ',
+          'meaning': 'to be excited about something in the future',
+          'example': 'I look forward to meeting you.',
+          'note': 'followed by V-ing',
+          'kind': 'PHRASAL_VERB',
+          'topics': [' Daily Life ', 'work'],
+        });
+        expect(c1.phrase, 'Look  Forward To');
+        expect(c1.kind, CardKind.phrasalVerb);
+        expect(c1.topics, ['daily life', 'work']);
+        expect((c1.stage, c1.dueAt, c1.reviewCount, c1.notYetCount, c1.suspended), (CardStage.newCard, null, 0, 0, false));
+        expect(c1.subjectId, sid);
+        final c2 = await api.createCard({'subjectId': sid, 'phrase': 'break the ice', 'meaning': 'to relax people', 'example': 'A joke broke the ice.', 'kind': 'IDIOM', 'topics': ['work']});
+        final c3 = await api.createCard({'subjectId': sid, 'phrase': 'make a decision', 'meaning': 'to choose', 'example': 'We must make a decision.', 'kind': 'COLLOCATION'});
+
+        // 2. Trùng cụm (khác hoa thường / khoảng trắng) → 409; một từ → 400 theo trường, app đọc ra câu tiếng Việt.
+        await expectLater(
+          api.createCard({'subjectId': sid, 'phrase': 'BREAK  the ICE', 'meaning': 'x', 'example': 'y', 'kind': 'IDIOM'}),
+          _apiError(409, 'duplicate_phrase'),
+        );
+        try {
+          await api.createCard({'subjectId': sid, 'phrase': 'hello', 'meaning': 'x', 'example': 'y', 'kind': 'IDIOM'});
+          fail('phải báo lỗi');
+        } on DioException catch (e) {
+          expect(e.response?.statusCode, 400);
+          expect(cardErrorMessage(e), 'Cụm từ phải có ít nhất 2 từ (kho không nhận từ đơn)');
+        }
+
+        // 3. Danh sách: mới nhất trước, số đếm cả môn; lọc theo giai đoạn / loại / chủ đề / từ khoá; số đếm không đổi khi lọc.
+        final all = await api.getCards(subjectId: sid);
+        expect(all.cards.map((c) => c.phrase), ['make a decision', 'break the ice', 'Look  Forward To']);
+        expect((all.counts.total, all.counts.newCards, all.counts.weekly, all.counts.suspended), (3, 3, 0, 0));
+        expect(all.nextCursor, isNull);
+        expect((await api.getCards(subjectId: sid, kind: CardKind.idiom)).cards.map((c) => c.id), [c2.id]);
+        expect((await api.getCards(subjectId: sid, topic: 'work')).cards.map((c) => c.id), [c2.id, c1.id]);
+        expect((await api.getCards(subjectId: sid, topic: 'daily life')).cards.map((c) => c.id), [c1.id]);
+        expect((await api.getCards(subjectId: sid, q: 'FORWARD')).cards.map((c) => c.id), [c1.id], reason: 'tìm không phân biệt hoa thường');
+        expect((await api.getCards(subjectId: sid, q: 'relax')).cards.map((c) => c.id), [c2.id], reason: 'tìm cả trong nghĩa');
+        final weekly = await api.getCards(subjectId: sid, stage: CardStage.weekly);
+        expect(weekly.cards, isEmpty);
+        expect(weekly.counts.total, 3);
+
+        // 4. Phân trang bằng con trỏ: 2 + 1, không sót, không lặp.
+        final p1 = await api.getCards(subjectId: sid, limit: 2);
+        expect(p1.cards.length, 2);
+        expect(p1.nextCursor, isNotNull);
+        final p2 = await api.getCards(subjectId: sid, limit: 2, cursor: p1.nextCursor);
+        expect(p2.cards.length, 1);
+        expect(p2.nextCursor, isNull);
+        expect([...p1.cards, ...p2.cards].map((c) => c.id), all.cards.map((c) => c.id));
+
+        // 5. Xem một thẻ; sửa nội dung + tạm dừng; khoá lạ (stage) bị bỏ qua; đổi cụm thành cụm đã có → 409.
+        expect((await api.getCard(c1.id)).example, 'I look forward to meeting you.');
+        final patched = await api.patchCard(c1.id, {'meaning': 'new meaning', 'topics': ['travel'], 'suspended': true, 'stage': 'QUARTERLY'});
+        expect(patched.meaning, 'new meaning');
+        expect(patched.topics, ['travel']);
+        expect(patched.suspended, isTrue);
+        expect(patched.stage, CardStage.newCard, reason: 'giai đoạn chỉ đổi khi ôn thẻ');
+        expect(cardDueLabel(patched), 'Tạm dừng');
+        await expectLater(api.patchCard(c1.id, {'phrase': 'Break The Ice'}), _apiError(409, 'duplicate_phrase'));
+        await expectLater(api.getCard('00000000-0000-4000-8000-000000000000'), _apiError(404, 'card_not_found'));
+        expect((await api.getCards(subjectId: sid)).counts.suspended, 1);
+
+        // 6. Chủ đề đang có (kể cả thẻ tạm dừng), nhiều thẻ trước.
+        final topics = await api.getCardTopics(sid);
+        expect(topics.map((t) => (t.topic, t.cards)), [('travel', 1), ('work', 1)]);
+
+        // 7. Xem trước: thẻ mới, đã có trong kho, lặp trong đầu vào, lỗi — không lưu gì.
+        final before = (await api.getCards(subjectId: sid)).counts.total;
+        final parsed = await api.parseCards(
+          sid,
+          '[{"phrase":"Break the ice","meaning":"m","example":"e","kind":"IDIOM"},'
+          '{"phrase":"pick up on","meaning":"to notice","example":"She picked up on it.","kind":"PHRASAL_VERB","topics":["Work"]},'
+          '{"phrase":"PICK  UP on","meaning":"m","example":"e","kind":"PHRASAL_VERB"},'
+          '{"phrase":"hello","meaning":"m","example":"e","kind":"WORD"}]',
+        );
+        expect(parsed.cards.map((c) => (c.index, c.phrase)), [(1, 'pick up on')]);
+        expect(parsed.cards.single.topics, ['work']);
+        expect(parsed.existing.map((e) => (e.index, e.phrase)), [(0, 'Break the ice')]);
+        expect(parsed.duplicates.single.index, 2);
+        expect(parsed.errors.map((e) => (e.index, e.field, e.reason)), [(3, 'phrase', 'single_word'), (3, 'kind', 'invalid')]);
+        expect(parsed.hasErrors, isTrue);
+        expect((await api.getCards(subjectId: sid)).counts.total, before, reason: 'xem trước không lưu');
+        expect((await api.parseCards(sid, '[{')).errors.single.reason, 'invalid_json');
+
+        // 8. Nhập thẻ có thẻ lỗi → 400 invalid_cards, không lưu gì; nhập thẻ mới + thẻ đã có → tạo 1, bỏ qua 1.
+        await expectLater(
+          api.importCards(sid, [parsed.cards.single.toImportJson(), {'phrase': 'oops', 'meaning': 'm', 'example': 'e', 'kind': 'IDIOM'}]),
+          _apiError(400, 'invalid_cards'),
+        );
+        expect((await api.getCards(subjectId: sid)).counts.total, before);
+        final imported = await api.importCards(sid, [
+          parsed.cards.single.toImportJson(),
+          {'phrase': 'break the ice', 'meaning': 'KHÁC', 'example': 'e', 'kind': 'IDIOM'},
+        ]);
+        expect((imported.created, imported.skipped), (1, 1));
+        expect((await api.getCards(subjectId: sid)).counts.total, before + 1);
+        expect((await api.getCard(c2.id)).meaning, 'to relax people', reason: 'thẻ đã có không bị ghi đè');
+        final again = await api.importCards(sid, [parsed.cards.single.toImportJson()]);
+        expect((again.created, again.skipped), (0, 1), reason: 'nhập lại thẻ vừa nhập thì bỏ qua');
+
+        // 9. Xoá thẻ: lần sau không còn; xoá lại → 404.
+        await api.deleteCard(c3.id);
+        await expectLater(api.getCard(c3.id), _apiError(404, 'card_not_found'));
+        await expectLater(api.deleteCard(c3.id), _apiError(404, 'card_not_found'));
+        expect((await api.getCards(subjectId: sid)).cards.any((c) => c.id == c3.id), isFalse);
+
+        // 10. Môn không tồn tại → 404 subject_not_found.
+        await expectLater(api.getCards(subjectId: '00000000-0000-4000-8000-000000000000'), _apiError(404, 'subject_not_found'));
+      } finally {
+        if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá thẻ, lượt ôn
       }
     },
     timeout: const Timeout(Duration(minutes: 5)),
