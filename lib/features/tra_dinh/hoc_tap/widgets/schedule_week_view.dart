@@ -10,11 +10,14 @@ import 'schedule_parts.dart';
 
 /// Xem tuần: banner kế hoạch gốc, mỗi ngày một dòng, tổng kết tuần.
 class ScheduleWeekView extends StatelessWidget {
-  const ScheduleWeekView({super.key, required this.schedule, required this.subject, required this.noCourses});
+  const ScheduleWeekView({super.key, required this.schedule, required this.subject, required this.noCourses, this.perDayHint});
 
   final StudySchedule schedule;
   final StudySubject subject;
   final bool noCourses;
+
+  /// "Còn … cần N phút mỗi ngày": chỉ có khi đang xem tuần hiện tại và môn còn thiếu phút so với mục tiêu tuần.
+  final String? perDayHint;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +27,7 @@ class ScheduleWeekView extends StatelessWidget {
       spacing: 8,
       children: [
         BaselineBanner(summary: schedule.summary, goalMinutes: subject.dailyGoalMinutes),
+        if (perDayHint != null) Text(perDayHint!, key: const ValueKey('week-per-day'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         for (final d in schedule.days) ScheduleDayRow(day: d, subject: subject, noCourses: noCourses),
         const SizedBox(height: 4),
         Text(

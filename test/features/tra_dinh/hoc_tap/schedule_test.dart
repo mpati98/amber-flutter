@@ -219,6 +219,15 @@ void main() {
       expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
     });
 
+    testWidgets('tuần hiện tại: dòng "cần N phút mỗi ngày" lấy từ tổng quan; tuần khác thì ẩn', (tester) async {
+      await _pump(tester, _api(), _weekUrl);
+      expect(find.textContaining('phút mỗi ngày'), findsOneWidget);
+      expect(find.textContaining('cần '), findsWidgets);
+      await tester.tap(_k('nav-next'));
+      await tester.pumpAndSettle();
+      expect(_k('week-per-day'), findsNothing);
+    });
+
     testWidgets('"Thiếu lý do" chỉ dựa vào needsReason của server, không tự suy ra từ phút / lý do', (tester) async {
       final week = _sched('schedule_week', (j) {
         _day(j, '2026-10-12')['needsReason'] = false; // 0 phút, chưa có lý do nhưng server nói không nợ (vd trước ngày tạo môn)

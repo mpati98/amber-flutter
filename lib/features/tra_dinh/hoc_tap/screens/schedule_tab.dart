@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/date_format.dart';
+import '../../../../shared/utils/duration_format.dart';
 import '../../../../shared/utils/vn_time.dart';
 import '../models/study_enums.dart';
 import '../models/study_subject.dart';
@@ -91,6 +92,12 @@ class _Loaded extends ConsumerWidget {
     final async = ref.watch(studyScheduleProvider(ScheduleQuery(subjectId: subject.id, from: from, to: to)));
     final liveCourses = ref.watch(studyCoursesProvider(CourseQuery(subjectId: subject.id, statuses: const [CourseStatus.active, CourseStatus.queued])));
     final noCourses = liveCourses.hasValue && liveCourses.value!.isEmpty;
+    // Dòng "cần X phút/ngày" lấy từ tổng quan, và chỉ đúng với tuần hiện tại (còn bao nhiêu ngày tính từ hôm nay).
+    final overview = ref.watch(studyOverviewProvider).value;
+    final bySubject = overview?.week.bySubject.where((s) => s.subjectId == subject.id).firstOrNull;
+    final perDayHint = overview != null && bySubject != null && bySubject.remainingMinutes > 0 && week.from == overview.week.start
+        ? 'Còn ${formatDuration(bySubject.remainingMinutes)} trong ${overview.week.remainingDays} ngày · cần ${bySubject.suggestedPerDay} phút mỗi ngày'
+        : null;
 
     final title = month ? 'Tháng ${parseDay(grid.monthStart).month}/${parseDay(grid.monthStart).year}' : '${formatDayMonth(week.from)} – ${formatDayMonth(week.to)}';
     final prev = month ? firstOfMonth(anchor, -1) : addDays(anchor, -7);
@@ -146,7 +153,7 @@ class _Loaded extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   spacing: 12,
                   children: [
-                    ScheduleWeekView(schedule: value, subject: subject, noCourses: noCourses),
+                    ScheduleWeekView(schedule: value, subject: subject, noCourses: noCourses, perDayHint: perDayHint),
                     if (noCourses) NoCourseHint(onAdd: () => showCourseFormSheet(context, subjectId: subject.id)),
                   ],
                 ),
