@@ -34,6 +34,9 @@ const _messages = {
   'invalid_cursor': 'Không tải được trang kế tiếp, kéo xuống để thử lại',
   'invalid_kind': 'Loại thẻ không hợp lệ',
   'empty_patch': 'Chưa có gì để lưu',
+  // Luyện AI
+  'practice_already_logged': 'Buổi này đã được ghi rồi',
+  'practice_session_not_found': 'Không tìm thấy buổi luyện này',
   // Ôn thẻ
   'already_finished_today': 'Thẻ này đã ôn xong hôm nay',
   'not_due_yet': 'Thẻ này chưa đến lúc ôn lại',

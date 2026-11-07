@@ -206,7 +206,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
         routes: [
           // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.
-          GoRoute(path: 'luyen-tap', builder: (_, _) => const TraDinhScreen()),
+          GoRoute(
+            path: 'luyen-tap',
+            builder: (_, state) => TraDinhScreen(subjectId: state.uri.queryParameters['subjectId']),
+          ),
           GoRoute(
             path: 'placement-test',
             builder: (_, _) => const PlacementTestScreen(),
@@ -260,6 +263,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: ':sessionId',
             builder: (_, state) => PracticeChatScreen(
               sessionId: state.pathParameters['sessionId']!,
+              subjectId: state.uri.queryParameters['subjectId'],
             ),
           ),
         ],

@@ -7,10 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/practice_message.dart';
 import '../models/practice_session.dart';
+import '../hoc_tap/providers/hoc_tap_provider.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../services/recording_service.dart';
 import '../services/tra_dinh_api.dart';
 import '../services/tts_service.dart';
+import '../utils/practice_minutes.dart';
+import '../widgets/practice_end_sheet.dart';
 import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
@@ -32,9 +35,12 @@ const maxRecordingDuration = Duration(minutes: 3);
 /// Port /tra-dinh/[sessionId] — tin nhắn văn bản, ghi âm thành chữ, đọc tin AI
 /// thành tiếng, kết thúc buổi.
 class PracticeChatScreen extends ConsumerStatefulWidget {
-  const PracticeChatScreen({super.key, required this.sessionId});
+  const PracticeChatScreen({super.key, required this.sessionId, this.subjectId});
 
   final String sessionId;
+
+  /// Môn học mà phút luyện của buổi này được ghi vào (truyền từ nơi mở chat). Thiếu thì lấy môn đang chọn lúc mở.
+  final String? subjectId;
 
   @override
   ConsumerState<PracticeChatScreen> createState() => _PracticeChatScreenState();
@@ -65,9 +71,13 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
   int _speakToken = 0;
   TtsService? _tts;
 
+  /// Môn của buổi, chốt lúc mở chat (đổi môn ở màn khác giữa chừng không làm đổi nơi ghi phút).
+  String? _subjectId;
+
   @override
   void initState() {
     super.initState();
+    _subjectId = widget.subjectId ?? currentSubjectId(ref);
     _input.addListener(() => setState(() {}));
   }
 
@@ -243,8 +253,10 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
     if (ok != true || !mounted) return;
 
     setState(() => _ending = true);
+    var ended = false;
     try {
       await ref.read(sessionDetailProvider(widget.sessionId).notifier).endSession();
+      ended = true;
       // Trang chính Trà Đình: điểm kỹ năng mới + buổi này thành "Đã kết thúc".
       ref
         ..invalidate(skillScoresProvider)
@@ -258,6 +270,24 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
     } finally {
       if (mounted) setState(() => _ending = false);
     }
+    // Chỉ khi PATCH kết thúc thành công mới mời ghi phút (PATCH lỗi thì không có sheet).
+    if (ended && mounted) await _offerLogMinutes();
+  }
+
+  /// Sheet "Luyện X phút" sau khi kết thúc buổi. Không có tin nhắn thì không hiện; chưa biết môn thì thử lấy môn đầu tiên.
+  Future<void> _offerLogMinutes() async {
+    final messages = ref.read(sessionDetailProvider(widget.sessionId)).value?.messages ?? const <PracticeMessage>[];
+    final minutes = estimatePracticeMinutes(messages);
+    if (minutes == 0) return;
+    try {
+      _subjectId ??= (await ref.read(studySubjectsProvider.future)).firstOrNull?.id;
+    } catch (_) {
+      // Không tải được danh sách môn: coi như chưa có môn để ghi, bỏ qua sheet.
+    }
+    final subjectId = _subjectId;
+    if (subjectId == null || !mounted) return;
+    final message = await showPracticeEndSheet(context, sessionId: widget.sessionId, subjectId: subjectId, minutes: minutes);
+    if (message != null && mounted) _snack(message);
   }
 
   Future<void> _reloadQuietly() async {

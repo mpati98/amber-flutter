@@ -27,6 +27,13 @@ class SelectedSubjectNotifier extends Notifier<String?> {
 
 final selectedSubjectIdProvider = NotifierProvider<SelectedSubjectNotifier, String?>(SelectedSubjectNotifier.new);
 
+/// Môn đang chọn ở màn Hôm nay: môn đã chọn, chưa chọn thì môn đầu (từ tổng quan hoặc danh sách môn nếu đã tải).
+/// null = chưa biết (chưa có môn nào hoặc chưa tải). Đọc một lần, không theo dõi.
+String? currentSubjectId(WidgetRef ref) =>
+    ref.read(selectedSubjectIdProvider) ??
+    ref.read(studyOverviewProvider).value?.subjects.firstOrNull?.subjectId ??
+    ref.read(studySubjectsProvider).value?.firstOrNull?.id;
+
 /// Khóa của danh sách khóa học: môn + các trạng thái (so sánh theo giá trị để family cache đúng).
 class CourseQuery {
   CourseQuery({this.subjectId, Iterable<CourseStatus> statuses = const []}) : statuses = (statuses.toList()..sort((a, b) => a.api.compareTo(b.api)));

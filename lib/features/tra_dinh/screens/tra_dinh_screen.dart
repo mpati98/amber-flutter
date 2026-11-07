@@ -10,6 +10,7 @@ import '../../../shared/widgets/scroll_card.dart';
 import '../../../shared/widgets/tag.dart';
 import '../models/practice_session.dart';
 import '../models/skill_score.dart';
+import '../hoc_tap/providers/hoc_tap_provider.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../widgets/new_practice_session_modal.dart';
 import '../../../shared/widgets/app_bar_back.dart';
@@ -27,15 +28,22 @@ String _errorText(Object e, String what) =>
 
 /// Port /tra-dinh: trình độ theo kỹ năng + danh sách buổi luyện.
 class TraDinhScreen extends ConsumerWidget {
-  const TraDinhScreen({super.key});
+  const TraDinhScreen({super.key, this.subjectId});
 
-  static void _openChat(BuildContext context, String sessionId) => context.push('/tra-dinh/$sessionId');
+  /// Môn mà các buổi mở từ màn này ghi phút vào (từ hàng Luyện AI); thiếu thì lấy môn đang chọn.
+  final String? subjectId;
+
+  /// Mở chat kèm môn đang chọn: chat giữ môn lúc mở để ghi phút luyện cuối phiên.
+  void _openChat(BuildContext context, WidgetRef ref, String sessionId) {
+    final subject = subjectId ?? currentSubjectId(ref);
+    context.push('/tra-dinh/$sessionId${subject == null ? '' : '?subjectId=$subject'}');
+  }
 
   /// Như web: tạo xong vào thẳng buổi vừa tạo.
-  Future<void> _newSession(BuildContext context) async {
+  Future<void> _newSession(BuildContext context, WidgetRef ref) async {
     final created = await showNewPracticeSessionModal(context);
     if (created == null || !context.mounted) return;
-    _openChat(context, created.id);
+    _openChat(context, ref, created.id);
   }
 
   @override
@@ -46,7 +54,7 @@ class TraDinhScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: const Text('Trà Đình')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _newSession(context),
+        onPressed: () => _newSession(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Bắt đầu buổi luyện mới'),
       ),
@@ -94,7 +102,7 @@ class TraDinhScreen extends ConsumerWidget {
                       ? [Text('Chưa có buổi luyện nào.', style: _muted(12))]
                       : [
                           for (final s in items) ...[
-                            _SessionCard(session: s, onTap: () => _openChat(context, s.id)),
+                            _SessionCard(session: s, onTap: () => _openChat(context, ref, s.id)),
                             const SizedBox(height: 8),
                           ],
                         ],
