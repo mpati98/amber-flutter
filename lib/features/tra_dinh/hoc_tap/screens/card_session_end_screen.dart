@@ -77,7 +77,9 @@ class _CardSessionEndScreenState extends ConsumerState<CardSessionEndScreen> {
     final logs = ref.watch(studyTodayLogsProvider(widget.subjectId)).value;
     final lesson = logs?.where((l) => l.activity == LogActivity.lesson).fold<int>(0, (n, l) => n + l.minutes) ?? 0;
     final cards = (logs?.where((l) => l.activity == LogActivity.cardReview).fold<int>(0, (n, l) => n + l.minutes) ?? 0) + (_typed ?? 0);
-    final total = lesson + cards;
+    // Phút luyện AI cũng tính vào mục tiêu ngày (server đã gồm), nên tổng phải cộng cả chúng.
+    final practice = logs?.where((l) => l.activity == LogActivity.practice).fold<int>(0, (n, l) => n + l.minutes) ?? 0;
+    final total = lesson + cards + practice;
 
     return Scaffold(
       appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: const Text('Xong phiên ôn')),
@@ -127,7 +129,7 @@ class _CardSessionEndScreenState extends ConsumerState<CardSessionEndScreen> {
                 ),
                 const SizedBox(height: 8),
               ],
-              Text('$lesson phút học bài + $cards phút ôn thẻ', key: const ValueKey('end-breakdown'), style: TextStyle(fontSize: 13, color: theme.textMuted)),
+              Text('$lesson phút học bài + $cards phút ôn thẻ${practice > 0 ? ' + $practice phút luyện AI' : ''}', key: const ValueKey('end-breakdown'), style: TextStyle(fontSize: 13, color: theme.textMuted)),
             ],
             if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, key: const ValueKey('end-error'), style: TextStyle(color: theme.colorScheme.error))),
             const SizedBox(height: 28),

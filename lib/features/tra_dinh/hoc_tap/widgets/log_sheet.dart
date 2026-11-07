@@ -97,7 +97,11 @@ class _LogSheetState extends ConsumerState<LogSheet> {
 
   /// Học bài (mặc định) hoặc Ôn thẻ. Sửa buổi có sẵn thì cố định theo buổi đó; thêm tay thì chọn bằng công tắc "Loại".
   late LogActivity _activity = widget.editing?.activity ?? LogActivity.lesson;
-  bool get _cardReview => _activity == LogActivity.cardReview;
+  /// Buổi chỉ có phút + ghi chú (không khóa, không phần): ôn thẻ hoặc luyện AI. Luyện AI chỉ được SỬA / xoá ở đây (ghi mới qua sheet cuối phiên chat).
+  bool get _minutesOnly => _activity == LogActivity.cardReview || _activity == LogActivity.practice;
+
+  /// Nhãn loại buổi chỉ-phút: "ôn thẻ" hoặc "luyện AI".
+  String get _kind => _activity == LogActivity.practice ? 'luyện AI' : 'ôn thẻ';
 
   late final _minutes = TextEditingController(text: widget.editing?.minutes.toString() ?? '');
   late final _note = TextEditingController(text: widget.editing?.note ?? '');
@@ -208,10 +212,10 @@ class _LogSheetState extends ConsumerState<LogSheet> {
       final actions = ref.read(hocTapActionsProvider);
       final result = _editing
           ? await actions.patchLog(widget.editing!.id, {'minutes': _input, 'note': note.isEmpty ? null : note})
-          : await actions.createLog({'subjectId': subject.id, 'activity': LogActivity.cardReview.api, 'minutes': _input, if (note.isNotEmpty) 'note': note});
+          : await actions.createLog({'subjectId': subject.id, 'activity': _activity.api, 'minutes': _input, if (note.isNotEmpty) 'note': note});
       final t = result.today;
       final todayText = t.goalMinutes == null ? '${t.minutes} phút' : '${t.minutes}/${t.goalMinutes}';
-      if (mounted) Navigator.of(context).pop(_editing ? 'Đã cập nhật buổi ôn thẻ · hôm nay $todayText' : 'Đã ghi $_input phút ôn thẻ · hôm nay $todayText');
+      if (mounted) Navigator.of(context).pop(_editing ? 'Đã cập nhật buổi $_kind · hôm nay $todayText' : 'Đã ghi $_input phút $_kind · hôm nay $todayText');
     } catch (e) {
       if (mounted) setState(() => (_busy = false, _error = hocTapErrorMessage(e)));
     }
@@ -262,17 +266,17 @@ class _LogSheetState extends ConsumerState<LogSheet> {
     final theme = Theme.of(context);
     final canSave = !_busy && _input >= 1 && _input <= 1440;
     return FinanceSheetBody(
-      title: _editing ? 'Ôn thẻ' : 'Ghi buổi học',
+      title: _editing ? (_activity == LogActivity.practice ? 'Luyện AI' : 'Ôn thẻ') : 'Ghi buổi học',
       children: [
         Text('Hôm nay · ${viDayLabel()}. Chỉ ghi cho hôm nay.', key: const ValueKey('log-header'), style: TextStyle(fontSize: 13, color: theme.textMuted)),
         if (!_editing) _activitySwitch(),
         if (subjects.length > 1 && !_editing) _subjectChips(subjects, subject),
-        if (_editing) Text('Môn: ${subject.name} · Ôn thẻ', key: const ValueKey('log-subject-line'), style: const TextStyle(fontSize: 13)),
+        if (_editing) Text('Môn: ${subject.name} · ${_activity == LogActivity.practice ? 'Luyện AI' : 'Ôn thẻ'}', key: const ValueKey('log-subject-line'), style: const TextStyle(fontSize: 13)),
         TextField(
           key: const ValueKey('log-minutes'),
           controller: _minutes,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Số phút ôn thẻ', suffixText: 'phút'),
+          decoration: InputDecoration(labelText: 'Số phút $_kind', suffixText: 'phút'),
         ),
         Wrap(
           spacing: 6,
@@ -280,13 +284,13 @@ class _LogSheetState extends ConsumerState<LogSheet> {
         ),
         TextField(key: const ValueKey('log-note'), controller: _note, minLines: 1, maxLines: 3, maxLength: 2000, decoration: const InputDecoration(labelText: 'Ghi chú (tuỳ chọn)', counterText: '')),
         sheetError(context, _error),
-        FilledButton(key: const ValueKey('log-save'), onPressed: canSave ? () => _saveCardReview(subject) : null, child: Text(_editing ? 'Lưu' : 'Ghi phút ôn thẻ')),
+        FilledButton(key: const ValueKey('log-save'), onPressed: canSave ? () => _saveCardReview(subject) : null, child: Text(_editing ? 'Lưu' : 'Ghi phút $_kind')),
         if (_editing)
           TextButton(
             key: const ValueKey('log-delete'),
             onPressed: _busy ? null : _delete,
             style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
-            child: const Text('Xoá buổi ôn thẻ'),
+            child: Text('Xoá buổi $_kind'),
           ),
       ],
     );
@@ -296,8 +300,8 @@ class _LogSheetState extends ConsumerState<LogSheet> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_cardReview ? 'Xoá buổi ôn thẻ?' : 'Xoá buổi học?'),
-        content: Text(_cardReview ? 'Xoá buổi ôn thẻ này khỏi hôm nay?' : 'Xoá buổi học này khỏi hôm nay? Phần đã đánh dấu xong vẫn giữ nguyên.'),
+        title: Text(_minutesOnly ? 'Xoá buổi $_kind?' : 'Xoá buổi học?'),
+        content: Text(_minutesOnly ? 'Xoá buổi $_kind này khỏi hôm nay?' : 'Xoá buổi học này khỏi hôm nay? Phần đã đánh dấu xong vẫn giữ nguyên.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
           TextButton(
@@ -315,7 +319,7 @@ class _LogSheetState extends ConsumerState<LogSheet> {
     });
     try {
       await ref.read(hocTapActionsProvider).deleteLog(widget.editing!.id);
-      if (mounted) Navigator.of(context).pop(_cardReview ? 'Đã xoá buổi ôn thẻ' : 'Đã xoá buổi học');
+      if (mounted) Navigator.of(context).pop(_minutesOnly ? 'Đã xoá buổi $_kind' : 'Đã xoá buổi học');
     } catch (e) {
       if (mounted) setState(() => (_busy = false, _error = hocTapErrorMessage(e)));
     }
@@ -334,7 +338,7 @@ class _LogSheetState extends ConsumerState<LogSheet> {
     }
     _subjectId = subjects.any((s) => s.id == _subjectId) ? _subjectId : (ref.watch(selectedSubjectIdProvider) ?? subjects.first.id);
     final subject = subjects.firstWhere((s) => s.id == _subjectId, orElse: () => subjects.first);
-    if (_cardReview) return _cardReviewForm(context, subjects, subject);
+    if (_minutesOnly) return _cardReviewForm(context, subjects, subject);
 
     final courses = ref.watch(studyCoursesProvider(CourseQuery(subjectId: subject.id, statuses: const [CourseStatus.active, CourseStatus.queued]))).value ?? const <CourseView>[];
     if (!_courseInit && ref.read(studyCoursesProvider(CourseQuery(subjectId: subject.id, statuses: const [CourseStatus.active, CourseStatus.queued]))).hasValue) {

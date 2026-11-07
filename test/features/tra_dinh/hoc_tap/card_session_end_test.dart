@@ -148,6 +148,13 @@ void main() {
       expect(tester.widget<LinearProgressIndicator>(_k('end-goal-bar')).value, 1.0);
     });
 
+    testWidgets('phút luyện AI cũng tính vào tổng ngày và hiện thêm "+ N phút luyện AI"; không có thì dòng giữ nguyên', (tester) async {
+      final t = _api(logs: [(30, LogActivity.lesson), (10, LogActivity.cardReview), (20, LogActivity.practice)]);
+      await _pump(tester, t.api, t.withGoal);
+      expect(tester.widget<Text>(_k('end-breakdown')).data, '30 phút học bài + 10 phút ôn thẻ + 20 phút luyện AI');
+      expect(tester.widget<Text>(_k('end-goal-text')).data, 'Tiếng Anh hôm nay: 60 / 60 phút');
+    });
+
     testWidgets('45 phút học bài + 15 phút ôn thẻ vừa nhập = 60 / 60 (đủ mục tiêu)', (tester) async {
       final t = _api(logs: [(45, LogActivity.lesson)]);
       await _pump(tester, t.api, t.withGoal);

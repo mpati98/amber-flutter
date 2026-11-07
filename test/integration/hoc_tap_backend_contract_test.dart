@@ -9,6 +9,8 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dar
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_insights_prompt.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/log_labels.dart';
+import 'package:amber_flutter/features/tra_dinh/models/practice_session.dart';
+import 'package:amber_flutter/features/tra_dinh/services/tra_dinh_api.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +24,7 @@ import 'package:flutter_test/flutter_test.dart';
 // Đi hết luồng của app bằng đúng HocTapApi và model của app: tạo môn → dán mục lục → thêm khóa Đang học / Chờ học →
 // đổi thứ tự → tick phần → Tổng quan → Muốn mua → Đã mua → routine STUDY → ghi buổi học (30 + 35 phút) → dừng + lý do →
 // học thêm xoá lý do → lý do ngày đã qua → sửa / xoá buổi hôm nay → lịch (hôm nay có buổi thật, ngày làm việc kế tiếp có kế hoạch) → thống kê 7 ngày.
+// Ca thứ 6 (Luyện AI): tạo phiên chat, ghi buổi PRACTICE, overview có minutesByActivity, 409 khi ghi trùng, sửa, xoá. Phiên chat nằm lại (không có API xoá).
 // Không có log hôm qua: test Flutter không chạm được DB (backend e2e chèn log quá khứ bằng SQL) nên `pendingReasonDates`
 // của routine mới tạo luôn rỗng ở đây; ngày đã qua chỉ kiểm bằng PUT / DELETE lý do (server cho phép ngày không có log). Ghi dữ liệu thật vào DB mà backend đang trỏ:
 // chỉ chạy trên nhánh dev; môn thử được xoá ở cuối (cascade khóa, phần, log).
@@ -645,6 +648,69 @@ void main() {
         await expectLater(api.getCardInsights('00000000-0000-4000-8000-000000000000'), status(404, 'subject_not_found'));
       } finally {
         if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá thẻ, lượt ôn
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 5)),
+    skip: missing ? 'thiếu --dart-define=NSD_API_BASE_URL / NSD_API_TOKEN' : false,
+  );
+
+  test(
+    'Luyện AI (PRACTICE): tạo phiên chat → POST log PRACTICE → overview có minutesByActivity.PRACTICE → 409 khi ghi trùng → sửa → xoá (backend thật)',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: _baseUrl, headers: {'Authorization': 'Bearer $_token'}));
+      final api = HocTapApi(dio);
+      String? subjectId;
+      try {
+        final subject = await api.createSubject({'name': 'TEST Luyện AI ${DateTime.now().millisecondsSinceEpoch}', 'dailyGoalMinutes': 60});
+        subjectId = subject.id;
+        // Phiên chat thật (server không có API xoá phiên: nó nằm lại cho tới khi xoá user thử).
+        final session = await TraDinhApi(dio).createSession(mode: PracticeMode.conversation);
+
+        // 1. Ghi 20 phút PRACTICE gắn phiên chat.
+        final created = await api.createLog({'subjectId': subjectId, 'activity': 'PRACTICE', 'minutes': 20, 'note': 'luyện thử', 'practiceSessionId': session.id});
+        expect(created.log.activity, LogActivity.practice, reason: 'PRACTICE không còn rơi vào unknown');
+        expect(created.log.courseId, isNull);
+        expect(created.log.sections, isEmpty);
+        expect(created.today.minutes, 20);
+        expect(logTitle(activity: created.log.activity), 'Luyện AI');
+
+        // 2. Overview: phút theo loại, tổng gồm PRACTICE, các trường mới đọc được bằng model của app.
+        var o = (await api.getOverview()).subjects.firstWhere((x) => x.subjectId == subjectId);
+        expect(o.today.byActivity.hasData, isTrue);
+        expect((o.today.byActivity.lesson, o.today.byActivity.cardReview, o.today.byActivity.practice), (0, 0, 20));
+        expect(o.today.minutes, 20);
+        expect(o.streak, isNotNull);
+        expect(o.pendingReasonDates, isEmpty);
+        expect(o.cards!.total, 0, reason: 'môn mới chưa có thẻ');
+
+        // 3. Ghi trùng cùng phiên → 409 practice_already_logged (app dịch thành "Buổi này đã được ghi rồi").
+        await expectLater(
+          api.createLog({'subjectId': subjectId, 'activity': 'PRACTICE', 'minutes': 5, 'practiceSessionId': session.id}),
+          _apiError(409, 'practice_already_logged'),
+        );
+        // Không courseId / sections; phiên lạ → 404.
+        await expectLater(api.createLog({'subjectId': subjectId, 'activity': 'PRACTICE', 'minutes': 5, 'courseId': '00000000-0000-4000-8000-000000000000'}), _apiError(400, 'practice_no_course'));
+        await expectLater(
+          api.createLog({'subjectId': subjectId, 'activity': 'PRACTICE', 'minutes': 5, 'practiceSessionId': '00000000-0000-4000-8000-000000000000'}),
+          _apiError(404, 'practice_session_not_found'),
+        );
+
+        // 4. Hôm nay có buổi PRACTICE trong danh sách; thống kê tách "Luyện AI"; sửa chỉ minutes + note.
+        final today = vnToday();
+        final logs = await api.getLogs(from: today, to: today, subjectId: subjectId);
+        expect(logs.single.id, created.log.id);
+        expect((await api.getStats(subjectId: subjectId, range: '7')).byCourse.map((c) => c.title), contains('Luyện AI'));
+        final patched = await api.patchLog(created.log.id, {'minutes': 25, 'note': 'đã sửa'});
+        expect((patched.log.minutes, patched.log.note, patched.log.activity), (25, 'đã sửa', LogActivity.practice));
+        await expectLater(api.patchLog(created.log.id, {'activity': 'LESSON', 'minutes': 10}), _apiError(400, 'activity_locked'));
+
+        // 5. Xoá buổi → overview về 0 phút luyện AI.
+        await api.deleteLog(created.log.id);
+        o = (await api.getOverview()).subjects.firstWhere((x) => x.subjectId == subjectId);
+        expect(o.today.byActivity.practice, 0);
+        expect(o.today.minutes, 0);
+      } finally {
+        if (subjectId != null) await api.deleteSubject(subjectId); // cascade xoá khóa, phần, log
       }
     },
     timeout: const Timeout(Duration(minutes: 5)),

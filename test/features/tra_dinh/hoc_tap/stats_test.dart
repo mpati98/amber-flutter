@@ -220,6 +220,17 @@ void main() {
       expect(find.descendant(of: _k('by-course-${c.courseId}'), matching: find.text('English Tenses 101')), findsOneWidget);
     });
 
+    testWidgets('theo khóa: "Luyện AI" và "Ôn thẻ" là hai dòng riêng (JSON thật), không gộp vào "Ôn tập"', (tester) async {
+      final api = FakeHocTapApi()..statsResponses['30|one'] = _stats('stats_practice');
+      await _pump(tester, api: api);
+      expect(find.descendant(of: _k('by-course-practice'), matching: find.text('Luyện AI')), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-practice'), matching: find.text('15p · 1 buổi')), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-cards'), matching: find.text('Ôn thẻ')), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-cards'), matching: find.text('10p · 1 buổi')), findsOneWidget);
+      expect(find.descendant(of: _k('by-course-review'), matching: find.text('Ôn tập')), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'ba mục cùng courseId null không trùng khoá widget');
+    });
+
     testWidgets('so với kế hoạch: dự kiến / gốc / sớm-trễ-đúng; DONE "Xong dd/MM"; tổng lộ trình', (tester) async {
       final stats = _stats('stats_30', (j) {
         final plan = (j['vsPlan'] as List).cast<Map<String, dynamic>>();
