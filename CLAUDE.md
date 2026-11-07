@@ -72,10 +72,13 @@ Dev local: chạy amber-v4 trước (`npm run dev` :3000).
 
 - Project Vercel `amber-flutter` (alias `amber.duangmai.io.vn`) **không nối Git**: `git push` KHÔNG deploy. Deploy bằng
   `API_BASE_URL=https://api.duangmai.io.vn tool/deploy_web.sh` từ `main` sạch, SAU khi backend amber-v4 đã deploy.
-- **Đang chạy** (06/11/2026): `dpl_BETF3w7jAYTj2X93kpUELbq99WC6`, build từ `9d40500` (kho thẻ từ vựng: Ôn thẻ, Kho thẻ, Nhóm khó, khối "Thẻ hôm nay"). Alias `amber.duangmai.io.vn`.
-  **Mốc rollback**: `dpl_CJiB92WeSeYdNi59umAQzB5RNMRy` (`6b553ea`, nhạc 24/10); trước nữa `dpl_heGz1HrjdSXTtK32WFfokveyCFtL` (`fc4ba11`) và `dpl_HRmzMgqVB3Y3uwoF3CVHqJTuoa6j`
-  (`a2c3b8e`, 22/10). Rollback: `vercel rollback dpl_CJiB92WeSeYdNi59umAQzB5RNMRy` chạy trong `amber_flutter/deploy` (đã nối project `amber-flutter`); khôi phục: `vercel promote dpl_BETF3w7jAYTj2X93kpUELbq99WC6`
-  (hoặc promote từ dashboard). Chưa thử lệnh rollback; chưa kiểm gói Vercel có cho rollback xa hơn "bản production ngay trước" hay không. Backend tương ứng: xem `amber-v4/CLAUDE.md`.
+- **Đang chạy** (07/11/2026): `dpl_CYHVDdQhxRyUP9pBpZf3hSNLsy3z`, build từ `eabc020` (màn Hôm nay + Thư viện, `LogActivity` chịu giá trị lạ và có PRACTICE, chat luyện AI + sheet ghi phút cuối phiên,
+  sửa/xoá buổi luyện AI, "Luyện AI" ở thống kê). Vercel chỉ có MỘT deployment mới sau `dpl_BETF3…`, nên code bước 1 (`3380b61`…`c749444`) và bước 3 (`826530b`…`eabc020`) lên production cùng lúc ở bản này,
+  không có bản trung gian chỉ có bước 1. Alias `amber.duangmai.io.vn`. Backend tương ứng: `dpl_GnH36PhDwqLmo6a6pzoXyMHF1wJu` (`ff7dee8`, migration 0012) — xem `amber-v4/CLAUDE.md`.
+  **Mốc rollback**: `dpl_BETF3w7jAYTj2X93kpUELbq99WC6` (`9d40500`, kho thẻ 06/11); trước nữa `dpl_CJiB92WeSeYdNi59umAQzB5RNMRy` (`6b553ea`, nhạc 24/10), `dpl_heGz1HrjdSXTtK32WFfokveyCFtL` (`fc4ba11`) và
+  `dpl_HRmzMgqVB3Y3uwoF3CVHqJTuoa6j` (`a2c3b8e`, 22/10). Rollback: `vercel rollback dpl_BETF3w7jAYTj2X93kpUELbq99WC6` chạy trong `amber_flutter/deploy` (đã nối project `amber-flutter`); khôi phục:
+  `vercel promote dpl_CYHVDdQhxRyUP9pBpZf3hSNLsy3z` (hoặc promote từ dashboard). Chưa thử lệnh rollback; chưa kiểm gói Vercel có cho rollback xa hơn "bản production ngay trước" hay không.
+  Lưu ý: lùi về `dpl_BETF3…` (không có PRACTICE) khi backend đã có log PRACTICE vẫn chạy được nhờ `LogActivity.unknown` của bản bước 1, nhưng bản đó coi `PRACTICE` là buổi lạ nên bỏ qua trong danh sách.
 - **`API_BASE_URL` phải là `https://api.duangmai.io.vn`.** Ví dụ trong comment đầu `tool/deploy_web.sh` (`API_BASE_URL=https://amber-v4.vercel.app …`) gây hiểu nhầm — đừng chép nó: script không đặt sẵn giá trị nào
   (thiếu biến thì dừng với lỗi). Script cần: `flutter`, `rsync`, Vercel CLI đã đăng nhập, `deploy/.vercel` đã nối `amber-flutter` (deploy/ bị gitignore, giữ liên kết qua các lần chạy), và `main` sạch.
 - Brain: `tool/deploy_web.sh` chỉ truyền `API_BASE_URL`, nên `BRAIN_BASE_URL` giữ mặc định `http://127.0.0.1:8765` (cổng dịch vụ; 8766 chỉ là cổng chạy thử
