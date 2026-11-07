@@ -1,0 +1,22 @@
+{
+  "log": {
+    "id": "61e8a27f-d5af-458a-8033-75352ad57b43",
+    "subjectId": "ca7de6ab-ff00-4592-9be0-86361c81d3df",
+    "courseId": null,
+    "courseTitle": null,
+    "logDate": "2026-11-07",
+    "minutes": 15,
+    "note": "nói chuyện 15 phút",
+    "activity": "PRACTICE",
+    "practiceSessionId": "155da1d0-525c-423f-93cc-11406e338a5b",
+    "createdAt": "2026-11-07T08:05:52.209Z",
+    "sections": []
+  },
+  "today": {
+    "minutes": 45,
+    "goalMinutes": 60,
+    "done": false,
+    "reason": null
+  },
+  "course": null
+}

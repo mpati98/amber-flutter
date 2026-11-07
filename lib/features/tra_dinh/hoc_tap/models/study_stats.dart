@@ -26,7 +26,7 @@ class StatsCourse {
     logCount: json['logCount'] as int,
   );
 
-  /// null = buổi không gắn khóa. Có thể có HAI mục như vậy: "Ôn tập" và "Ôn thẻ" (server đặt title) — KHÔNG dùng
+  /// null = buổi không gắn khóa. Có thể có BA mục như vậy: "Ôn tập", "Ôn thẻ" và "Luyện AI" (server đặt title) — KHÔNG dùng
   /// courseId làm khoá duy nhất; dùng [statsCourseKeys].
   final String? courseId;
   final String title;
@@ -35,13 +35,13 @@ class StatsCourse {
 }
 
 /// Khoá duy nhất cho từng mục của `byCourse` (cùng thứ tự): id khóa; mục không khóa thì "review" ("Ôn tập"),
-/// "cards" ("Ôn thẻ"); mục không khóa trùng khoá (lạ) thêm số thứ tự để không bao giờ trùng.
+/// "cards" ("Ôn thẻ"), "practice" ("Luyện AI"); mục không khóa trùng khoá (lạ) thêm số thứ tự để không bao giờ trùng.
 List<String> statsCourseKeys(List<StatsCourse> courses) {
   final used = <String>{};
   return [
     for (final (i, c) in courses.indexed)
       () {
-        var key = c.courseId ?? (c.title == 'Ôn thẻ' ? 'cards' : 'review');
+        var key = c.courseId ?? switch (c.title) { 'Ôn thẻ' => 'cards', 'Luyện AI' => 'practice', _ => 'review' };
         if (!used.add(key)) {
           key = '$key-$i';
           used.add(key);

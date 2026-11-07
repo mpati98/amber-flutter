@@ -1,0 +1,101 @@
+{
+  "from": "2026-11-01",
+  "to": "2026-11-07",
+  "totalMinutes": 45,
+  "logCount": 3,
+  "avgPerDay": 6,
+  "goalDays": {
+    "met": 0,
+    "total": 0
+  },
+  "bucket": "day",
+  "series": [
+    {
+      "start": "2026-11-01",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-02",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-03",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-04",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-05",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-06",
+      "minutes": 0,
+      "goalMinutes": 60
+    },
+    {
+      "start": "2026-11-07",
+      "minutes": 45,
+      "goalMinutes": 60
+    }
+  ],
+  "byCourse": [
+    {
+      "courseId": null,
+      "title": "Ôn tập",
+      "minutes": 20,
+      "logCount": 1
+    },
+    {
+      "courseId": null,
+      "title": "Luyện AI",
+      "minutes": 15,
+      "logCount": 1
+    },
+    {
+      "courseId": null,
+      "title": "Ôn thẻ",
+      "minutes": 10,
+      "logCount": 1
+    }
+  ],
+  "vsPlan": [
+    {
+      "courseId": "4e39230a-aabd-4a24-b6e4-35b48624258b",
+      "title": "English Tenses 101",
+      "status": "ACTIVE",
+      "progressPct": 0,
+      "baselineFinishDate": "2026-11-09",
+      "forecastFinishDate": "2026-11-10",
+      "finishedDate": null,
+      "deltaDays": 1
+    }
+  ],
+  "overallDeltaDays": [
+    {
+      "subjectId": "ca7de6ab-ff00-4592-9be0-86361c81d3df",
+      "deltaDays": 1
+    }
+  ],
+  "longestDay": {
+    "date": "2026-11-07",
+    "minutes": 45
+  },
+  "topWeekday": {
+    "weekday": 6,
+    "minutes": 45
+  },
+  "reasonCounts": {
+    "BUSY": 0,
+    "TIRED": 0,
+    "AWAY": 0,
+    "OTHER": 0
+  }
+}

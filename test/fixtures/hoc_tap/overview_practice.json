@@ -1,0 +1,167 @@
+{
+  "today": "2026-11-07",
+  "week": {
+    "start": "2026-11-02",
+    "end": "2026-11-08",
+    "goalMinutes": 420,
+    "minutes": 45,
+    "remainingMinutes": 375,
+    "remainingDays": 2,
+    "suggestedPerDay": 188,
+    "days": [
+      {
+        "date": "2026-11-02",
+        "minutes": 0,
+        "goalMinutes": 60,
+        "done": false
+      },
+      {
+        "date": "2026-11-03",
+        "minutes": 0,
+        "goalMinutes": 60,
+        "done": false
+      },
+      {
+        "date": "2026-11-04",
+        "minutes": 0,
+        "goalMinutes": 60,
+        "done": false
+      },
+      {
+        "date": "2026-11-05",
+        "minutes": 0,
+        "goalMinutes": 60,
+        "done": false
+      },
+      {
+        "date": "2026-11-06",
+        "minutes": 0,
+        "goalMinutes": 60,
+        "done": false
+      },
+      {
+        "date": "2026-11-07",
+        "minutes": 45,
+        "goalMinutes": 60,
+        "done": false
+      },
+      {
+        "date": "2026-11-08",
+        "minutes": 0,
+        "goalMinutes": 60,
+        "done": false
+      }
+    ],
+    "bySubject": [
+      {
+        "subjectId": "ca7de6ab-ff00-4592-9be0-86361c81d3df",
+        "name": "Tiếng Anh",
+        "goalMinutes": 420,
+        "minutes": 45,
+        "remainingMinutes": 375,
+        "suggestedPerDay": 188
+      }
+    ]
+  },
+  "subjects": [
+    {
+      "subjectId": "ca7de6ab-ff00-4592-9be0-86361c81d3df",
+      "name": "Tiếng Anh",
+      "goalMinutes": 60,
+      "today": {
+        "minutes": 45,
+        "logCount": 3,
+        "done": false,
+        "reason": null,
+        "minutesByActivity": {
+          "LESSON": 20,
+          "CARD_REVIEW": 10,
+          "PRACTICE": 15
+        }
+      },
+      "streak": 0,
+      "pendingReasonDates": [],
+      "next": {
+        "courseId": "4e39230a-aabd-4a24-b6e4-35b48624258b",
+        "courseTitle": "English Tenses 101",
+        "sectionId": "be939b15-b143-4c6c-a4db-c6bbfdb883e8",
+        "sectionTitle": "First English Sentences",
+        "minutes": 25
+      },
+      "activeCourse": {
+        "id": "4e39230a-aabd-4a24-b6e4-35b48624258b",
+        "subjectId": "ca7de6ab-ff00-4592-9be0-86361c81d3df",
+        "title": "English Tenses 101",
+        "instructor": null,
+        "platform": null,
+        "url": null,
+        "status": "ACTIVE",
+        "queuePosition": null,
+        "targetPrice": null,
+        "note": null,
+        "startedAt": "2026-11-07T08:05:46.828Z",
+        "finishedAt": null,
+        "baselineFinishDate": "2026-11-09",
+        "forecastFinishDate": "2026-11-10",
+        "deltaDays": 1,
+        "progress": {
+          "doneSections": 0,
+          "totalSections": 2,
+          "doneMinutes": 0,
+          "totalMinutes": 45
+        },
+        "nextSection": {
+          "id": "be939b15-b143-4c6c-a4db-c6bbfdb883e8",
+          "title": "First English Sentences",
+          "minutes": 25
+        }
+      },
+      "counts": {
+        "QUEUED": 0,
+        "DONE": 0,
+        "WISHLIST": 0
+      },
+      "vsBaseline": 1,
+      "cards": {
+        "planned": 0,
+        "finished": 0,
+        "total": 2,
+        "quota": 20,
+        "nextReviewDay": "2026-11-08"
+      }
+    },
+    {
+      "subjectId": "88f83658-aa88-4c89-a78a-61204591fda2",
+      "name": "Lập trình",
+      "goalMinutes": null,
+      "today": {
+        "minutes": 0,
+        "logCount": 0,
+        "done": false,
+        "reason": null,
+        "minutesByActivity": {
+          "LESSON": 0,
+          "CARD_REVIEW": 0,
+          "PRACTICE": 0
+        }
+      },
+      "streak": 0,
+      "pendingReasonDates": [],
+      "next": null,
+      "activeCourse": null,
+      "counts": {
+        "QUEUED": 0,
+        "DONE": 0,
+        "WISHLIST": 0
+      },
+      "vsBaseline": null,
+      "cards": {
+        "planned": 0,
+        "finished": 0,
+        "total": 0,
+        "quota": 20,
+        "nextReviewDay": "2026-11-08"
+      }
+    }
+  ]
+}

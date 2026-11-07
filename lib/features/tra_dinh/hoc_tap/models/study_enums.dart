@@ -31,10 +31,13 @@ enum ReasonCode {
 }
 
 /// Loại buổi học (study_log_activity). Thiếu trường (app / server cũ) → [lesson]; giá trị có mặt nhưng lạ
-/// (ví dụ PRACTICE từ backend mới hơn bản app này) → [unknown], để danh sách bỏ qua thay vì hiểu nhầm là học bài.
+/// (bản backend mới hơn bản app này) → [unknown], để danh sách bỏ qua thay vì hiểu nhầm là học bài.
 enum LogActivity {
   lesson('LESSON'),
   cardReview('CARD_REVIEW'),
+
+  /// Phút luyện chat AI: chỉ phút + ghi chú, không khóa, không phần (như [cardReview]).
+  practice('PRACTICE'),
   unknown('');
 
   const LogActivity(this.api);

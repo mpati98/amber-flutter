@@ -1,0 +1,131 @@
+{
+  "days": [
+    {
+      "date": "2026-11-01",
+      "kind": "past",
+      "isReviewDay": true,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-02",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-03",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-04",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-05",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-06",
+      "kind": "past",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 0,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [],
+      "milestones": []
+    },
+    {
+      "date": "2026-11-07",
+      "kind": "today",
+      "isReviewDay": false,
+      "goalMinutes": 60,
+      "minutes": 45,
+      "done": false,
+      "needsReason": false,
+      "extraMinutes": 0,
+      "reason": null,
+      "logs": [
+        {
+          "id": "61e8a27f-d5af-458a-8033-75352ad57b43",
+          "courseTitle": null,
+          "minutes": 15,
+          "activity": "PRACTICE",
+          "sections": []
+        },
+        {
+          "id": "1fb08b2f-b768-4a9e-b299-3c7cdda361d2",
+          "courseTitle": null,
+          "minutes": 10,
+          "activity": "CARD_REVIEW",
+          "sections": []
+        },
+        {
+          "id": "952e7034-a595-4ced-9415-118df0bd66d1",
+          "courseTitle": null,
+          "minutes": 20,
+          "activity": "LESSON",
+          "sections": []
+        }
+      ],
+      "milestones": []
+    }
+  ],
+  "summary": {
+    "minutes": 45,
+    "plannedMinutes": 0,
+    "vsBaseline": [
+      {
+        "courseId": "4e39230a-aabd-4a24-b6e4-35b48624258b",
+        "courseTitle": "English Tenses 101",
+        "status": "ACTIVE",
+        "baselineFinishDate": "2026-11-09",
+        "forecastFinishDate": "2026-11-10",
+        "deltaDays": 1
+      }
+    ]
+  }
+}

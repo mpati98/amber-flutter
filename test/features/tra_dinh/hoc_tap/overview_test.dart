@@ -332,13 +332,13 @@ void main() {
     });
   });
 
-  test('activity lạ (PRACTICE): enum → unknown; lịch bỏ qua buổi đó, giữ các buổi khác', () {
-    expect(LogActivity.fromApi('PRACTICE'), LogActivity.unknown);
+  test('activity lạ (chưa biết): enum → unknown; lịch bỏ qua buổi đó, giữ các buổi khác', () {
+    expect(LogActivity.fromApi('FUTURE_KIND'), LogActivity.unknown);
     expect(LogActivity.fromApi(null), LogActivity.lesson);
     final json = jsonDecodeMap(fixtureMap('schedule_card_review'));
     final day = (json['days'] as List).firstWhere((d) => (d['logs'] as List).isNotEmpty) as Map<String, dynamic>;
     final before = (day['logs'] as List).length;
-    (day['logs'] as List).add({'id': 'p', 'minutes': 20, 'activity': 'PRACTICE', 'sections': []});
+    (day['logs'] as List).add({'id': 'p', 'minutes': 20, 'activity': 'FUTURE_KIND', 'sections': []});
     final parsed = StudySchedule.fromJson(json).days.firstWhere((d) => d.date == day['date']);
     expect(parsed.logs.length, before);
     expect(parsed.logs.any((l) => l.id == 'p'), isFalse);

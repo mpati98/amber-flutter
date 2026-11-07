@@ -1,6 +1,9 @@
 import 'course.dart';
 import 'study_enums.dart';
 
+/// Trường số của backend mới hơn: sai kiểu / thiếu → null, không ném (bản cũ vẫn chạy).
+int? _intOrNull(Object? v) => v is num ? v.toInt() : null;
+
 class WeekDay {
   const WeekDay({required this.date, required this.minutes, required this.goalMinutes, required this.done});
 
@@ -94,36 +97,60 @@ class DayReason {
   String get label => text == null || text!.trim().isEmpty ? code.label : '${code.label}: $text';
 }
 
+/// Phút hôm nay theo loại buổi (`today.minutesByActivity`). Backend cũ không có → toàn 0 ([hasData] = false).
+class MinutesByActivity {
+  const MinutesByActivity({this.lesson = 0, this.cardReview = 0, this.practice = 0, this.hasData = false});
+
+  factory MinutesByActivity.fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return const MinutesByActivity();
+    int n(String k) => _intOrNull(json[k]) ?? 0;
+    return MinutesByActivity(lesson: n('LESSON'), cardReview: n('CARD_REVIEW'), practice: n('PRACTICE'), hasData: true);
+  }
+
+  final int lesson;
+  final int cardReview;
+  final int practice;
+
+  /// false = server không trả (bản cũ), nên "0 phút" chưa chắc là thật.
+  final bool hasData;
+}
+
 class TodayInfo {
-  const TodayInfo({required this.minutes, required this.logCount, required this.done, this.reason});
+  const TodayInfo({required this.minutes, required this.logCount, required this.done, this.reason, this.byActivity = const MinutesByActivity()});
 
   factory TodayInfo.fromJson(Map<String, dynamic> json) => TodayInfo(
     minutes: json['minutes'] as int,
     logCount: json['logCount'] as int,
     done: json['done'] as bool,
     reason: json['reason'] == null ? null : DayReason.fromJson(json['reason'] as Map<String, dynamic>),
+    byActivity: MinutesByActivity.fromJson(json['minutesByActivity']),
   );
 
   final int minutes;
   final int logCount;
   final bool done;
   final DayReason? reason;
+  final MinutesByActivity byActivity;
 }
 
 class NextItem {
-  const NextItem({required this.courseId, required this.courseTitle, required this.sectionId, required this.sectionTitle});
+  const NextItem({required this.courseId, required this.courseTitle, required this.sectionId, required this.sectionTitle, this.minutes});
 
   factory NextItem.fromJson(Map<String, dynamic> json) => NextItem(
     courseId: json['courseId'] as String,
     courseTitle: json['courseTitle'] as String,
     sectionId: json['sectionId'] as String,
     sectionTitle: json['sectionTitle'] as String,
+    minutes: _intOrNull(json['minutes']),
   );
 
   final String courseId;
   final String courseTitle;
   final String sectionId;
   final String sectionTitle;
+
+  /// Số phút của phần kế tiếp; null = server không trả (bản cũ).
+  final int? minutes;
 }
 
 class CourseCounts {
@@ -139,17 +166,21 @@ class CourseCounts {
 
 /// Khối thẻ từ vựng của một môn trong Tổng quan (`cards`): số thẻ trong kế hoạch hôm nay, đã ôn xong, hạn mức, ngày ôn tập kế tiếp.
 class CardsToday {
-  const CardsToday({this.planned = 0, this.finished = 0, this.quota = 20, this.nextReviewDay});
+  const CardsToday({this.planned = 0, this.finished = 0, this.total, this.quota = 20, this.nextReviewDay});
 
   factory CardsToday.fromJson(Map<String, dynamic> json) => CardsToday(
     planned: (json['planned'] as num?)?.toInt() ?? 0,
     finished: (json['finished'] as num?)?.toInt() ?? 0,
+    total: _intOrNull(json['total']),
     quota: (json['quota'] as num?)?.toInt() ?? 20,
     nextReviewDay: json['nextReviewDay'] as String?,
   );
 
   final int planned;
   final int finished;
+
+  /// Tổng thẻ không tạm dừng của môn; null = server không trả (bản cũ), coi như chưa biết.
+  final int? total;
   final int quota;
 
   /// "YYYY-MM-DD" của ngày ôn tập kế tiếp (sau hôm nay); null nếu server không trả.
@@ -167,6 +198,8 @@ class SubjectOverview {
     this.counts = const CourseCounts(),
     this.vsBaseline,
     this.cards,
+    this.streak,
+    this.pendingReasonDates = const [],
   });
 
   factory SubjectOverview.fromJson(Map<String, dynamic> json) => SubjectOverview(
@@ -179,6 +212,8 @@ class SubjectOverview {
     counts: json['counts'] == null ? const CourseCounts() : CourseCounts.fromJson(json['counts'] as Map<String, dynamic>),
     vsBaseline: json['vsBaseline'] as int?,
     cards: json['cards'] is Map<String, dynamic> ? CardsToday.fromJson(json['cards'] as Map<String, dynamic>) : null,
+    streak: _intOrNull(json['streak']),
+    pendingReasonDates: [for (final d in (json['pendingReasonDates'] as List? ?? const [])) if (d is String) d],
   );
 
   final String subjectId;
@@ -194,6 +229,12 @@ class SubjectOverview {
 
   /// Khối thẻ từ vựng; null = backend cũ chưa có (không hiện gì).
   final CardsToday? cards;
+
+  /// Chuỗi ngày đủ mục tiêu của môn; null = backend cũ chưa có (ẩn).
+  final int? streak;
+
+  /// Ngày còn thiếu lý do (cũ trước hoặc mới trước tuỳ server); rỗng = không có hoặc backend cũ.
+  final List<String> pendingReasonDates;
 }
 
 /// GET /api/tra-dinh/hoc-tap/overview.
