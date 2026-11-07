@@ -112,7 +112,11 @@ class HocTapApi {
   /// Buổi học trong [from, to] ("YYYY-MM-DD", tối đa 400 ngày), mới nhất trước.
   Future<List<StudyLog>> getLogs({required String from, required String to, String? subjectId}) async {
     final res = await _dio.get<List<dynamic>>('$_base/logs', queryParameters: {'subjectId': ?subjectId, 'from': from, 'to': to});
-    return [for (final e in res.data!) StudyLog.fromJson(e as Map<String, dynamic>)];
+    // Buổi có activity lạ (backend mới hơn app) bị bỏ qua, không làm hỏng cả danh sách.
+    return [
+      for (final e in res.data!)
+        if (StudyLog.fromJson(e as Map<String, dynamic>) case final log when log.activity != LogActivity.unknown) log,
+    ];
   }
 
   /// Ghi buổi học HÔM NAY (server tự đặt ngày). [body]: subjectId, courseId, minutes, sections [{sectionId, markDone}],

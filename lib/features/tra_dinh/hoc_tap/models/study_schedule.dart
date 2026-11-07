@@ -100,7 +100,11 @@ class ScheduleDay {
     done: json['done'] as bool?,
     extraMinutes: json['extraMinutes'] as int?,
     reason: json['reason'] == null ? null : DayReason.fromJson(json['reason'] as Map<String, dynamic>),
-    logs: [for (final l in (json['logs'] as List? ?? const [])) ScheduleLog.fromJson(l as Map<String, dynamic>)],
+    // Buổi có activity lạ (backend mới hơn app) bị bỏ qua.
+    logs: [
+      for (final l in (json['logs'] as List? ?? const []))
+        if (ScheduleLog.fromJson(l as Map<String, dynamic>) case final log when log.activity != LogActivity.unknown) log,
+    ],
     plannedItems: json['plannedItems'] == null ? null : [for (final p in json['plannedItems'] as List) PlannedItem.fromJson(p as Map<String, dynamic>)],
     milestones: [for (final m in (json['milestones'] as List? ?? const [])) Milestone.fromJson(m as Map<String, dynamic>)],
     needsReason: json['needsReason'] as bool? ?? false,

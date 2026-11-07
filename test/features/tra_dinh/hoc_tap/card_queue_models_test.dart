@@ -114,7 +114,7 @@ void main() {
     expect(logs.where((l) => l.activity == LogActivity.cardReview).fold<int>(0, (n, l) => n + l.minutes), 15);
     final old = StudyLog.fromJson({'id': 'x', 'subjectId': 's', 'logDate': '2026-11-06', 'minutes': 30, 'createdAt': '2026-11-06T01:00:00.000Z'});
     expect(old.activity, LogActivity.lesson);
-    expect(StudyLog.fromJson({'id': 'x', 'subjectId': 's', 'logDate': '2026-11-06', 'minutes': 1, 'createdAt': '2026-11-06T01:00:00.000Z', 'activity': 'NEW_KIND'}).activity, LogActivity.lesson);
+    expect(StudyLog.fromJson({'id': 'x', 'subjectId': 's', 'logDate': '2026-11-06', 'minutes': 1, 'createdAt': '2026-11-06T01:00:00.000Z', 'activity': 'NEW_KIND'}).activity, LogActivity.unknown);
   });
 
   test('trường thiếu hoặc lạ không làm hỏng việc đọc', () {
