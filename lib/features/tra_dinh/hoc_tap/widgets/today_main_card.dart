@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/date_format.dart';
@@ -7,24 +6,14 @@ import '../../../../shared/utils/duration_format.dart';
 import '../../../../shared/widgets/progress_ring.dart';
 import '../../../../shared/widgets/scroll_card.dart';
 import '../../../../shared/widgets/tag.dart';
-import '../../../nghi_su_duong/models/routine.dart';
-import '../../../nghi_su_duong/providers/nghi_su_duong_provider.dart';
 import '../models/study_overview.dart';
 import 'missing_reason_sheet.dart';
 import 'subject_sheet.dart';
 
-/// Routine STUDY của môn (nguồn chuỗi ngày và ngày thiếu lý do). null = chưa có routine hoặc chưa tải được.
-Routine? studyRoutineOf(List<Routine>? routines, String subjectId) {
-  for (final r in routines ?? const <Routine>[]) {
-    if (r.isStudy && r.studySubjectId == subjectId) return r;
-  }
-  return null;
-}
-
 const _dayLabels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 /// Thẻ chính của màn Hôm nay: vòng tiến độ phút hôm nay, chuỗi ngày, dải 7 chấm, "Tuần này: X / Y", thiếu lý do.
-class TodayMainCard extends ConsumerWidget {
+class TodayMainCard extends StatelessWidget {
   const TodayMainCard({
     super.key,
     required this.overview,
@@ -35,17 +24,15 @@ class TodayMainCard extends ConsumerWidget {
   final SubjectOverview subject;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final today = subject.today;
     final goal = subject.goalMinutes;
     final week = overview.week;
-    final routine = studyRoutineOf(
-      ref.watch(routinesProvider).value,
-      subject.subjectId,
-    );
-    final pending = [...?routine?.pendingReasonDates]
+    // Chuỗi ngày và ngày thiếu lý do do overview tính (cùng hàm với việc hằng ngày học tập); backend cũ không có → ẩn.
+    final streak = goal == null ? null : subject.streak;
+    final pending = [...subject.pendingReasonDates]
       ..sort((a, b) => b.compareTo(a));
 
     return ScrollCard(
@@ -100,9 +87,9 @@ class TodayMainCard extends ConsumerWidget {
                             variant: TagVariant.tonal,
                           ),
                         ),
-                      if (routine != null)
+                      if (streak != null)
                         Text(
-                          'Chuỗi ${routine.streak} ngày',
+                          'Chuỗi $streak ngày',
                           key: const ValueKey('today-streak'),
                           style: TextStyle(
                             fontSize: 13,
@@ -131,7 +118,7 @@ class TodayMainCard extends ConsumerWidget {
               style: TextStyle(fontSize: 13, color: theme.textMuted),
             ),
           ],
-          if (pending.isNotEmpty && routine?.studySubjectId != null)
+          if (pending.isNotEmpty)
             InkWell(
               key: const ValueKey('today-pending'),
               onTap: () => showMissingReasonSheet(

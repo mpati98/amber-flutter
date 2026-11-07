@@ -24,6 +24,15 @@ String weekdayDateLabel(String isoDate) {
       : '${weekdayShort(d.weekday)} ${formatDayMonth(isoDate)}';
 }
 
+/// Dòng phụ của hàng Luyện AI: số phút đã luyện hôm nay. Backend cũ không trả `minutesByActivity` thì không khẳng định
+/// "0 phút" (chưa chắc đúng), giữ câu giới thiệu cũ.
+String _practiceSubtitle(MinutesByActivity m) {
+  if (!m.hasData) return 'Trò chuyện, làm bài test, xem trình độ';
+  return m.practice > 0
+      ? 'Đã luyện ${m.practice} phút hôm nay'
+      : 'Trò chuyện, làm bài test · 0 phút';
+}
+
 /// Khối "Việc hôm nay": Ôn thẻ, Học bài tiếp, Luyện nói với AI. Chỉ việc tiếp theo ([nextTodayAction]) có nút vàng.
 class TodayTasksCard extends ConsumerWidget {
   const TodayTasksCard({super.key, required this.subject});
@@ -69,7 +78,9 @@ class TodayTasksCard extends ConsumerWidget {
             _TaskRow(
               key: const ValueKey('task-lesson'),
               icon: Icons.menu_book_outlined,
-              title: next.sectionTitle,
+              title: next.minutes == null
+                  ? next.sectionTitle
+                  : '${next.sectionTitle} · ${next.minutes} phút',
               subtitle: next.courseTitle,
               button: 'Học tiếp',
               primary: action == TodayAction.nextLesson,
@@ -92,10 +103,12 @@ class TodayTasksCard extends ConsumerWidget {
             key: const ValueKey('task-practice'),
             icon: Icons.record_voice_over_outlined,
             title: 'Luyện nói với AI',
-            subtitle: 'Trò chuyện, làm bài test, xem trình độ',
+            subtitle: _practiceSubtitle(subject.today.byActivity),
             button: 'Luyện',
             primary: action == TodayAction.practice,
-            onTap: () => context.push('/tra-dinh/luyen-tap'),
+            onTap: () => context.push(
+              '/tra-dinh/luyen-tap?subjectId=${subject.subjectId}',
+            ),
           ),
           if (logs.isNotEmpty) ...[
             const Divider(height: 20),
@@ -131,6 +144,22 @@ class TodayTasksCard extends ConsumerWidget {
     bool primary,
   ) {
     final next = cards.nextReviewDay;
+    // Môn chắc chắn chưa có thẻ (total == 0): không có gì để ôn, chỉ mời nhập thẻ. Không phải việc cần làm → không nút vàng.
+    if (cards.total == 0) {
+      return _TaskRow(
+        key: const ValueKey('task-cards'),
+        icon: Icons.style_outlined,
+        title: 'Ôn thẻ',
+        statusKey: const ValueKey('cards-status'),
+        status: 'Chưa có thẻ',
+        button: 'Nhập thẻ ›',
+        buttonKey: const ValueKey('cards-import'),
+        quiet: true,
+        onTap: () => context.push(
+          '/tra-dinh/hoc-tap/the/them?subjectId=${subject.subjectId}',
+        ),
+      );
+    }
     final done = cards.planned > 0 && cards.finished >= cards.planned;
     if (done) {
       return _TaskRow(

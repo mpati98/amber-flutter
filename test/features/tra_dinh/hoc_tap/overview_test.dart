@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
@@ -10,14 +9,12 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dar
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/next_action.dart';
-import 'package:amber_flutter/shared/services/api_client.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../nghi_su_duong/detail_test_support.dart';
 import 'hoc_tap_test_support.dart';
 import 'hoc_tap_widget_support.dart';
 
@@ -36,32 +33,14 @@ SubjectOverview _subject({CardsToday? cards, NextItem? next, int? goal = 60, boo
 
 const _next = NextItem(courseId: 'c', courseTitle: 'Khóa', sectionId: 'x', sectionTitle: 'Bài 1');
 
-Routine _studyRoutine(String subjectId, {int streak = 3, List<String> pending = const []}) {
-  final base = mkRoutine('st', 'Học', kind: RoutineKind.study, done: const {});
-  return Routine(
-    id: base.id,
-    name: base.name,
-    weekdays: base.weekdays,
-    dueToday: true,
-    doneToday: false,
-    streak: streak,
-    last7: base.last7,
-    kind: RoutineKind.study,
-    studySubjectId: subjectId,
-    studySubjectName: 'Tiếng Anh',
-    todayMinutes: 10,
-    goalMinutes: 60,
-    pendingReasonDates: pending,
-  );
+/// Overview từ JSON thật chụp ở dev (có trường mới) với môn đầu đã chỉnh bằng [edit].
+StudyOverview _practiceOverview([void Function(Map<String, dynamic> subject)? edit]) {
+  final json = jsonDecode(jsonEncode(fixtureMap('overview_practice'))) as Map<String, dynamic>;
+  if (edit != null) edit((json['subjects'] as List).first as Map<String, dynamic>);
+  return StudyOverview.fromJson(json);
 }
 
-Future<void> _pumpTab(WidgetTester tester, FakeHocTapApi api, {List<Routine> routines = const []}) => pumpHocTap(
-  tester,
-  const Scaffold(body: OverviewTab()),
-  api: api,
-  routinesApi: FakeApi(project: mkProject(), tasks: [])..routines = [...routines],
-  overrides: [apiClientProvider.overrideWithValue(offlineDio())],
-);
+Future<void> _pumpTab(WidgetTester tester, FakeHocTapApi api, {double width = 390}) => pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api, width: width);
 
 void main() {
   group('nextTodayAction (hàm thuần)', () {
@@ -74,6 +53,18 @@ void main() {
     });
     test('ôn thẻ xong (done == planned > 0) → học bài nếu còn phần kế tiếp', () {
       expect(nextTodayAction(_subject(cards: const CardsToday(planned: 5, finished: 5), next: _next)), TodayAction.nextLesson);
+    });
+    test('cards.total == 0 (môn chưa có thẻ) → không phải việc cần làm, nút vàng sang việc kế tiếp', () {
+      expect(nextTodayAction(_subject(cards: const CardsToday(total: 0), next: _next)), TodayAction.nextLesson);
+      expect(nextTodayAction(_subject(cards: const CardsToday(total: 0))), TodayAction.practice);
+    });
+    test('planned == 0 với total > 0 hoặc total thiếu → vẫn là ôn thẻ', () {
+      expect(nextTodayAction(_subject(cards: const CardsToday(total: 5), next: _next)), TodayAction.reviewCards);
+      expect(nextTodayAction(_subject(cards: const CardsToday(), next: _next)), TodayAction.reviewCards);
+    });
+    test('có phút luyện AI nhưng chưa đủ mục tiêu, hết việc khác → vẫn gợi ý Luyện AI; đủ phút (đã gồm PRACTICE) → không', () {
+      expect(nextTodayAction(_subject()), TodayAction.practice);
+      expect(nextTodayAction(_subject(done: true)), isNull);
     });
     test('backend cũ không có cards → bỏ qua Ôn thẻ', () {
       expect(nextTodayAction(_subject(next: _next)), TodayAction.nextLesson);
@@ -141,10 +132,12 @@ void main() {
     expect(find.text('Đủ mục tiêu'), findsOneWidget);
   });
 
-  testWidgets('chuỗi ngày và dòng "Thiếu lý do" lấy từ routine STUDY của môn; mở sheet lý do', (tester) async {
-    final api = FakeHocTapApi();
-    final id = api.overview.subjects.first.subjectId;
-    await _pumpTab(tester, api, routines: [_studyRoutine(id, streak: 4, pending: const ['2026-10-12', '2026-10-13'])]);
+  testWidgets('chuỗi ngày và dòng "Thiếu lý do" đọc từ overview (không cần routine); mở sheet lý do', (tester) async {
+    final o = _practiceOverview((s) {
+      s['streak'] = 4;
+      s['pendingReasonDates'] = ['2026-10-12', '2026-10-13'];
+    });
+    await _pumpTab(tester, FakeHocTapApi(overview: o));
     expect(tester.widget<Text>(_k('today-streak')).data, 'Chuỗi 4 ngày');
     expect(find.textContaining('Thiếu lý do ngày 13/10, 12/10'), findsOneWidget);
     await tester.tap(_k('today-pending'));
@@ -152,10 +145,88 @@ void main() {
     expect(find.byType(CloseButton), findsWidgets, reason: 'sheet lý do đã mở');
   });
 
-  testWidgets('không có routine STUDY: ẩn chuỗi và dòng thiếu lý do, không lỗi', (tester) async {
+  testWidgets('overview không có streak / pendingReasonDates (backend cũ): ẩn cả hai, không lỗi', (tester) async {
     await _pumpTab(tester, FakeHocTapApi());
     expect(_k('today-streak'), findsNothing);
     expect(_k('today-pending'), findsNothing);
+  });
+
+  testWidgets('streak 0 vẫn hiện "Chuỗi 0 ngày" khi môn có mục tiêu; môn không mục tiêu thì ẩn', (tester) async {
+    await _pumpTab(tester, FakeHocTapApi(overview: _practiceOverview()));
+    expect(tester.widget<Text>(_k('today-streak')).data, 'Chuỗi 0 ngày');
+  });
+
+  group('hàng Học bài tiếp và Luyện AI', () {
+    testWidgets('Học bài tiếp: "[Tên bài] · N phút" khi có next.minutes; thiếu thì chỉ tên bài', (tester) async {
+      await _pumpTab(tester, FakeHocTapApi(overview: _practiceOverview()));
+      expect(find.text('First English Sentences · 25 phút'), findsOneWidget);
+      await _pumpTab(tester, FakeHocTapApi());
+      expect(find.text('First English Sentences'), findsOneWidget);
+      expect(find.textContaining(' phút'), findsWidgets); // chỉ để chắc không lỗi; tên bài không kèm phút
+      expect(find.textContaining('First English Sentences ·'), findsNothing);
+    });
+
+    testWidgets('Luyện AI: đã luyện 15 phút → "Đã luyện 15 phút hôm nay"', (tester) async {
+      await _pumpTab(tester, FakeHocTapApi(overview: _practiceOverview()));
+      expect(find.descendant(of: _k('task-practice'), matching: find.text('Đã luyện 15 phút hôm nay')), findsOneWidget);
+    });
+
+    testWidgets('Luyện AI: chưa luyện (PRACTICE 0) → "Trò chuyện, làm bài test · 0 phút"', (tester) async {
+      final o = _practiceOverview((s) => (s['today'] as Map<String, dynamic>)['minutesByActivity']['PRACTICE'] = 0);
+      await _pumpTab(tester, FakeHocTapApi(overview: o));
+      expect(find.descendant(of: _k('task-practice'), matching: find.text('Trò chuyện, làm bài test · 0 phút')), findsOneWidget);
+    });
+
+    testWidgets('Luyện AI: backend cũ (không có minutesByActivity) không khẳng định "0 phút"', (tester) async {
+      await _pumpTab(tester, FakeHocTapApi());
+      expect(find.descendant(of: _k('task-practice'), matching: find.textContaining('0 phút')), findsNothing);
+      expect(find.descendant(of: _k('task-practice'), matching: find.textContaining('Trò chuyện')), findsOneWidget);
+    });
+
+    testWidgets('Luyện AI là nút vàng khi hết việc khác và chưa đủ phút; đủ phút thì không còn nút vàng', (tester) async {
+      final o = _practiceOverview((s) {
+        s['next'] = null;
+        s['cards'] = {...Map<String, dynamic>.from(s['cards'] as Map), 'planned': 3, 'finished': 3};
+      });
+      await _pumpTab(tester, FakeHocTapApi(overview: o));
+      expect(find.descendant(of: _k('task-practice'), matching: find.byType(FilledButton)), findsOneWidget);
+      expect(find.descendant(of: _k('today-tasks'), matching: find.byType(FilledButton)), findsOneWidget);
+
+      final done = _practiceOverview((s) {
+        s['next'] = null;
+        s['cards'] = {...Map<String, dynamic>.from(s['cards'] as Map), 'planned': 3, 'finished': 3};
+        s['today'] = {...Map<String, dynamic>.from(s['today'] as Map), 'minutes': 60, 'done': true};
+      });
+      await _pumpTab(tester, FakeHocTapApi(overview: done));
+      expect(find.descendant(of: _k('today-tasks'), matching: find.byType(FilledButton)), findsNothing);
+    });
+  });
+
+  group('hàng Ôn thẻ theo cards.total', () {
+    testWidgets('total == 0: "Chưa có thẻ" + "Nhập thẻ ›" (không nút vàng), bấm → màn nhập thẻ của môn', (tester) async {
+      final o = _practiceOverview((s) => s['cards'] = {...Map<String, dynamic>.from(s['cards'] as Map), 'total': 0});
+      await _pumpTab(tester, FakeHocTapApi(overview: o));
+      expect(tester.widget<Text>(_k('cards-status')).data, 'Chưa có thẻ');
+      expect(_k('cards-start'), findsNothing);
+      expect(tester.widget(_k('cards-import')), isA<TextButton>());
+      // Nút vàng chuyển sang việc kế tiếp (Học tiếp), không phải Ôn thẻ.
+      expect(find.descendant(of: _k('task-lesson'), matching: find.byType(FilledButton)), findsOneWidget);
+      await tester.tap(_k('cards-import'));
+      await tester.pumpAndSettle();
+      expect(visited.last, '/tra-dinh/hoc-tap/the/them?subjectId=${o.subjects.first.subjectId}');
+    });
+
+    testWidgets('planned == 0 và total > 0: "Chưa bắt đầu" là nút vàng', (tester) async {
+      await _pumpTab(tester, FakeHocTapApi(overview: _practiceOverview()));
+      expect(tester.widget<Text>(_k('cards-status')).data, 'Chưa bắt đầu · tối đa 20 thẻ');
+      expect(tester.widget(_k('cards-start')), isA<FilledButton>());
+    });
+
+    testWidgets('total thiếu (backend cũ) và planned == 0: vẫn nút vàng như trước', (tester) async {
+      final o = _practiceOverview((s) => (s['cards'] as Map<String, dynamic>).remove('total'));
+      await _pumpTab(tester, FakeHocTapApi(overview: o));
+      expect(tester.widget(_k('cards-start')), isA<FilledButton>());
+    });
   });
 
   testWidgets('môn không có mục tiêu: không có vòng, có "Đặt mục tiêu ›"', (tester) async {
@@ -179,7 +250,7 @@ void main() {
 
     await tester.tap(find.descendant(of: _k('task-practice'), matching: find.byType(OutlinedButton)));
     await tester.pumpAndSettle();
-    expect(visited.last, '/tra-dinh/luyen-tap');
+    expect(visited.last, '/tra-dinh/luyen-tap?subjectId=${api.overview.subjects.first.subjectId}');
     GoRouter.of(tester.element(find.byType(Scaffold).first)).pop();
     await tester.pumpAndSettle();
 
@@ -229,19 +300,18 @@ void main() {
     expect(_k('today-main'), findsOneWidget);
   });
 
-  testWidgets('không tràn ở 320 px, chữ x2.0', (tester) async {
+  testWidgets('không tràn ở 320 px, chữ x2.0 (có chuỗi, thiếu lý do, phút luyện AI, nhập thẻ)', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 2.0;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    final api = FakeHocTapApi();
-    await pumpHocTap(
-      tester,
-      const Scaffold(body: OverviewTab()),
-      api: api,
-      width: 320,
-      routinesApi: FakeApi(project: mkProject(), tasks: [])..routines = [_studyRoutine(api.overview.subjects.first.subjectId, pending: const ['2026-10-12'])],
-      overrides: [apiClientProvider.overrideWithValue(offlineDio())],
-    );
-    expect(tester.takeException(), isNull);
+    for (final total in [0, 2]) {
+      final o = _practiceOverview((s) {
+        s['streak'] = 12;
+        s['pendingReasonDates'] = ['2026-10-12', '2026-10-13', '2026-10-14'];
+        s['cards'] = {...Map<String, dynamic>.from(s['cards'] as Map), 'total': total};
+      });
+      await _pumpTab(tester, FakeHocTapApi(overview: o), width: 320);
+      expect(tester.takeException(), isNull, reason: 'total=$total');
+    }
   });
 
   testWidgets('shell: tab Hôm nay | Lịch | Thống kê, menu ⋯ có "+ Môn" và "Cài đặt môn"', (tester) async {
@@ -254,7 +324,7 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [hocTapApiProvider.overrideWithValue(FakeHocTapApi()), apiClientProvider.overrideWithValue(offlineDio())],
+        overrides: [hocTapApiProvider.overrideWithValue(FakeHocTapApi())],
         child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),
       ),
     );
