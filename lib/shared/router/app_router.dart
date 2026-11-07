@@ -29,6 +29,7 @@ import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart'
     as hoc_tap;
 import '../../features/tra_dinh/hoc_tap/screens/course_list_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
+import '../../features/tra_dinh/hoc_tap/screens/library_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/wishlist_screen.dart';
 import '../../features/tra_dinh/screens/placement_test_screen.dart';
 import '../../features/tra_dinh/screens/practice_chat_screen.dart';
@@ -227,6 +228,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, state) => hoc_tap.CourseDetailScreen(
               courseId: state.pathParameters['courseId']!,
             ),
+          ),
+          GoRoute(
+            path: 'hoc-tap/thu-vien',
+            builder: (_, state) => LibraryScreen(subjectId: state.uri.queryParameters['subjectId']),
           ),
           GoRoute(
             path: 'hoc-tap/wishlist',

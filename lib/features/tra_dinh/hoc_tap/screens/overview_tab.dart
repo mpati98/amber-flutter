@@ -7,15 +7,13 @@ import '../../../../shared/widgets/scroll_card.dart';
 import '../models/study_overview.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../utils/async_view.dart';
-import '../widgets/cards_today_block.dart';
-import '../widgets/course_form_sheet.dart';
+import '../widgets/card_widgets.dart' show ChipScrollRow;
 import '../widgets/hoc_tap_common.dart';
-import '../widgets/log_sheet.dart';
-import '../widgets/overview_cards.dart';
+import '../widgets/today_main_card.dart';
+import '../widgets/today_tasks_card.dart';
 import '../widgets/subject_sheet.dart';
-import '../widgets/week_goal_card.dart';
 
-/// Tab Tổng quan của Học tập.
+/// Tab Hôm nay của Học tập: thẻ chính, việc hôm nay, ô Thư viện.
 class OverviewTab extends ConsumerWidget {
   const OverviewTab({super.key});
 
@@ -34,8 +32,6 @@ class OverviewTab extends ConsumerWidget {
             AsyncError() => HocTapLoadError(what: 'tổng quan học tập', onRetry: () => ref.invalidate(studyOverviewProvider)),
             _ => const Padding(padding: EdgeInsets.symmetric(vertical: 48), child: Center(child: CircularProgressIndicator())),
           },
-          const SizedBox(height: 12),
-          const _PracticeCard(),
         ],
       ),
     );
@@ -57,21 +53,11 @@ class _Loaded extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 12,
       children: [
-        _SubjectChips(subjects: overview.subjects, selected: subject.subjectId),
-        WeekGoalCard(overview: overview),
-        TodayCard(
-          subject: subject,
-          onLog: () => showLogSheet(context, subjectId: subject.subjectId),
-        ),
-        ActiveCourseCard(course: subject.activeCourse),
-        CourseLinksCard(subject: subject),
-        OutlinedButton.icon(
-          key: const ValueKey('add-course'),
-          onPressed: () => showCourseFormSheet(context, subjectId: subject.subjectId),
-          icon: const Icon(Icons.add),
-          label: const Text('Khóa học'),
-        ),
-        CardsTodayBlock(subject: subject),
+        // Chip chọn môn chỉ hiện khi có từ 2 môn; thêm môn / cài đặt môn nằm ở menu ⋯ của header.
+        if (overview.subjects.length > 1) _SubjectChips(subjects: overview.subjects, selected: subject.subjectId),
+        TodayMainCard(overview: overview, subject: subject),
+        TodayTasksCard(subject: subject),
+        _LibraryTile(subjectId: subject.subjectId),
       ],
     );
   }
@@ -85,10 +71,7 @@ class _SubjectChips extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return ChipScrollRow(
       children: [
         for (final s in subjects)
           ChoiceChip(
@@ -100,14 +83,6 @@ class _SubjectChips extends ConsumerWidget {
             labelStyle: TextStyle(fontSize: 13, color: s.subjectId == selected ? AppColors.ink950 : null),
             onSelected: (_) => ref.read(selectedSubjectIdProvider.notifier).select(s.subjectId),
           ),
-        ActionChip(key: const ValueKey('add-subject'), label: const Text('+ Môn'), onPressed: () => showSubjectSheet(context)),
-        IconButton(
-          key: const ValueKey('edit-subject'),
-          tooltip: 'Sửa môn học',
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.tune, size: 20),
-          onPressed: () => showSubjectSheet(context, subjectId: selected),
-        ),
       ],
     );
   }
@@ -131,25 +106,27 @@ class _EmptyCard extends StatelessWidget {
   );
 }
 
-class _PracticeCard extends StatelessWidget {
-  const _PracticeCard();
+class _LibraryTile extends StatelessWidget {
+  const _LibraryTile({required this.subjectId});
+
+  final String subjectId;
 
   @override
   Widget build(BuildContext context) => InkWell(
-    key: const ValueKey('practice-card'),
-    onTap: () => context.push('/tra-dinh/luyen-tap'),
+    key: const ValueKey('library-tile'),
+    onTap: () => context.push('/tra-dinh/hoc-tap/thu-vien?subjectId=$subjectId'),
     child: ScrollCard(
       glow: ScrollCardGlow.yugen,
       child: Row(
         children: [
-          const Text('🍵', style: TextStyle(fontSize: 24)),
+          const Icon(Icons.local_library_outlined, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Luyện tập với AI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                Text('Trò chuyện, làm bài test, xem trình độ theo kỹ năng', style: TextStyle(fontSize: 12, color: Theme.of(context).textMuted)),
+                const Text('Thư viện', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                Text('Khóa học, thẻ từ vựng, trình độ', style: TextStyle(fontSize: 12, color: Theme.of(context).textMuted)),
               ],
             ),
           ),

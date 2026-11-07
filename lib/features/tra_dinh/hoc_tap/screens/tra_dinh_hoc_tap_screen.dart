@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../widgets/log_sheet.dart';
+import '../widgets/subject_sheet.dart';
 import 'overview_tab.dart';
 import 'schedule_tab.dart';
 import 'stats_tab.dart';
@@ -12,9 +13,9 @@ import '../../../../shared/widgets/app_bar_back.dart';
 
 const hocTapTabs = ['overview', 'schedule', 'stats'];
 
-/// /tra-dinh: Học tập của Trà Đình, 3 tab Tổng quan | Lịch | Thống kê. Tab lưu ở `?tab=`.
+/// /tra-dinh: Học tập của Trà Đình, 3 tab Hôm nay | Lịch | Thống kê. Tab lưu ở `?tab=`.
 ///
-/// `?openLog=1&subjectId=…` (từ thẻ routine STUDY): mở tab Tổng quan, tự mở sheet ghi buổi học MỘT lần rồi xoá query khỏi URL.
+/// `?openLog=1&subjectId=…` (từ thẻ routine STUDY): mở tab Hôm nay, tự mở sheet ghi buổi học MỘT lần rồi xoá query khỏi URL.
 class TraDinhHocTapScreen extends ConsumerStatefulWidget {
   const TraDinhHocTapScreen({super.key, this.tab, this.openLog = false, this.subjectId, this.view, this.date, this.range, this.subject});
 
@@ -98,16 +99,37 @@ class _TraDinhHocTapScreenState extends ConsumerState<TraDinhHocTapScreen> with 
       appBar: AppBar(
         leading: const AppBarBack(),
         title: const Text('Trà Đình'),
+        actions: [_SubjectMenu()],
         bottom: TabBar(
           controller: _controller,
           indicatorColor: AppColors.kincha400,
-          tabs: const [Tab(text: 'Tổng quan'), Tab(text: 'Lịch'), Tab(text: 'Thống kê')],
+          tabs: const [Tab(text: 'Hôm nay'), Tab(text: 'Lịch'), Tab(text: 'Thống kê')],
         ),
       ),
       body: TabBarView(
         controller: _controller,
         children: [const OverviewTab(), ScheduleTab(view: widget.view, date: widget.date), StatsTab(range: widget.range, subject: widget.subject)],
       ),
+    );
+  }
+}
+
+/// Menu ⋯ ở header: thêm môn và cài đặt môn đang chọn (môn đầu tiên nếu chưa chọn).
+class _SubjectMenu extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedSubjectIdProvider);
+    final subjects = ref.watch(studyOverviewProvider).value?.subjects ?? const [];
+    final current = subjects.where((s) => s.subjectId == selected).firstOrNull ?? subjects.firstOrNull;
+    return PopupMenuButton<String>(
+      key: const ValueKey('subject-menu'),
+      tooltip: 'Môn học',
+      icon: const Icon(Icons.more_horiz),
+      onSelected: (v) => showSubjectSheet(context, subjectId: v == 'edit' ? current?.subjectId : null),
+      itemBuilder: (_) => [
+        const PopupMenuItem(value: 'add', key: ValueKey('add-subject'), child: Text('+ Môn')),
+        if (current != null) const PopupMenuItem(value: 'edit', key: ValueKey('edit-subject'), child: Text('Cài đặt môn')),
+      ],
     );
   }
 }

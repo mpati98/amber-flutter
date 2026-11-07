@@ -5,8 +5,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.da
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/log_labels.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/overview_cards.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/cards_today_block.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/today_tasks_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/schedule_day_row.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'hoc_tap_test_support.dart';
 import 'hoc_tap_widget_support.dart';
 
-// Khối "Thẻ hôm nay" ở Tổng quan (JSON thật `overview_cards`: A 0/3, B chưa có kế hoạch, C 2/2, D 1/3), nhãn "Ôn thẻ" ở danh sách buổi học.
+// Hàng Ôn thẻ của "Việc hôm nay" (JSON thật `overview_cards`: A 0/3, B chưa có kế hoạch, C 2/2, D 1/3), nhãn "Ôn thẻ" ở danh sách buổi học.
 
 Finder _k(String key) => find.byKey(ValueKey(key));
 
@@ -29,6 +28,7 @@ Future<FakeHocTapApi> _pump(WidgetTester tester, {StudyOverview? overview, Strin
   await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
   if (select != null) {
     final id = _subject(o, select).subjectId;
+    await tester.ensureVisible(_k('subject-chip-$id'));
     await tester.tap(_k('subject-chip-$id'));
     await tester.pumpAndSettle();
   }
@@ -79,45 +79,36 @@ void main() {
     });
   });
 
-  group('khối Thẻ hôm nay', () {
-    testWidgets('chưa có kế hoạch (planned 0): "chưa bắt đầu · tối đa 20 thẻ" + nút chính "Bắt đầu ôn", không thanh tiến độ', (tester) async {
+  group('hàng Ôn thẻ trong "Việc hôm nay"', () {
+    testWidgets('chưa mở hàng đợi (planned 0): "Chưa bắt đầu · tối đa 20 thẻ", "Bắt đầu" là nút vàng', (tester) async {
       await _pump(tester, select: 'Môn B');
-      expect(_text(tester, 'cards-status'), 'Thẻ hôm nay: chưa bắt đầu · tối đa 20 thẻ');
-      expect(find.text('Bắt đầu ôn'), findsOneWidget);
-      expect(find.text('Tiếp tục ôn'), findsNothing);
-      expect(_k('cards-progress'), findsNothing);
-      expect(find.text('Kho thẻ'), findsOneWidget);
+      expect(_text(tester, 'cards-status'), 'Chưa bắt đầu · tối đa 20 thẻ');
+      expect(tester.widget(_k('cards-start')), isA<FilledButton>());
+      expect(find.descendant(of: _k('cards-start'), matching: find.text('Bắt đầu')), findsOneWidget);
     });
 
-    testWidgets('đang ôn dở (0 < finished < planned): "Đã ôn 1 / 3 thẻ", thanh tiến độ mảnh, nút chính "Tiếp tục ôn"', (tester) async {
+    testWidgets('đang ôn dở (1 / 3): "1 / 3 thẻ", nút "Tiếp tục" là nút vàng', (tester) async {
       await _pump(tester, select: 'Môn D');
-      expect(_text(tester, 'cards-status'), 'Đã ôn 1 / 3 thẻ');
-      final bar = tester.widget<LinearProgressIndicator>(_k('cards-progress'));
-      expect(bar.value, closeTo(1 / 3, 1e-9));
-      expect(bar.minHeight, lessThanOrEqualTo(4));
-      expect(find.text('Tiếp tục ôn'), findsOneWidget);
-      expect(find.text('Bắt đầu ôn'), findsNothing);
-      expect(find.text('Kho thẻ'), findsOneWidget);
+      expect(_text(tester, 'cards-status'), '1 / 3 thẻ');
+      expect(tester.widget(_k('cards-start')), isA<FilledButton>());
+      expect(find.text('Tiếp tục'), findsOneWidget);
     });
 
-    testWidgets('đã mở kế hoạch nhưng chưa ôn thẻ nào (0 / 3): nút "Bắt đầu ôn", vẫn có thanh tiến độ', (tester) async {
+    testWidgets('đã mở kế hoạch nhưng chưa ôn (0 / 3): "Bắt đầu" là nút vàng', (tester) async {
       await _pump(tester, select: 'Môn A');
-      expect(_text(tester, 'cards-status'), 'Đã ôn 0 / 3 thẻ');
-      expect(tester.widget<LinearProgressIndicator>(_k('cards-progress')).value, 0.0);
-      expect(find.text('Bắt đầu ôn'), findsOneWidget);
+      expect(_text(tester, 'cards-status'), '0 / 3 thẻ');
+      expect(tester.widget(_k('cards-start')), isA<FilledButton>());
     });
 
-    testWidgets('ôn xong (finished = planned > 0): "Hôm nay đã ôn xong 2 thẻ", KHÔNG có nút chính, vẫn có "Kho thẻ"', (tester) async {
+    testWidgets('ôn xong (2 / 2): "2 / 2 · xong" + dấu tick, không có nút', (tester) async {
       await _pump(tester, select: 'Môn C');
-      expect(_text(tester, 'cards-status'), 'Hôm nay đã ôn xong 2 thẻ');
+      expect(find.descendant(of: _k('today-tasks'), matching: find.byType(FilledButton)).evaluate().any((e) => e.widget.key == const ValueKey('cards-start')), isFalse);
+      expect(_text(tester, 'cards-status'), '2 / 2 · xong');
       expect(_k('cards-start'), findsNothing);
-      expect(find.text('Bắt đầu ôn'), findsNothing);
-      expect(find.text('Tiếp tục ôn'), findsNothing);
-      expect(_k('cards-progress'), findsNothing);
-      expect(_k('open-card-library'), findsOneWidget);
+      expect(_k('task-done'), findsOneWidget);
     });
 
-    testWidgets('luôn có dòng "Ngày ôn tập kế tiếp: thứ dd/MM" ở cả ba trạng thái', (tester) async {
+    testWidgets('dòng "Ngày ôn tập kế tiếp: thứ dd/MM" ở cả ba trạng thái', (tester) async {
       final o = _overview();
       final expected = 'Ngày ôn tập kế tiếp: ${weekdayDateLabel(_subject(o, 'Môn A').cards!.nextReviewDay!)}';
       for (final name in ['Môn A', 'Môn B', 'Môn C']) {
@@ -136,7 +127,7 @@ void main() {
       expect(_k('cards-start'), findsOneWidget);
     });
 
-    testWidgets('nút chính mở màn ôn, "Kho thẻ" mở kho thẻ — đúng môn đang chọn', (tester) async {
+    testWidgets('nút mở màn ôn của đúng môn đang chọn', (tester) async {
       final o = _overview();
       final id = _subject(o, 'Môn D').subjectId;
       await _pump(tester, overview: o, select: 'Môn D');
@@ -145,41 +136,7 @@ void main() {
       expect(visited.last, '/tra-dinh/hoc-tap/the/on?subjectId=$id');
     });
 
-    testWidgets('"Thống kê thẻ" cạnh "Kho thẻ" mở màn Nhóm khó của môn đang chọn (cả khi đã ôn xong, không có nút chính)', (tester) async {
-      final o = _overview();
-      final id = _subject(o, 'Môn C').subjectId;
-      await _pump(tester, overview: o, select: 'Môn C');
-      expect(find.text('Thống kê thẻ'), findsOneWidget);
-      expect(_k('open-card-library'), findsOneWidget);
-      expect(find.byType(Wrap), findsWidgets, reason: 'hai nút phụ trong Wrap: cạnh nhau khi đủ chỗ, xuống dòng khi hẹp (font test rộng hơn font thật nên không kiểm vị trí)');
-      await tester.tap(_k('open-card-insights'));
-      await tester.pumpAndSettle();
-      expect(visited.last, '/tra-dinh/hoc-tap/the/thong-ke?subjectId=$id');
-    });
-
-    testWidgets('hai nút phụ không tràn ở 320 px, chữ x2.0 (xuống dòng)', (tester) async {
-      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: CardsTodayBlock(subject: _subject(_overview(), 'Môn C')))), api: FakeHocTapApi(), width: 320);
-      expect(tester.takeException(), isNull);
-      expect(_k('open-card-insights'), findsOneWidget);
-    });
-
-    testWidgets('backend cũ (không có khối cards): không có nút "Thống kê thẻ"', (tester) async {
-      await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: FakeHocTapApi());
-      expect(_k('open-card-insights'), findsNothing);
-    });
-
-    testWidgets('"Kho thẻ" mở kho thẻ của môn đang chọn', (tester) async {
-      final o = _overview();
-      final id = _subject(o, 'Môn C').subjectId;
-      await _pump(tester, overview: o, select: 'Môn C');
-      await tester.tap(_k('open-card-library'));
-      await tester.pumpAndSettle();
-      expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=$id');
-    });
-
-    testWidgets('quay lại từ màn ôn thì Tổng quan tải lại (số thẻ đã ôn mới)', (tester) async {
+    testWidgets('quay lại từ màn ôn thì tải lại tổng quan (số thẻ đã ôn mới)', (tester) async {
       final api = await _pump(tester, select: 'Môn D');
       final before = api.overviewCalls;
       await tester.tap(_k('cards-start'));
@@ -189,21 +146,19 @@ void main() {
       expect(api.overviewCalls, greaterThan(before));
     });
 
-    testWidgets('backend cũ (không có khối cards): không hiện gì — cả nút "Kho thẻ"; phần còn lại của Tổng quan vẫn như cũ', (tester) async {
+    testWidgets('backend cũ (không có khối cards): không có hàng Ôn thẻ; hàng Học bài và Luyện AI vẫn có', (tester) async {
       await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: FakeHocTapApi());
-      expect(_k('cards-today'), findsNothing);
-      expect(find.text('Thẻ hôm nay'), findsNothing);
-      expect(_k('open-card-library'), findsNothing);
-      expect(_k('add-course'), findsOneWidget);
-      expect(find.text('+ Môn'), findsOneWidget, reason: 'chip môn của Tổng quan giữ nguyên');
+      expect(_k('task-cards'), findsNothing);
+      expect(_k('task-lesson'), findsOneWidget);
+      expect(_k('task-practice'), findsOneWidget);
     });
 
-    testWidgets('riêng khối này không tràn ở bề rộng 320 với chữ x1.8, ở cả ba trạng thái', (tester) async {
+    testWidgets('không tràn ở 320 px, chữ x1.8, cả ba trạng thái', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 1.8;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final o = _overview();
       for (final name in ['Môn B', 'Môn D', 'Môn C']) {
-        await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: CardsTodayBlock(subject: _subject(o, name)))), api: FakeHocTapApi(), width: 320);
+        await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: TodayTasksCard(subject: _subject(o, name)))), api: FakeHocTapApi(), width: 320);
         expect(tester.takeException(), isNull, reason: name);
       }
     });
@@ -226,6 +181,7 @@ void main() {
           StudyLog(id: 'free', subjectId: sid, logDate: vnToday(), minutes: 20, createdAt: DateTime.now()),
         ];
       await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
+      await tester.ensureVisible(_k('subject-chip-$sid'));
       await tester.tap(_k('subject-chip-$sid'));
       await tester.pumpAndSettle();
       expect(find.descendant(of: _k('today-log-card'), matching: find.text('Ôn thẻ')), findsOneWidget);
@@ -240,34 +196,6 @@ void main() {
       expect(find.text('Ôn thẻ'), findsOneWidget);
       expect(find.text('Ôn tập'), findsOneWidget);
       expect(find.text('15p'), findsOneWidget);
-    });
-  });
-
-  group('thẻ "Hôm nay" (TodayCard): dòng phút không tràn', () {
-    SubjectOverview subject({int minutes = 0, int logCount = 0, int? goal = 60}) => SubjectOverview(
-      subjectId: 's',
-      name: 'Tiếng Anh',
-      goalMinutes: goal,
-      today: TodayInfo(minutes: minutes, logCount: logCount, done: false),
-    );
-
-    for (final (width, scale) in [(390.0, 1.0), (320.0, 1.0), (320.0, 2.0), (390.0, 2.0)]) {
-      testWidgets('bề rộng $width, chữ x$scale: "0 / 60 phút" và "Chưa có buổi nào" xuống dòng thay vì tràn', (tester) async {
-        tester.platformDispatcher.textScaleFactorTestValue = scale;
-        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-        for (final s in [subject(), subject(goal: null), subject(minutes: 1440, logCount: 12, goal: 1440), subject(minutes: 20, logCount: 1)]) {
-          await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: TodayCard(subject: s, onLog: () {}))), api: FakeHocTapApi(), width: width);
-          expect(tester.takeException(), isNull, reason: '${s.goalMinutes} / ${s.today.minutes} / ${s.today.logCount}');
-          expect(find.byKey(const ValueKey('today-minutes')), findsOneWidget);
-        }
-      });
-    }
-
-    testWidgets('chữ vẫn đủ: số phút, mục tiêu và số buổi đều có mặt', (tester) async {
-      await pumpHocTap(tester, Scaffold(body: SingleChildScrollView(child: TodayCard(subject: subject(), onLog: () {}))), api: FakeHocTapApi(), width: 320);
-      expect(find.text('0'), findsOneWidget);
-      expect(find.text(' / 60 phút'), findsOneWidget);
-      expect(find.text('Chưa có buổi nào'), findsOneWidget);
     });
   });
 }

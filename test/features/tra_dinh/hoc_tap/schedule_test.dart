@@ -232,7 +232,7 @@ void main() {
     testWidgets('chuyển tab rồi quay lại Lịch: nhớ view + date (provider), không phải về tuần hôm nay', (tester) async {
       await _pump(tester, _api(), _monthUrl);
       expect(find.text('Tháng 10/2026'), findsOneWidget);
-      await tester.tap(find.text('Tổng quan'));
+      await tester.tap(find.widgetWithText(Tab, 'Hôm nay'));
       await tester.pumpAndSettle();
       expect(_router.state.uri.toString(), '/tra-dinh?tab=overview');
       await tester.tap(find.text('Lịch'));
