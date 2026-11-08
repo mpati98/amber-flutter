@@ -44,6 +44,30 @@ void main() {
     expect(page.counts.total, 3, reason: 'số đếm là của cả môn, không phải của trang');
   });
 
+  test('StudyCard.fromJson: pronunciation có / thiếu / lạ / rỗng / quá dài', () {
+    Map<String, dynamic> j(Object? p, {bool omit = false}) => {'id': 'c1', 'phrase': 'catch up with', if (!omit) 'pronunciation': p};
+    expect(StudyCard.fromJson(j('  /ˈkætʃ ʌp wɪð/ ')).pronunciation, '/ˈkætʃ ʌp wɪð/');
+    expect(StudyCard.fromJson(j(null, omit: true)).pronunciation, isNull, reason: 'backend cũ không có trường');
+    expect(StudyCard.fromJson(j(null)).pronunciation, isNull);
+    expect(StudyCard.fromJson(j(42)).pronunciation, isNull);
+    expect(StudyCard.fromJson(j('   ')).pronunciation, isNull);
+    expect(StudyCard.fromJson(j('a' * 101)).pronunciation, isNull);
+    expect(StudyCard.fromJson(j('a' * 100)).pronunciation, 'a' * 100);
+  });
+
+  test('ParsedCardItem: pronunciation có / thiếu / quá dài (chỉ bỏ trường đó), và gửi lại khi import', () {
+    final withP = ParsedCardItem.fromJson({'index': 0, 'phrase': 'catch up with', 'pronunciation': ' /ˈkætʃ/ '});
+    expect(withP.pronunciation, '/ˈkætʃ/');
+    expect(withP.toImportJson()['pronunciation'], '/ˈkætʃ/');
+    final without = ParsedCardItem.fromJson({'index': 1, 'phrase': 'break the ice'});
+    expect(without.pronunciation, isNull);
+    expect(without.toImportJson().containsKey('pronunciation'), isFalse, reason: 'thiếu thì không gửi khoá');
+    final long = ParsedCardItem.fromJson({'index': 2, 'phrase': 'pick up on', 'meaning': 'giữ nguyên', 'pronunciation': 'a' * 101});
+    expect(long.pronunciation, isNull);
+    expect(long.phrase, 'pick up on');
+    expect(long.meaning, 'giữ nguyên');
+  });
+
   test('ParsedCards.fromJson: thẻ hợp lệ, lỗi theo vị trí, lặp, đã có', () {
     final p = ParsedCards.fromJson(fixtureMap('cards_parse'));
     expect(p.cards.map((c) => (c.index, c.phrase)), [(1, 'pick up on'), (4, 'come across')]);

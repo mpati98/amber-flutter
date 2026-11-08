@@ -5,9 +5,10 @@ String cardPrompt(Iterable<String> topics) {
   return 'Here is the transcript of my English lesson. Pick the 10–15 most useful\n'
       'phrases (collocations, phrasal verbs, patterns), not single isolated words.\n'
       'Return only a JSON array. Each item:\n'
-      '{"phrase", "meaning", "example", "note", "kind", "topics"}.\n'
+      '{"phrase", "meaning", "example", "note", "pronunciation", "kind", "topics"}.\n'
       '"meaning" is a simple English definition. "example" is a natural sentence\n'
       'that contains the phrase. "note" is optional (grammar or usage warning).\n'
+      '"pronunciation" is the IPA between slashes, e.g. /ˈkætʃ ʌp wɪð/, optional.\n'
       '"kind" is exactly one of: PHRASAL_VERB, COLLOCATION, IDIOM, PATTERN,\n'
       'EXPRESSION. "topics" has up to 3 lowercase topics. Reuse these existing\n'
       'topics when they fit: ${list.isEmpty ? 'none yet' : list.join(', ')}.';

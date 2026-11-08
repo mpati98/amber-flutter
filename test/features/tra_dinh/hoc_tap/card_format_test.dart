@@ -118,6 +118,13 @@ void main() {
       expect(p, contains('PHRASAL_VERB, COLLOCATION, IDIOM, PATTERN,\nEXPRESSION'));
     });
 
+    test('mô tả trường pronunciation (IPA, tuỳ chọn) và giữ nguyên các trường cũ', () {
+      final p = cardPrompt(const []);
+      expect(p, contains('{"phrase", "meaning", "example", "note", "pronunciation", "kind", "topics"}.'));
+      expect(p, contains('"pronunciation" is the IPA between slashes, e.g. /ˈkætʃ ʌp wɪð/, optional.'));
+      expect(p, contains('"note" is optional (grammar or usage warning).'));
+    });
+
     test('chưa có chủ đề (hoặc chỉ chuỗi rỗng) → "none yet"', () {
       expect(cardPrompt(const []), contains('topics when they fit: none yet.'));
       expect(cardPrompt(['', '  ']), contains('none yet'));

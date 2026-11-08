@@ -42,6 +42,7 @@ class StudyCard {
     this.meaning = '',
     this.example = '',
     this.note,
+    this.pronunciation,
     this.kind = CardKind.unknown,
     this.topics = const [],
     this.stage = CardStage.newCard,
@@ -61,6 +62,7 @@ class StudyCard {
     meaning: json['meaning'] as String? ?? '',
     example: json['example'] as String? ?? '',
     note: json['note'] as String?,
+    pronunciation: parsePronunciation(json['pronunciation']),
     kind: CardKind.fromApi(json['kind']),
     topics: [for (final t in (json['topics'] as List? ?? const [])) if (t is String) t],
     stage: CardStage.fromApi(json['stage']),
@@ -79,6 +81,9 @@ class StudyCard {
   final String meaning;
   final String example;
   final String? note;
+
+  /// Phiên âm IPA (tuỳ chọn), null khi thiếu.
+  final String? pronunciation;
   final CardKind kind;
   final List<String> topics;
   final CardStage stage;
@@ -90,6 +95,15 @@ class StudyCard {
   final DateTime? lastReviewedAt;
   final bool suspended;
   final DateTime? createdAt;
+}
+
+const maxPronunciationLength = 100;
+
+/// Đọc phiên âm dung sai: không phải chuỗi → null; cắt khoảng trắng, rỗng → null; quá 100 ký tự → bỏ riêng trường này.
+String? parsePronunciation(Object? v) {
+  if (v is! String) return null;
+  final t = v.trim();
+  return t.isEmpty || t.length > maxPronunciationLength ? null : t;
 }
 
 DateTime? _date(Object? v) => v is String ? DateTime.tryParse(v) : null;
@@ -140,7 +154,7 @@ class CardListPage {
 
 /// Một thẻ đọc được từ JSON dán vào (kết quả POST /cards/parse). [index] là vị trí (từ 0) trong mảng đầu vào.
 class ParsedCardItem {
-  const ParsedCardItem({required this.index, required this.phrase, this.meaning = '', this.example = '', this.note, this.kind = CardKind.unknown, this.topics = const []});
+  const ParsedCardItem({required this.index, required this.phrase, this.meaning = '', this.example = '', this.note, this.pronunciation, this.kind = CardKind.unknown, this.topics = const []});
 
   factory ParsedCardItem.fromJson(Map<String, dynamic> json) => ParsedCardItem(
     index: (json['index'] as num?)?.toInt() ?? 0,
@@ -148,6 +162,7 @@ class ParsedCardItem {
     meaning: json['meaning'] as String? ?? '',
     example: json['example'] as String? ?? '',
     note: json['note'] as String?,
+    pronunciation: parsePronunciation(json['pronunciation']),
     kind: CardKind.fromApi(json['kind']),
     topics: [for (final t in (json['topics'] as List? ?? const [])) if (t is String) t],
   );
@@ -157,6 +172,7 @@ class ParsedCardItem {
   final String meaning;
   final String example;
   final String? note;
+  final String? pronunciation;
   final CardKind kind;
   final List<String> topics;
 
@@ -166,6 +182,7 @@ class ParsedCardItem {
     'meaning': meaning,
     'example': example,
     'note': note,
+    'pronunciation': ?pronunciation,
     'kind': kind.api,
     'topics': topics,
   };
