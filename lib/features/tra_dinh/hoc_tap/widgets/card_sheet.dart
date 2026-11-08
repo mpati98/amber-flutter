@@ -7,6 +7,7 @@ import '../models/study_card.dart';
 import '../providers/card_provider.dart';
 import '../utils/card_format.dart';
 import 'card_widgets.dart';
+import 'speak_button.dart';
 
 /// Form thêm một thẻ ([card] null) hoặc xem / sửa / tạm dừng / xoá [card]. Mở bằng showFinanceSheet;
 /// trả về true khi đã lưu hoặc xoá (màn kho thẻ tải lại danh sách), đóng bằng X → null.
@@ -149,10 +150,10 @@ class _CardSheetState extends ConsumerState<CardSheet> {
     return FinanceSheetBody(
       title: _editing ? 'Thẻ từ vựng' : 'Thêm thẻ',
       children: [
-        TextField(key: const ValueKey('card-phrase'), controller: _phrase, maxLength: 255, decoration: const InputDecoration(labelText: 'Cụm từ', counterText: '')),
+        TextField(key: const ValueKey('card-phrase'), controller: _phrase, maxLength: 255, decoration: InputDecoration(labelText: 'Cụm từ', counterText: '', suffixIcon: ValueListenableBuilder(valueListenable: _phrase, builder: (_, v, _) => SpeakButton(key: const ValueKey('speak-phrase'), text: v.text)))),
         TextField(key: const ValueKey('card-pronunciation'), controller: _pronunciation, maxLength: 100, decoration: const InputDecoration(labelText: 'Phát âm', hintText: '/…/', counterText: '')),
         TextField(key: const ValueKey('card-meaning'), controller: _meaning, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Nghĩa tiếng Anh')),
-        TextField(key: const ValueKey('card-example'), controller: _example, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Câu ví dụ (có chứa cụm)')),
+        TextField(key: const ValueKey('card-example'), controller: _example, minLines: 2, maxLines: 4, decoration: InputDecoration(labelText: 'Câu ví dụ (có chứa cụm)', suffixIcon: ValueListenableBuilder(valueListenable: _example, builder: (_, v, _) => SpeakButton(key: const ValueKey('speak-example'), text: v.text, small: true)))),
         TextField(key: const ValueKey('card-note'), controller: _note, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Ghi chú (không bắt buộc)')),
         const Text('Loại', style: TextStyle(fontWeight: FontWeight.w600)),
         ChipScrollRow(

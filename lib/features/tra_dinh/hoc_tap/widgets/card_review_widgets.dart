@@ -5,6 +5,7 @@ import '../models/study_card_queue.dart';
 import '../utils/card_format.dart';
 import '../utils/card_mask.dart';
 import 'card_widgets.dart';
+import 'speak_button.dart';
 
 const _cardRadius = 20.0;
 
@@ -100,16 +101,29 @@ class ReviewAnswer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 14,
         children: [
-          Text(c.phrase, key: const ValueKey('review-phrase'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.2, color: theme.colorScheme.primary)),
+          Row(
+            children: [
+              Expanded(child: Text(c.phrase, key: const ValueKey('review-phrase'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.2, color: theme.colorScheme.primary))),
+              SpeakButton(key: const ValueKey('speak-phrase'), text: c.phrase),
+            ],
+          ),
           if (c.pronunciation != null) Text(c.pronunciation!, key: const ValueKey('review-pronunciation'), style: TextStyle(fontSize: 14, color: theme.textMuted)),
-          Text.rich(
-            key: const ValueKey('review-answer-example'),
-            TextSpan(
-              style: body,
-              children: masked == null
-                  ? [TextSpan(text: c.example)]
-                  : [TextSpan(text: masked.before), TextSpan(text: masked.match, style: const TextStyle(fontWeight: FontWeight.w700)), TextSpan(text: masked.after)],
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text.rich(
+                  key: const ValueKey('review-answer-example'),
+                  TextSpan(
+                    style: body,
+                    children: masked == null
+                        ? [TextSpan(text: c.example)]
+                        : [TextSpan(text: masked.before), TextSpan(text: masked.match, style: const TextStyle(fontWeight: FontWeight.w700)), TextSpan(text: masked.after)],
+                  ),
+                ),
+              ),
+              SpeakButton(key: const ValueKey('speak-example'), text: c.example, small: true),
+            ],
           ),
           Text(c.meaning, key: const ValueKey('review-answer-meaning'), style: TextStyle(fontSize: 15, color: theme.colorScheme.secondary)),
           const Divider(height: 8),

@@ -4,6 +4,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_queue.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/providers/card_review_provider.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/card_review_screen.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/speech_service.dart';
 import 'package:amber_flutter/shared/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -19,6 +20,20 @@ Finder _k(String key) => find.byKey(ValueKey(key));
 
 // Bây giờ cố định: 14:00 giờ VN thứ Sáu 06/11/2026.
 final _now = DateTime.parse('2026-11-06T14:00:00+07:00');
+
+class _FakeSpeech implements SpeechService {
+  final spoken = <String>[];
+  var stops = 0;
+
+  @override
+  void warmUp() {}
+
+  @override
+  Future<void> speak(String text) async => spoken.add(text);
+
+  @override
+  Future<void> stop() async => stops++;
+}
 
 class _Clock {
   _Clock(this.now);
@@ -159,6 +174,25 @@ void main() {
       expect(p.data, '/ˈkætʃ ʌp wɪð/');
       expect(p.style!.fontSize, lessThan(tester.widget<Text>(_k('review-phrase')).style!.fontSize!));
       expect(tester.getTopLeft(_k('review-pronunciation')).dy, greaterThan(tester.getBottomLeft(_k('review-phrase')).dy - 1));
+    });
+
+    testWidgets('nút loa: chỉ đọc khi chạm, cụm và câu ví dụ riêng; rời màn hình thì dừng', (tester) async {
+      final speech = _FakeSpeech();
+      final api = FakeHocTapApi()..cardQueue = _queue([_qc('c1', 'catch up with', 'I will catch up with you later.')]);
+      await _pump(tester, api, overrides: [speechServiceProvider.overrideWithValue(speech)]);
+      await tester.tap(_k('review-show-answer'));
+      await tester.pumpAndSettle();
+      expect(speech.spoken, isEmpty, reason: 'không tự đọc, chỉ đọc khi chạm');
+      expect(_k('speak-phrase'), findsOneWidget);
+      expect(_k('speak-example'), findsOneWidget);
+      expect(tester.getSize(find.descendant(of: _k('speak-phrase'), matching: find.byType(IconButton))).shortestSide, greaterThanOrEqualTo(44));
+      expect(tester.getSize(find.descendant(of: _k('speak-example'), matching: find.byType(IconButton))).width, lessThan(tester.getSize(find.descendant(of: _k('speak-phrase'), matching: find.byType(IconButton))).width));
+      await tester.tap(_k('speak-phrase'));
+      await tester.tap(_k('speak-example'));
+      expect(speech.spoken, ['catch up with', 'I will catch up with you later.']);
+      final stopsBefore = speech.stops;
+      await tester.pumpWidget(const SizedBox());
+      expect(speech.stops, greaterThan(stopsBefore));
     });
 
     testWidgets('phiên âm thiếu: không có dòng phiên âm ở mặt sau', (tester) async {
