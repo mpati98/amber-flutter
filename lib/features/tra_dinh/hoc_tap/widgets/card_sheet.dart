@@ -30,6 +30,7 @@ class _CardSheetState extends ConsumerState<CardSheet> {
   late final _meaning = TextEditingController(text: widget.card?.meaning ?? '');
   late final _example = TextEditingController(text: widget.card?.example ?? '');
   late final _note = TextEditingController(text: widget.card?.note ?? '');
+  late final _pronunciation = TextEditingController(text: widget.card?.pronunciation ?? '');
   final _topicInput = TextEditingController();
   late CardKind? _kind = widget.card == null || widget.card!.kind == CardKind.unknown ? null : widget.card!.kind;
   late final List<String> _topics = [...?widget.card?.topics];
@@ -49,7 +50,7 @@ class _CardSheetState extends ConsumerState<CardSheet> {
 
   @override
   void dispose() {
-    for (final c in [_phrase, _meaning, _example, _note, _topicInput]) {
+    for (final c in [_phrase, _meaning, _example, _note, _pronunciation, _topicInput]) {
       c.dispose();
     }
     super.dispose();
@@ -86,6 +87,7 @@ class _CardSheetState extends ConsumerState<CardSheet> {
           'meaning': _meaning.text.trim(),
           'example': _example.text.trim(),
           'note': _blankToNull(_note),
+          'pronunciation': _blankToNull(_pronunciation),
           'kind': ?_kind?.api,
           'topics': _topics,
           'suspended': _suspended,
@@ -97,6 +99,7 @@ class _CardSheetState extends ConsumerState<CardSheet> {
           'meaning': _meaning.text.trim(),
           'example': _example.text.trim(),
           'note': ?_blankToNull(_note),
+          'pronunciation': ?_blankToNull(_pronunciation),
           'kind': _kind!.api,
           'topics': _topics,
         });
@@ -147,6 +150,7 @@ class _CardSheetState extends ConsumerState<CardSheet> {
       title: _editing ? 'Thẻ từ vựng' : 'Thêm thẻ',
       children: [
         TextField(key: const ValueKey('card-phrase'), controller: _phrase, maxLength: 255, decoration: const InputDecoration(labelText: 'Cụm từ', counterText: '')),
+        TextField(key: const ValueKey('card-pronunciation'), controller: _pronunciation, maxLength: 100, decoration: const InputDecoration(labelText: 'Phát âm', hintText: '/…/', counterText: '')),
         TextField(key: const ValueKey('card-meaning'), controller: _meaning, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Nghĩa tiếng Anh')),
         TextField(key: const ValueKey('card-example'), controller: _example, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Câu ví dụ (có chứa cụm)')),
         TextField(key: const ValueKey('card-note'), controller: _note, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Ghi chú (không bắt buộc)')),

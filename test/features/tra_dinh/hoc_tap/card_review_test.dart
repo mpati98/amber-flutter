@@ -34,12 +34,13 @@ QueueCard _qc(
   CardKind kind = CardKind.phrasalVerb,
   List<String> topics = const [],
   String? note,
+  String? pronunciation,
   CardStage stage = CardStage.newCard,
   DateTime? dueAt,
   CardBucket bucket = CardBucket.newCard,
   Map<CardRating, NextSchedule>? next,
 }) => QueueCard(
-  card: StudyCard(id: id, subjectId: _sid, phrase: phrase, meaning: meaning, example: example, kind: kind, topics: topics, note: note, stage: stage, dueAt: dueAt),
+  card: StudyCard(id: id, subjectId: _sid, phrase: phrase, meaning: meaning, example: example, kind: kind, topics: topics, note: note, pronunciation: pronunciation, stage: stage, dueAt: dueAt),
   bucket: bucket,
   next:
       next ??
@@ -148,6 +149,26 @@ void main() {
   });
 
   group('mặt sau', () {
+    testWidgets('phiên âm: dòng nhỏ mờ ngay dưới cụm khi có, không hiện khi thiếu', (tester) async {
+      final api = FakeHocTapApi()..cardQueue = _queue([_qc('c1', 'catch up with', 'I will catch up with you later.', pronunciation: '/ˈkætʃ ʌp wɪð/')]);
+      await _pump(tester, api);
+      expect(_k('review-pronunciation'), findsNothing, reason: 'mặt trước chưa lộ đáp án');
+      await tester.tap(_k('review-show-answer'));
+      await tester.pumpAndSettle();
+      final p = tester.widget<Text>(_k('review-pronunciation'));
+      expect(p.data, '/ˈkætʃ ʌp wɪð/');
+      expect(p.style!.fontSize, lessThan(tester.widget<Text>(_k('review-phrase')).style!.fontSize!));
+      expect(tester.getTopLeft(_k('review-pronunciation')).dy, greaterThan(tester.getBottomLeft(_k('review-phrase')).dy - 1));
+    });
+
+    testWidgets('phiên âm thiếu: không có dòng phiên âm ở mặt sau', (tester) async {
+      final api2 = FakeHocTapApi()..cardQueue = _queue([_qc('c2', 'break the ice', 'A joke can break the ice.')]);
+      await _pump(tester, api2);
+      await tester.tap(_k('review-show-answer'));
+      await tester.pumpAndSettle();
+      expect(_k('review-pronunciation'), findsNothing);
+    });
+
     testWidgets('cụm lớn đậm màu primary, câu đầy đủ có cụm in đậm, nghĩa màu secondary, rồi loại / chủ đề / ghi chú', (tester) async {
       final api = FakeHocTapApi()..cardQueue = _queue([_fixtureCard]);
       await _pump(tester, api);

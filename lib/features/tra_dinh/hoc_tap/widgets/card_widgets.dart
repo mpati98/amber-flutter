@@ -106,6 +106,7 @@ class CardRow extends StatelessWidget {
                     spacing: 3,
                     children: [
                       Text(card.phrase, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      if (card.pronunciation != null) Text(card.pronunciation!, key: ValueKey('pron-${card.id}'), style: TextStyle(fontSize: 12, color: theme.textMuted)),
                       Text(card.meaning, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: theme.textMuted)),
                     ],
                   ),

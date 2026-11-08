@@ -101,6 +101,7 @@ class ReviewAnswer extends StatelessWidget {
         spacing: 14,
         children: [
           Text(c.phrase, key: const ValueKey('review-phrase'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.2, color: theme.colorScheme.primary)),
+          if (c.pronunciation != null) Text(c.pronunciation!, key: const ValueKey('review-pronunciation'), style: TextStyle(fontSize: 14, color: theme.textMuted)),
           Text.rich(
             key: const ValueKey('review-answer-example'),
             TextSpan(
