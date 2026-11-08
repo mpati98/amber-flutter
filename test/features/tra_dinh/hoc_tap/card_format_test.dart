@@ -2,6 +2,7 @@ import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart' show w
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_queue.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_format.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/speech_service.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_prompt.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,6 +17,7 @@ StudyCard _card({CardStage stage = CardStage.weekly, String? dueAt, bool suspend
     StudyCard(id: 'c', phrase: 'p', stage: stage, dueAt: dueAt == null ? null : DateTime.parse(dueAt), suspended: suspended);
 
 void main() {
+  _voiceTests();
   group('cardDueLabel', () {
     test('Mới / Tạm dừng (tạm dừng thắng mọi nhãn khác)', () {
       expect(cardDueLabel(_card(stage: CardStage.newCard), now: _now), 'Mới');
@@ -202,5 +204,31 @@ void main() {
     expect(countdownLabel(const Duration(seconds: 7)), '0:07');
     expect(countdownLabel(const Duration(hours: 1, minutes: 2, seconds: 3)), '1:02:03');
     expect(countdownLabel(const Duration(seconds: -5)), '0:00');
+  });
+}
+
+// Chọn giọng đọc tiếng Anh với danh sách giọng giả.
+void _voiceTests() {
+  SpeechVoice v(String name, String locale) => (name: name, locale: locale);
+  group('pickEnglishVoice', () {
+    test('ưu tiên en-US có Premium/Enhanced, hơn cả Ava/Samantha', () {
+      final r = pickEnglishVoice([v('Samantha', 'en-US'), v('Zoe (Premium)', 'en-US'), v('Ava', 'en-US')]);
+      expect(r?.name, 'Zoe (Premium)');
+      expect(pickEnglishVoice([v('Ava', 'en-US'), v('Tom (Enhanced)', 'en_US')])?.name, 'Tom (Enhanced)', reason: 'en_US cũng là en-US');
+      expect(pickEnglishVoice([v('Daniel (Premium)', 'en-GB'), v('Ava', 'en-US')])?.name, 'Ava', reason: 'Premium nhưng không phải en-US thì không ưu tiên');
+    });
+
+    test('rồi tên Ava > Evan > Samantha > Nathan (chỉ en-US)', () {
+      expect(pickEnglishVoice([v('Nathan', 'en-US'), v('Samantha', 'en-US'), v('Evan', 'en-US')])?.name, 'Evan');
+      expect(pickEnglishVoice([v('Nathan', 'en-US'), v('Samantha', 'en-US')])?.name, 'Samantha');
+      expect(pickEnglishVoice([v('Ava', 'en-GB'), v('Fred', 'en-US'), v('Nathan', 'en-US')])?.name, 'Nathan');
+    });
+
+    test('rồi bất kỳ en-US, rồi bất kỳ en-*, không có thì null', () {
+      expect(pickEnglishVoice([v('Thomas', 'fr-FR'), v('Fred', 'en-US'), v('Kate', 'en-GB')])?.name, 'Fred');
+      expect(pickEnglishVoice([v('Thomas', 'fr-FR'), v('Kate', 'en-GB')])?.name, 'Kate');
+      expect(pickEnglishVoice([v('Thomas', 'fr-FR'), v('Linh', 'vi-VN')]), isNull);
+      expect(pickEnglishVoice(const []), isNull);
+    });
   });
 }

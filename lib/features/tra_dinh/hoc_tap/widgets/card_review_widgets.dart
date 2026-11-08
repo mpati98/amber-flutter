@@ -125,6 +125,7 @@ class ReviewAnswer extends StatelessWidget {
               SpeakButton(key: const ValueKey('speak-example'), text: c.example, small: true),
             ],
           ),
+          const Align(alignment: Alignment.centerRight, child: SpeechSpeedToggle()),
           Text(c.meaning, key: const ValueKey('review-answer-meaning'), style: TextStyle(fontSize: 15, color: theme.colorScheme.secondary)),
           const Divider(height: 8),
           ChipScrollRow(children: [KindTag(c.kind), for (final t in c.topics) TopicTag(t)]),

@@ -38,3 +38,21 @@ class _SpeakButtonState extends ConsumerState<SpeakButton> {
     onPressed: () => _speech.speak(widget.text),
   );
 }
+
+/// Công tắc nhỏ "Normal / Slow" cho tốc độ đọc (Slow = 0.75 lần), nhớ lựa chọn.
+class SpeechSpeedToggle extends ConsumerWidget {
+  const SpeechSpeedToggle({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slow = ref.watch(speechSlowProvider);
+    return SegmentedButton<bool>(
+      key: const ValueKey('speech-speed'),
+      showSelectedIcon: false,
+      style: const ButtonStyle(visualDensity: VisualDensity.compact, tapTargetSize: MaterialTapTargetSize.padded),
+      segments: const [ButtonSegment(value: false, label: Text('Normal')), ButtonSegment(value: true, label: Text('Slow'))],
+      selected: {slow},
+      onSelectionChanged: (s) => ref.read(speechSlowProvider.notifier).set(s.first),
+    );
+  }
+}

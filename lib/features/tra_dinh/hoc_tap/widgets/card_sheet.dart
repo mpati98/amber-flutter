@@ -154,6 +154,7 @@ class _CardSheetState extends ConsumerState<CardSheet> {
         TextField(key: const ValueKey('card-pronunciation'), controller: _pronunciation, maxLength: 100, decoration: const InputDecoration(labelText: 'Phát âm', hintText: '/…/', counterText: '')),
         TextField(key: const ValueKey('card-meaning'), controller: _meaning, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Nghĩa tiếng Anh')),
         TextField(key: const ValueKey('card-example'), controller: _example, minLines: 2, maxLines: 4, decoration: InputDecoration(labelText: 'Câu ví dụ (có chứa cụm)', suffixIcon: ValueListenableBuilder(valueListenable: _example, builder: (_, v, _) => SpeakButton(key: const ValueKey('speak-example'), text: v.text, small: true)))),
+        const Align(alignment: Alignment.centerRight, child: SpeechSpeedToggle()),
         TextField(key: const ValueKey('card-note'), controller: _note, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Ghi chú (không bắt buộc)')),
         const Text('Loại', style: TextStyle(fontWeight: FontWeight.w600)),
         ChipScrollRow(
