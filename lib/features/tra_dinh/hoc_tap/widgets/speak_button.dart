@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/theme/app_theme.dart';
 import '../services/speech_service.dart';
 
 /// Nút loa đọc [text] bằng tiếng Anh khi chạm. [small] = nút nhỏ hơn cho câu ví dụ. Rời màn hình thì dừng đọc.
@@ -37,6 +38,20 @@ class _SpeakButtonState extends ConsumerState<SpeakButton> {
     constraints: BoxConstraints.tightFor(width: widget.small ? 40 : 48, height: widget.small ? 40 : 48),
     onPressed: () => _speech.speak(widget.text),
   );
+}
+
+/// Dòng nhỏ mờ "Giọng: tên (locale)" của giọng đang đọc.
+class SpeechVoiceLine extends ConsumerWidget {
+  const SpeechVoiceLine({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final muted = Theme.of(context).textMuted;
+    return ValueListenableBuilder<SpeechVoice?>(
+      valueListenable: ref.read(speechServiceProvider).voice,
+      builder: (_, v, _) => Text(voiceLabel(v), key: const ValueKey('speech-voice'), maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: muted)),
+    );
+  }
 }
 
 /// Công tắc nhỏ "Normal / Slow" cho tốc độ đọc (Slow = 0.75 lần), nhớ lựa chọn.

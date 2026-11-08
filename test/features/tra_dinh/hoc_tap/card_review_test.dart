@@ -6,6 +6,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/providers/card_review_pr
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/card_review_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/speech_service.dart';
 import 'package:amber_flutter/shared/theme/app_theme.dart';
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +25,9 @@ final _now = DateTime.parse('2026-11-06T14:00:00+07:00');
 class _FakeSpeech implements SpeechService {
   final spoken = <String>[];
   var stops = 0;
+
+  @override
+  ValueListenable<SpeechVoice?> get voice => ValueNotifier<SpeechVoice?>(null);
 
   @override
   void warmUp() {}
@@ -185,6 +189,7 @@ void main() {
       expect(speech.spoken, isEmpty, reason: 'không tự đọc, chỉ đọc khi chạm');
       expect(_k('speak-phrase'), findsOneWidget);
       expect(_k('speak-example'), findsOneWidget);
+      expect(_k('speech-voice'), findsNothing, reason: 'dòng giọng chỉ ở form thẻ');
       expect(tester.getSize(find.descendant(of: _k('speak-phrase'), matching: find.byType(IconButton))).shortestSide, greaterThanOrEqualTo(44));
       expect(tester.getSize(find.descendant(of: _k('speak-example'), matching: find.byType(IconButton))).width, lessThan(tester.getSize(find.descendant(of: _k('speak-phrase'), matching: find.byType(IconButton))).width));
       await tester.tap(_k('speak-phrase'));

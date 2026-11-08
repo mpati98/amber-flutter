@@ -45,8 +45,23 @@ SpeechVoice? pickEnglishVoice(Iterable<SpeechVoice> voices) {
   return null;
 }
 
+/// Đọc danh sách giọng thô của flutter_tts thành [SpeechVoice]; phần tử lạ bị bỏ.
+List<SpeechVoice> parseVoices(Object? raw) => [
+  for (final v in (raw as List? ?? const []))
+    if (v is Map && v['name'] is String) (name: v['name'] as String, locale: '${v['locale'] ?? ''}'),
+];
+
+/// Một dòng "tên (locale)" cho mọi giọng, sắp xếp, để xem trình duyệt có những giọng nào.
+String describeVoices(Iterable<SpeechVoice> voices) => (voices.map((v) => '${v.name} (${v.locale})').toList()..sort()).join(', ');
+
+/// Dòng hiển thị giọng đang dùng ở form thẻ; chưa có giọng Anh → "mặc định".
+String voiceLabel(SpeechVoice? v) => 'Giọng: ${v == null ? 'mặc định' : '${v.name} (${v.locale})'}';
+
 /// Đọc to tiếng Anh. Mọi lỗi (không có giọng, trình duyệt chặn, nền tảng không hỗ trợ) bị nuốt: không báo lỗi, không làm gì.
 abstract class SpeechService {
+  /// Giọng đã chọn; null khi chưa có giọng tiếng Anh (dùng giọng mặc định).
+  ValueListenable<SpeechVoice?> get voice;
+
   /// Chuẩn bị giọng đọc sớm (không phát âm) để lúc chạm chỉ còn gọi speak.
   void warmUp();
 
@@ -63,7 +78,12 @@ class FlutterTtsSpeech implements SpeechService {
   final bool Function() _slow;
   FlutterTts? _tts;
   Future<void>? _ready;
-  SpeechVoice? _voice; // giọng đã chọn, nhớ lại
+  final _voiceNotifier = ValueNotifier<SpeechVoice?>(null);
+  SpeechVoice? get _voice => _voiceNotifier.value; // giọng đã chọn, nhớ lại
+  var _listed = false;
+
+  @override
+  ValueListenable<SpeechVoice?> get voice => _voiceNotifier;
   double? _appliedRate;
 
   Future<void> _init() async {
@@ -84,13 +104,14 @@ class FlutterTtsSpeech implements SpeechService {
     if (tts == null || _voice != null) return;
     try {
       final raw = await tts.getVoices;
-      final list = <SpeechVoice>[
-        for (final v in (raw as List? ?? const []))
-          if (v is Map && v['name'] is String) (name: v['name'] as String, locale: '${v['locale'] ?? ''}'),
-      ];
+      final list = parseVoices(raw);
+      if (list.isNotEmpty && !_listed) {
+        _listed = true;
+        debugPrint('TTS các giọng có sẵn (${list.length}): ${describeVoices(list)}');
+      }
       final picked = pickEnglishVoice(list);
       if (picked == null) return;
-      _voice = picked;
+      _voiceNotifier.value = picked;
       await tts.setVoice({'name': picked.name, 'locale': picked.locale});
       debugPrint('TTS giọng đã chọn: ${picked.name} (${picked.locale})');
     } catch (_) {}
