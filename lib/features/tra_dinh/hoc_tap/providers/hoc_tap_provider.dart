@@ -54,6 +54,9 @@ final studyCoursesProvider = FutureProvider.autoDispose.family<List<CourseView>,
   (ref, q) => ref.watch(hocTapApiProvider).getCourses(subjectId: q.subjectId, statuses: q.statuses),
 );
 
+/// Thùng rác: các khóa đã xoá mềm (GET /courses?deleted=1).
+final studyTrashProvider = FutureProvider.autoDispose<List<CourseView>>((ref) => ref.watch(hocTapApiProvider).getDeletedCourses());
+
 /// Chi tiết 1 khóa. Notifier để tick phần ngay (lạc quan) rồi mới gọi API.
 class StudyCourseDetailNotifier extends AsyncNotifier<CourseDetail> {
   StudyCourseDetailNotifier(this.courseId);
@@ -144,6 +147,7 @@ final studyTodayLogsProvider = FutureProvider.autoDispose.family<List<StudyLog>,
 void _invalidateAround(Ref ref, {String? courseId, bool keepDetail = false, bool subjects = false}) {
   ref.invalidate(studyOverviewProvider);
   ref.invalidate(studyCoursesProvider);
+  ref.invalidate(studyTrashProvider);
   ref.invalidate(studyTodayLogsProvider);
   ref.invalidate(studyScheduleProvider);
   ref.invalidate(studyStatsProvider);
@@ -193,9 +197,26 @@ class HocTapActions {
     _invalidateAround(_ref, courseId: id);
   }
 
-  Future<void> deleteCourse(String id) async {
-    await _api.deleteCourse(id);
-    _invalidateAround(_ref, courseId: id);
+  /// Xoá mềm (cần mật khẩu). Lỗi (403/429/...) ném lại cho sheet báo; mật khẩu không được lưu hay ghi log ở đây.
+  Future<void> deleteCourse(String id, {required String password}) async {
+    await _api.deleteCourse(id, password: password);
+    // Giữ provider chi tiết: màn khóa sắp đóng, tải lại chỉ cho ra 404 chớp nhoáng.
+    _invalidateAround(_ref, courseId: id, keepDetail: true);
+  }
+
+  Future<void> restoreCourse(String id) async {
+    try {
+      await _api.restoreCourse(id);
+    } finally {
+      // Kể cả 404 (khóa không còn trong Thùng rác) danh sách cũng phải tải lại.
+      _invalidateAround(_ref, courseId: id);
+    }
+  }
+
+  /// Xoá hẳn khóa trong Thùng rác (cần mật khẩu).
+  Future<void> purgeCourse(String id, {required String password}) async {
+    await _api.purgeCourse(id, password: password);
+    _invalidateAround(_ref, courseId: id, keepDetail: true);
   }
 
   Future<void> putSections(String courseId, List<SectionInput> sections) async {

@@ -56,6 +56,8 @@ class CourseView {
     this.deltaDays,
     this.progress = CourseProgress.empty,
     this.nextSection,
+    this.deletedAt,
+    this.daysLeft,
   });
 
   factory CourseView.fromJson(Map<String, dynamic> json) => CourseView(
@@ -76,6 +78,8 @@ class CourseView {
     deltaDays: json['deltaDays'] as int?,
     progress: json['progress'] == null ? CourseProgress.empty : CourseProgress.fromJson(json['progress'] as Map<String, dynamic>),
     nextSection: json['nextSection'] == null ? null : NextSection.fromJson(json['nextSection'] as Map<String, dynamic>),
+    deletedAt: _dt(json['deletedAt']),
+    daysLeft: json['daysLeft'] as int?,
   );
 
   final String id;
@@ -98,6 +102,10 @@ class CourseView {
   final CourseProgress progress;
   final NextSection? nextSection;
 
+  /// Chỉ có ở GET /courses?deleted=1 (Thùng rác): lúc xoá và số ngày còn lại trước khi xoá hẳn (tối thiểu 0).
+  final DateTime? deletedAt;
+  final int? daysLeft;
+
   /// "Giảng viên · Nền tảng" (bỏ vế trống).
   String get byline => [?instructor, ?platform].where((s) => s.trim().isNotEmpty).join(' · ');
 
@@ -119,6 +127,8 @@ class CourseView {
     deltaDays: deltaDays,
     progress: progress ?? this.progress,
     nextSection: clearNext ? null : (nextSection ?? this.nextSection),
+    deletedAt: deletedAt,
+    daysLeft: daysLeft,
   );
 }
 

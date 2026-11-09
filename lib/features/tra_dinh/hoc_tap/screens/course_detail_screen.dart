@@ -19,6 +19,7 @@ import '../utils/open_course_link.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/log_sheet.dart';
+import '../widgets/password_confirm_sheet.dart';
 import '../widgets/sections_editor_sheet.dart';
 import '../../../../shared/widgets/app_bar_back.dart';
 
@@ -39,7 +40,7 @@ List<(String, CourseStatus)> statusChoices(CourseStatus from) => switch (from) {
   CourseStatus.unknown => const [],
 };
 
-enum _Menu { edit, sections, rebaseline, delete }
+enum _Menu { edit, sections, rebaseline }
 
 /// Chi tiết khóa học: tiến độ, các phần (tick), buổi học gần đây, menu thao tác.
 class CourseDetailScreen extends ConsumerWidget {
@@ -63,6 +64,28 @@ class CourseDetailScreen extends ConsumerWidget {
       ) ??
       false;
 
+  /// Xoá mềm có nhập mật khẩu; xong thì thoát màn khóa về danh sách.
+  Future<void> _deleteCourse(BuildContext context, WidgetRef ref, CourseView course) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final actions = ref.read(hocTapActionsProvider);
+    final done = await showPasswordConfirmSheet(
+      context,
+      title: 'Xoá khóa này?',
+      subtitle: course.title,
+      bullets: const [
+        'Khóa vào Thùng rác 30 ngày. Khôi phục được bất cứ lúc nào, sau đó xoá hẳn.',
+        'Các buổi học đã ghi vẫn tính vào chuỗi ngày.',
+        'Ghi chú khóa ở Tàng Kinh Các được giữ nguyên.',
+      ],
+      actionLabel: 'Xoá khóa',
+      onConfirm: (password) => actions.deleteCourse(course.id, password: password),
+    );
+    if (!done) return;
+    router.canPop() ? router.pop() : router.go('/tra-dinh');
+    messenger.showSnackBar(const SnackBar(content: Text('Đã chuyển vào Thùng rác')));
+  }
+
   Future<void> _run(BuildContext context, Future<void> Function() action) async {
     try {
       await action();
@@ -83,13 +106,6 @@ class CourseDetailScreen extends ConsumerWidget {
           await _run(context, () async {
             await actions.rebaseline(d.course.subjectId);
             if (context.mounted) _snack(context, 'Đã chốt lại kế hoạch');
-          });
-        }
-      case _Menu.delete:
-        if (await _confirm(context, 'Xoá khóa học?', 'Xoá khóa "${d.course.title}" cùng các phần của nó? Nhật ký học vẫn được giữ.', 'Xoá') && context.mounted) {
-          await _run(context, () async {
-            await actions.deleteCourse(courseId);
-            if (context.mounted) context.canPop() ? context.pop() : context.go('/tra-dinh');
           });
         }
     }
@@ -117,7 +133,6 @@ class CourseDetailScreen extends ConsumerWidget {
                 for (final (label, status) in statusChoices(detail.course.status)) PopupMenuItem(value: status, child: Text(label)),
                 const PopupMenuItem(value: _Menu.sections, child: Text('Sửa các phần')),
                 const PopupMenuItem(value: _Menu.rebaseline, child: Text('Chốt lại kế hoạch của môn')),
-                const PopupMenuItem(value: _Menu.delete, child: Text('Xoá khóa học')),
               ],
             ),
         ],
@@ -125,7 +140,7 @@ class CourseDetailScreen extends ConsumerWidget {
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyCourseDetailProvider(courseId).future),
         child: switch (async.settled) {
-          AsyncData(:final value) => _Detail(detail: value, onToggle: (id, done) => _toggle(context, ref, id, done)),
+          AsyncData(:final value) => _Detail(detail: value, onToggle: (id, done) => _toggle(context, ref, id, done), onDelete: () => _deleteCourse(context, ref, value.course)),
           AsyncError(:final error) =>
             apiErrorCode(error) == 'course_not_found'
                 ? const Center(child: Text('Không tìm thấy khóa học'))
@@ -147,10 +162,11 @@ class CourseDetailScreen extends ConsumerWidget {
 }
 
 class _Detail extends StatelessWidget {
-  const _Detail({required this.detail, required this.onToggle});
+  const _Detail({required this.detail, required this.onToggle, required this.onDelete});
 
   final CourseDetail detail;
   final void Function(String sectionId, bool done) onToggle;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -251,6 +267,32 @@ class _Detail extends StatelessWidget {
           onPressed: () => showLogSheet(context, subjectId: c.subjectId, courseId: c.id),
           icon: const Icon(Icons.edit_note),
           label: const Text('Ghi buổi học'),
+        ),
+        const SizedBox(height: 16),
+        // Khu thứ yếu thu gọn: thao tác nguy hiểm không nằm ngang hàng nút chính.
+        Theme(
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            key: const ValueKey('advanced-section'),
+            tilePadding: EdgeInsets.zero,
+            title: Text('Nâng cao', style: TextStyle(fontSize: 13, color: theme.textMuted)),
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton(
+                  key: const ValueKey('delete-course'),
+                  onPressed: onDelete,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.colorScheme.error,
+                    backgroundColor: Colors.transparent,
+                    side: BorderSide(color: theme.colorScheme.error),
+                    minimumSize: const Size(0, 48),
+                  ),
+                  child: const Text('Xoá khóa'),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

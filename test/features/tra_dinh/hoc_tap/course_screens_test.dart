@@ -83,7 +83,7 @@ void main() {
       expect(find.text('Bắt đầu học'), findsNothing);
       expect(find.text('Chốt lại kế hoạch của môn'), findsOneWidget);
       expect(find.text('Sửa các phần'), findsOneWidget);
-      expect(find.text('Xoá khóa học'), findsOneWidget);
+      expect(find.text('Xoá khóa học'), findsNothing, reason: 'xoá khóa chuyển sang khu "Nâng cao" ở cuối màn');
 
       await tester.tap(find.text('Về hàng chờ'));
       await tester.pumpAndSettle();

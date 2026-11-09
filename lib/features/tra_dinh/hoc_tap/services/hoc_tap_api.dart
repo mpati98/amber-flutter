@@ -85,7 +85,23 @@ class HocTapApi {
     return CourseView.fromJson(res.data!);
   }
 
-  Future<void> deleteCourse(String id) => _dio.delete<void>('$_base/courses/$id');
+  /// Xoá MỀM (vào Thùng rác 30 ngày), bắt buộc [password]. 403 `wrong_password`, 429 `password_locked` (+ `retryAfterSeconds`), 404.
+  Future<void> deleteCourse(String id, {required String password}) => _dio.delete<void>('$_base/courses/$id', data: {'password': password});
+
+  /// Thùng rác: khóa đã xoá mềm của người dùng (kèm `deletedAt`, `daysLeft`). Backend tự xoá hẳn khóa quá 30 ngày mỗi lần gọi.
+  Future<List<CourseView>> getDeletedCourses() async {
+    final res = await _dio.get<List<dynamic>>('$_base/courses', queryParameters: {'deleted': 1});
+    return [for (final e in res.data!) CourseView.fromJson(e as Map<String, dynamic>)];
+  }
+
+  /// Khôi phục khóa trong Thùng rác (không cần mật khẩu). 404 `course_not_found` nếu không còn trong Thùng rác.
+  Future<CourseView> restoreCourse(String id) async {
+    final res = await _dio.post<Map<String, dynamic>>('$_base/courses/$id/restore');
+    return CourseView.fromJson(res.data!);
+  }
+
+  /// Xoá HẲN khóa đang trong Thùng rác, bắt buộc [password]; cùng mã lỗi như [deleteCourse].
+  Future<void> purgeCourse(String id, {required String password}) => _dio.delete<void>('$_base/courses/$id/purge', data: {'password': password});
 
   /// Thay cả danh sách phần; trả chi tiết (không kèm recentLogs).
   Future<CourseDetail> putSections(String courseId, List<SectionInput> sections) async {

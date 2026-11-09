@@ -255,6 +255,7 @@ void main() {
         'hoc-tap/courses/:courseId',
       );
       expect(routePath('/tra-dinh/hoc-tap/wishlist'), 'hoc-tap/wishlist');
+      expect(routePath('/tra-dinh/hoc-tap/thung-rac'), 'hoc-tap/thung-rac');
       // Kho thẻ từ vựng: không bị hiểu là sessionId.
       expect(routePath('/tra-dinh/hoc-tap/the'), 'hoc-tap/the');
       expect(routePath('/tra-dinh/hoc-tap/the?subjectId=s'), 'hoc-tap/the');

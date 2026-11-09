@@ -69,6 +69,10 @@ class _FakeBackend {
         return reply(200, {'accessToken': validAccess, 'refreshToken': validRefresh});
       case '/api/mobile/auth/login':
         return reply(401, {'error': 'invalid_credentials'});
+      case '/wrong-password':
+        return reply(403, {'error': 'wrong_password'});
+      case '/locked':
+        return reply(429, {'error': 'password_locked', 'retryAfterSeconds': 600});
       case '/always-401':
         return reply(401, {'error': 'unauthorized'});
       default:
@@ -174,6 +178,21 @@ void main() {
       ..refresh = 'refresh-1';
     await expectLater(dio.get<void>('${external.baseUrl}/private'), throwsA(isA<DioException>()));
     expect(backend.refreshCalls + external.refreshCalls, 0);
+    expect(storage.refresh, 'refresh-1');
+  });
+
+  test('403 wrong_password và 429 password_locked đi thẳng ra ngoài: không refresh, không thử lại, không mất phiên', () async {
+    storage
+      ..access = 'access-1'
+      ..refresh = 'refresh-1';
+    final wrong = await dio.delete<void>('/wrong-password').then<DioException?>((_) => null, onError: (Object e) => e as DioException);
+    final locked = await dio.delete<void>('/locked').then<DioException?>((_) => null, onError: (Object e) => e as DioException);
+    expect(wrong?.response?.statusCode, 403);
+    expect(locked?.response?.statusCode, 429);
+    expect(backend.refreshCalls, 0);
+    expect(backend.authHeaders, hasLength(2), reason: 'mỗi request đúng một lần, không retry');
+    expect(sessionExpiredCalls, 0);
+    expect(storage.access, 'access-1');
     expect(storage.refresh, 'refresh-1');
   });
 

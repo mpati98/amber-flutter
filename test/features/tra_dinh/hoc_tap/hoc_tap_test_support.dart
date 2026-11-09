@@ -243,8 +243,39 @@ class FakeHocTapApi extends HocTapApi {
     return courses;
   }
 
+  final deletes = <({String id, String password})>[];
+  final purges = <({String id, String password})>[];
+  final restores = <String>[];
+  List<CourseView> trash = [];
+  Object? deleteError;
+  Object? restoreError;
+  Completer<void>? deleteGate;
+
   @override
-  Future<void> deleteCourse(String id) async {}
+  Future<void> deleteCourse(String id, {required String password}) async {
+    deletes.add((id: id, password: password));
+    await deleteGate?.future;
+    if (deleteError case final e?) throw e;
+  }
+
+  @override
+  Future<List<CourseView>> getDeletedCourses() async => trash;
+
+  @override
+  Future<CourseView> restoreCourse(String id) async {
+    restores.add(id);
+    if (restoreError case final e?) throw e;
+    final c = trash.firstWhere((c) => c.id == id);
+    trash = [for (final t in trash) if (t.id != id) t];
+    return c;
+  }
+
+  @override
+  Future<void> purgeCourse(String id, {required String password}) async {
+    purges.add((id: id, password: password));
+    if (deleteError case final e?) throw e;
+    trash = [for (final t in trash) if (t.id != id) t];
+  }
 
   @override
   Future<CourseDetail> putSections(String courseId, List<SectionInput> sections) async {
