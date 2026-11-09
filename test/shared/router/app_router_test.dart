@@ -97,8 +97,8 @@ void main() {
 
     test('mất phiên giữa chừng (Unauthenticated khi đang ở trong app) → /login nhớ trang đang xem', () {
       expect(
-        _redirect(_signedOut, '/hoc-tap/c1'),
-        '/login?from=%2Fhoc-tap%2Fc1',
+        _redirect(_signedOut, '/finance/p1'),
+        '/login?from=%2Ffinance%2Fp1',
       );
     });
 

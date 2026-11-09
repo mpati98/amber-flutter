@@ -9,11 +9,9 @@ import '../../features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
 import '../../features/kieu_lau/screens/music_screen.dart';
-import '../../features/nghi_su_duong/screens/course_detail_screen.dart';
 import '../../features/nghi_su_duong/screens/du_an_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_screen.dart';
-import '../../features/nghi_su_duong/screens/hoc_tap_screen.dart';
 import '../../features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
 import '../../features/nghi_su_duong/screens/project_detail_screen.dart';
 import '../../features/tang_kinh_cac/screens/ke_hoach_doc_screen.dart';
@@ -115,7 +113,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) =>
         _NotFoundScreen(location: state.uri.toString()),
     // Đường dẫn khớp trang web (src/app/**/page.tsx) — alert.href của Kiều Lâu
-    // (/du-an, /finance/<id>, /hoc-tap/<id>) dùng được thẳng với context.go.
+    // (/du-an, /finance/<id>) dùng được thẳng với context.go.
     routes: [
       GoRoute(path: _splash, builder: (_, _) => const _SplashScreen()),
       GoRoute(path: _login, builder: (_, _) => const LoginScreen()),
@@ -179,17 +177,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, state) => FinanceMonthScreen(
               projectId: state.pathParameters['projectId']!,
             ),
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/hoc-tap',
-        builder: (_, _) => const HocTapScreen(),
-        routes: [
-          GoRoute(
-            path: ':courseId',
-            builder: (_, state) =>
-                CourseDetailScreen(courseId: state.pathParameters['courseId']!),
           ),
         ],
       ),

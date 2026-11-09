@@ -5,8 +5,6 @@ import 'package:amber_flutter/features/nghi_su_duong/providers/finance_provider.
 import 'package:amber_flutter/features/nghi_su_duong/services/finance_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/add_account_modal.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/add_category_modal.dart';
-import 'package:amber_flutter/features/nghi_su_duong/widgets/add_course_modal.dart';
-import 'package:amber_flutter/features/nghi_su_duong/widgets/add_lesson_modal.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/add_transaction_modal.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/set_budget_modal.dart';
 import 'package:amber_flutter/features/tra_dinh/models/practice_session.dart';
@@ -126,8 +124,6 @@ class _Host extends ConsumerWidget {
         showSetBudgetModal(c, projectId: 'p1', projectName: 'Tháng 10', currentLimits: const {}),
     'Thêm ví': (c) => showAddAccountModal(c, projectId: 'p1'),
     'Thêm danh mục': showAddCategoryModal,
-    'Thêm khóa học': showAddCourseModal,
-    'Thêm bài học': (c) => showAddLessonModal(c, courseId: 'course1'),
     'Bắt đầu buổi luyện mới': showNewPracticeSessionModal,
   };
 

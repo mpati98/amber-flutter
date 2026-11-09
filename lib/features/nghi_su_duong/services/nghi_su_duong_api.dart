@@ -82,11 +82,6 @@ class NghiSuDuongApi {
     return FinanceOverview.fromJson(res.data!);
   }
 
-  Future<LearnOverview> getLearnOverview({int? year}) async {
-    final res = await _dio.get<Map<String, dynamic>>('/api/learn/overview', queryParameters: {'year': ?year});
-    return LearnOverview.fromJson(res.data!);
-  }
-
   /// Chỉ project chưa lưu trữ. [type] null = mọi loại.
   Future<List<Project>> getProjects({ProjectType? type}) async {
     final res = await _dio.get<List<dynamic>>(

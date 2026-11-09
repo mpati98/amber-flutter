@@ -112,36 +112,3 @@ class FinanceOverview {
   final String? activeProjectId;
   final String? activeProjectName;
 }
-
-class CurrentCourse {
-  const CurrentCourse({required this.id, required this.name, this.lastLessonTitle});
-
-  factory CurrentCourse.fromJson(Map<String, dynamic> json) => CurrentCourse(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        lastLessonTitle: json['lastLessonTitle'] as String?,
-      );
-
-  final String id;
-  final String name;
-  final String? lastLessonTitle;
-}
-
-/// GET /api/learn/overview.
-class LearnOverview {
-  const LearnOverview({required this.completedThisYear, this.currentCourse, this.nextPlannedCourseName});
-
-  factory LearnOverview.fromJson(Map<String, dynamic> json) => LearnOverview(
-        completedThisYear: json['completedThisYear'] as int,
-        currentCourse: json['currentCourse'] == null
-            ? null
-            : CurrentCourse.fromJson(json['currentCourse'] as Map<String, dynamic>),
-        nextPlannedCourseName: (json['nextPlannedCourse'] as Map<String, dynamic>?)?['name'] as String?,
-      );
-
-  final int completedThisYear;
-
-  /// Khóa IN_PROGRESS đầu tiên backend tìm thấy (không sắp xếp).
-  final CurrentCourse? currentCourse;
-  final String? nextPlannedCourseName;
-}

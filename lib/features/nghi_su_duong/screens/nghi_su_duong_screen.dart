@@ -9,7 +9,7 @@ import '../../../shared/widgets/scroll_card.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../../../shared/widgets/app_bar_back.dart';
 
-/// Port /nghi-su-duong: trang chính 3 mảng Dự án / Tài chính / Học tập.
+/// Port /nghi-su-duong: trang chính 2 mảng Dự án / Tài chính.
 /// Xếp 1 cột thay cho lưới 1–3 cột bên web.
 class NghiSuDuongScreen extends ConsumerWidget {
   const NghiSuDuongScreen({super.key});
@@ -28,7 +28,6 @@ class NghiSuDuongScreen extends ConsumerWidget {
             onRefresh: () => Future.wait([
               ref.refresh(duAnOverviewProvider.future),
               ref.refresh(financeOverviewProvider.future),
-              ref.refresh(learnOverviewProvider.future),
             ]),
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -36,8 +35,6 @@ class NghiSuDuongScreen extends ConsumerWidget {
                 _DuAnCard(onTap: () => push('/du-an')),
                 const SizedBox(height: 20), // gap-5
                 _FinanceCard(onTap: () => push('/finance')),
-                const SizedBox(height: 20),
-                _LearnCard(onTap: () => push('/hoc-tap')),
               ],
             ),
           ),
@@ -47,7 +44,7 @@ class NghiSuDuongScreen extends ConsumerWidget {
   }
 }
 
-/// Khung chung của 3 card: tiêu đề serif + chữ nhỏ bên phải, thân tuỳ mảng.
+/// Khung chung của các card: tiêu đề serif + chữ nhỏ bên phải, thân tuỳ mảng.
 class _HubCard extends StatelessWidget {
   const _HubCard({required this.title, this.trailing, required this.glow, required this.onTap, required this.child});
 
@@ -192,49 +189,6 @@ class _FinanceCard extends ConsumerWidget {
                     ),
                   ],
                 ),
-              ],
-            ),
-    );
-  }
-}
-
-class _LearnCard extends ConsumerWidget {
-  const _LearnCard({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final overview = ref.watch(learnOverviewProvider);
-    final data = overview.value;
-    final course = data?.currentCourse;
-
-    return _HubCard(
-      title: '🎓 Học tập',
-      trailing: '${data?.completedThisYear ?? 0} khóa xong năm nay',
-      glow: ScrollCardGlow.shuiro,
-      onTap: onTap,
-      child: overview.hasError
-          ? Text('Không tải được số liệu.', style: _muted(14))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (course == null)
-                  Text(data == null ? 'Đang tải...' : 'Chưa có khóa nào đang học.', style: _muted(14))
-                else ...[
-                  Text(
-                    'Đang học: ${course.name}',
-                    style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8)),
-                  ),
-                  if (course.lastLessonTitle != null) ...[
-                    const SizedBox(height: 4),
-                    Text('Gần nhất: ${course.lastLessonTitle}', style: _muted(12)),
-                  ],
-                ],
-                if (data?.nextPlannedCourseName != null) ...[
-                  const SizedBox(height: 8),
-                  Text('Sắp tới: ${data!.nextPlannedCourseName}', style: _muted(12)),
-                ],
               ],
             ),
     );

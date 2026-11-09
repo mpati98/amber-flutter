@@ -71,10 +71,6 @@ final financeOverviewProvider = FutureProvider.autoDispose<FinanceOverview>(
   (ref) => ref.watch(nghiSuDuongApiProvider).getFinanceOverview(),
 );
 
-final learnOverviewProvider = FutureProvider.autoDispose<LearnOverview>(
-  (ref) => ref.watch(nghiSuDuongApiProvider).getLearnOverview(),
-);
-
 /// Dự án STANDARD [id] kèm keyResults — màn Chi tiết dự án.
 final projectDetailProvider = FutureProvider.autoDispose.family<ProjectDetail, String>(
   (ref, id) => ref.watch(nghiSuDuongApiProvider).getProject(id),

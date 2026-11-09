@@ -12,6 +12,11 @@ typedef KieuLauNotifications = ({List<Alert> alerts, List<ActivityLogEntry> rece
 /// `failed` là tên các nguồn không parse được RSS.
 typedef FeedRefreshResult = ({int refreshed, List<String> failed});
 
+/// Bỏ cảnh báo của Học tập cũ (LEARN_INACTIVE, href `/hoc-tap/<id>`): màn đó đã gỡ,
+/// backend cũ còn gửi thì bấm vào chỉ ra trang "không tìm thấy".
+List<Alert> filterLegacyAlerts(List<Alert> alerts) =>
+    alerts.where((a) => a.kind != 'LEARN_INACTIVE' && !a.href.startsWith('/hoc-tap')).toList();
+
 class KieuLauApi {
   const KieuLauApi(this._dio);
 
@@ -21,7 +26,7 @@ class KieuLauApi {
     final res = await _dio.get<Map<String, dynamic>>('/api/kieu-lau/notifications');
     final data = res.data!;
     return (
-      alerts: _parseList(data['alerts'], Alert.fromJson),
+      alerts: filterLegacyAlerts(_parseList(data['alerts'], Alert.fromJson)),
       recentActivity: _parseList(data['recentActivity'], ActivityLogEntry.fromJson),
     );
   }
