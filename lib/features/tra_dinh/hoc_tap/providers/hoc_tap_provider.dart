@@ -122,20 +122,6 @@ final studyStatsProvider = FutureProvider.autoDispose.family<StudyStats, StatsQu
   (ref, q) => ref.watch(hocTapApiProvider).getStats(subjectId: q.subjectId, range: q.range),
 );
 
-/// Chế độ xem + mốc ngày của tab Lịch, nhớ khi chuyển sang tab khác (mất khi tải lại trang).
-typedef ScheduleNav = ({String view, String date});
-
-class ScheduleNavNotifier extends Notifier<ScheduleNav?> {
-  @override
-  ScheduleNav? build() => null;
-
-  void remember(String view, String date) {
-    if (state?.view != view || state?.date != date) state = (view: view, date: date);
-  }
-}
-
-final scheduleNavProvider = NotifierProvider<ScheduleNavNotifier, ScheduleNav?>(ScheduleNavNotifier.new);
-
 /// Các buổi đã ghi HÔM NAY của một môn (mới nhất trước).
 final studyTodayLogsProvider = FutureProvider.autoDispose.family<List<StudyLog>, String>((ref, subjectId) {
   final today = vnToday();

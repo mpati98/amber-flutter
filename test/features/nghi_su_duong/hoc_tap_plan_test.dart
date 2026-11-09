@@ -299,7 +299,7 @@ void main() {
           overview: _overview([_subject(_first)]),
         );
         expect(
-          find.text('Lịch dự kiến · Thống kê · Muốn mua · Thùng rác'),
+          find.text('Lịch dự kiến · Thống kê · Muốn mua · Đã xong · Thùng rác'),
           findsOneWidget,
         );
         expect(find.byType(Divider), findsOneWidget);
@@ -330,15 +330,39 @@ void main() {
     });
   });
 
+  group('quản lý môn học (dời từ menu ⋯ của Trà Đình)', () {
+    testWidgets('menu ⋯ ở màn kế hoạch có "+ Môn" và "Cài đặt môn" cho từng môn; mở đúng sheet', (tester) async {
+      await _pump(tester, '/hoc-tap');
+      await tester.tap(find.byKey(const ValueKey('plan-menu')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('menu-add-subject')), findsOneWidget);
+      expect(find.text('Cài đặt môn: Tiếng Anh'), findsOneWidget);
+      expect(find.text('Cài đặt môn: Lập trình'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('menu-add-subject')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CloseButton), findsWidgets, reason: 'sheet thêm môn mở');
+      await tester.tap(find.byType(CloseButton).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('plan-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cài đặt môn: Tiếng Anh'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CloseButton), findsWidgets, reason: 'sheet cài đặt môn mở (sửa tên, mục tiêu phút / ngày, xoá)');
+    });
+  });
+
   group('màn Chi tiết kế hoạch', () {
     testWidgets(
-      'đúng bốn hàng theo thứ tự, cao ≥ 52, không nút vàng, không còn "Lý do thiếu"; mỗi hàng đi đúng route và Back về lại màn này',
+      'đúng năm hàng theo thứ tự (Khóa đã xong thay cho màn Thư viện cũ), cao ≥ 52, không nút vàng, không còn "Lý do thiếu"; mỗi hàng đi đúng route và Back về lại màn này',
       (tester) async {
         // Lịch / Thống kê là màn của Nghị Sự Đường; Muốn mua / Thùng rác là màn Trà Đình (stub ghi lại đường dẫn).
         final rows = [
           ('plan-schedule', 'Lịch dự kiến', '/hoc-tap/lich'),
           ('plan-stats', 'Thống kê', '/hoc-tap/thong-ke'),
           ('plan-wishlist', 'Muốn mua', '/tra-dinh/hoc-tap/wishlist'),
+          ('plan-done', 'Khóa đã xong', '/tra-dinh/hoc-tap/courses?status=DONE'),
           ('plan-trash', 'Thùng rác', '/tra-dinh/hoc-tap/thung-rac'),
         ];
         await _pump(tester, '/hoc-tap/chi-tiet');
@@ -346,7 +370,7 @@ void main() {
         expect(find.text('Chi tiết kế hoạch'), findsOneWidget);
         expect(find.byType(FilledButton), findsNothing);
         expect(find.text('Lý do thiếu'), findsNothing);
-        expect(find.byType(PlanNavRow), findsNWidgets(4));
+        expect(find.byType(PlanNavRow), findsNWidgets(5));
         final ys = [
           for (final r in rows) tester.getTopLeft(find.byKey(ValueKey(r.$1))).dy,
         ];

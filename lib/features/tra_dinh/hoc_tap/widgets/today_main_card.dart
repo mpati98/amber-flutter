@@ -87,6 +87,12 @@ class TodayMainCard extends StatelessWidget {
                             variant: TagVariant.tonal,
                           ),
                         ),
+                      if (!today.done && goal > today.minutes)
+                        Text(
+                          'Còn ${goal - today.minutes} phút để đủ mục tiêu',
+                          key: const ValueKey('today-remaining'),
+                          style: TextStyle(fontSize: 13, color: theme.textMuted),
+                        ),
                       if (streak != null)
                         Text(
                           'Chuỗi $streak ngày',

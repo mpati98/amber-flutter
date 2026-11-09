@@ -38,6 +38,19 @@ class HocTapPlanScreen extends ConsumerWidget {
         leading: const AppBarBack(fallback: '/nghi-su-duong', label: 'Nghị Sự Đường'),
         leadingWidth: 160,
         title: const Text('Học tập'),
+        // Quản lý môn học (trước đây ở menu ⋯ của Trà Đình): thêm môn; sửa tên, mục tiêu phút/ngày, ngày ôn, xoá môn.
+        actions: [
+          PopupMenuButton<String>(
+            key: const ValueKey('plan-menu'),
+            tooltip: 'Môn học',
+            icon: const Icon(Icons.more_horiz),
+            onSelected: (v) => showSubjectSheet(context, subjectId: v == 'add' ? null : v),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'add', key: ValueKey('menu-add-subject'), child: Text('+ Môn')),
+              for (final s in subjects) PopupMenuItem(value: s.subjectId, key: ValueKey('menu-edit-${s.subjectId}'), child: Text('Cài đặt môn: ${s.name}')),
+            ],
+          ),
+        ],
       ),
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyOverviewProvider.future),
@@ -84,7 +97,7 @@ class HocTapPlanScreen extends ConsumerWidget {
               PlanNavRow(
                 key: const ValueKey('plan-details'),
                 label: 'Chi tiết kế hoạch',
-                subtitle: 'Lịch dự kiến · Thống kê · Muốn mua · Thùng rác',
+                subtitle: 'Lịch dự kiến · Thống kê · Muốn mua · Đã xong · Thùng rác',
                 onTap: () => context.push('/hoc-tap/chi-tiet'),
               ),
             ],

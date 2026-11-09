@@ -7,8 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import 'hoc_tap_test_support.dart';
 
-// Màn Trà Đình (Tổng quan / Lịch / Thống kê) phải luôn có đường về Âm Dương Giới — kể cả khi mở thẳng URL (PWA trên iPhone)
-// hay sau khi đổi tab (context.go thay cả stack).
+// Màn Hôm nay của Trà Đình phải luôn có đường về Âm Dương Giới — kể cả khi mở thẳng URL (PWA trên iPhone)
+// hay sau khi context.go thay cả stack.
 
 late GoRouter _router;
 
@@ -23,13 +23,8 @@ Future<void> _pump(WidgetTester tester, String location, {bool pushed = false}) 
       GoRoute(
         path: '/tra-dinh',
         builder: (_, state) => TraDinhHocTapScreen(
-          tab: state.uri.queryParameters['tab'],
           openLog: state.uri.queryParameters['openLog'] == '1',
           subjectId: state.uri.queryParameters['subjectId'],
-          view: state.uri.queryParameters['view'],
-          date: state.uri.queryParameters['date'],
-          range: state.uri.queryParameters['range'],
-          subject: state.uri.queryParameters['subject'],
         ),
       ),
     ],
@@ -47,8 +42,8 @@ Future<void> _pump(WidgetTester tester, String location, {bool pushed = false}) 
 String _loc() => _router.routeInformationProvider.value.uri.toString();
 
 Future<void> _back(WidgetTester tester) async {
-  expect(find.byType(BackButton), findsOneWidget);
-  await tester.tap(find.byType(BackButton));
+  expect(find.byKey(const ValueKey('app-bar-back-label')), findsOneWidget);
+  await tester.tap(find.byKey(const ValueKey('app-bar-back-label')));
   await tester.pumpAndSettle();
 }
 
@@ -56,7 +51,9 @@ void main() {
   testWidgets('mở thẳng /tra-dinh (app đã cài mở lại): có nút quay lại, bấm → Âm Dương Giới', (tester) async {
     await _pump(tester, '/tra-dinh');
     expect(_router.canPop(), isFalse);
-    expect(find.text('Trà Đình'), findsOneWidget);
+    expect(find.text('‹ Trà Đình'), findsOneWidget);
+    expect(find.text('Hôm nay'), findsWidgets);
+    expect(find.byType(TabBar), findsNothing);
     await _back(tester);
     expect(find.text('Âm Dương Giới'), findsOneWidget);
     expect(_loc(), '/');
@@ -68,20 +65,6 @@ void main() {
     await _back(tester);
     expect(find.text('Âm Dương Giới'), findsOneWidget);
     expect(_router.canPop(), isFalse);
-  });
-
-  testWidgets('đổi tab Lịch / Thống kê (context.go) xong vẫn quay về được Âm Dương Giới', (tester) async {
-    await _pump(tester, '/tra-dinh', pushed: true);
-    for (final (label, tab) in [('Lịch', 'schedule'), ('Thống kê', 'stats')]) {
-      await tester.tap(find.widgetWithText(Tab, label));
-      await tester.pumpAndSettle();
-      expect(_loc(), contains('tab=$tab'));
-      expect(_router.canPop(), isFalse, reason: 'tab đổi bằng go() đã thay stack — mũi tên tự thêm của Flutter không còn');
-      expect(find.byType(BackButton), findsOneWidget);
-    }
-    await _back(tester);
-    expect(find.text('Âm Dương Giới'), findsOneWidget);
-    expect(_loc(), '/');
   });
 
   testWidgets('?openLog=1: mở sheet ghi buổi học, đóng sheet xong vẫn có nút quay lại', (tester) async {

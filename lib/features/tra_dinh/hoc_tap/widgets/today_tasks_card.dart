@@ -114,23 +114,6 @@ class TodayTasksCard extends ConsumerWidget {
             const Divider(height: 20),
             for (final l in logs) _LogRow(log: l),
           ],
-          Align(
-            alignment: Alignment.centerLeft,
-            // Label dài: để Text tự xuống dòng thay vì tràn khi chữ phóng to (TextButton.icon không xuống dòng).
-            child: TextButton(
-              key: const ValueKey('manual-log'),
-              onPressed: () =>
-                  showLogSheet(context, subjectId: subject.subjectId),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 8,
-                children: [
-                  Icon(Icons.edit_note),
-                  Flexible(child: Text('Ghi buổi học thủ công')),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );

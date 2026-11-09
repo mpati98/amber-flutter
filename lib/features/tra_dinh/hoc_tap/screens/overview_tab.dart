@@ -11,9 +11,9 @@ import '../widgets/card_widgets.dart' show ChipScrollRow;
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/today_main_card.dart';
 import '../widgets/today_tasks_card.dart';
-import '../widgets/subject_sheet.dart';
+import '../widgets/log_sheet.dart';
 
-/// Tab Hôm nay của Học tập: thẻ chính, việc hôm nay, ô Thư viện.
+/// Thân màn Hôm nay của Trà Đình: chip môn, thẻ chính, việc hôm nay, hàng Kho thẻ, liên kết ghi buổi học thủ công.
 class OverviewTab extends ConsumerWidget {
   const OverviewTab({super.key});
 
@@ -57,7 +57,16 @@ class _Loaded extends ConsumerWidget {
         if (overview.subjects.length > 1) _SubjectChips(subjects: overview.subjects, selected: subject.subjectId),
         TodayMainCard(overview: overview, subject: subject),
         TodayTasksCard(subject: subject),
-        _LibraryTile(subjectId: subject.subjectId),
+        _CardsTile(subjectId: subject.subjectId, total: subject.cards?.total),
+        // Cuối màn, căn giữa: ghi buổi học thủ công.
+        Center(
+          child: TextButton(
+            key: const ValueKey('manual-log'),
+            style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+            onPressed: () => showLogSheet(context, subjectId: subject.subjectId),
+            child: const Text('Ghi buổi học thủ công'),
+          ),
+        ),
       ],
     );
   }
@@ -99,40 +108,49 @@ class _EmptyCard extends StatelessWidget {
       spacing: 10,
       children: [
         const HocTapSectionTitle('Học tập'),
-        Text('Chưa có môn học nào. Tạo môn đầu tiên để đặt mục tiêu mỗi ngày và theo dõi các khóa học.', style: TextStyle(fontSize: 13, color: Theme.of(context).textMuted)),
-        FilledButton(key: const ValueKey('create-first-subject'), onPressed: () => showSubjectSheet(context), child: const Text('Tạo môn đầu tiên')),
+        Text('Chưa có môn học nào. Thêm môn và khóa đầu tiên ở kế hoạch học tập để đặt mục tiêu mỗi ngày.', style: TextStyle(fontSize: 13, color: Theme.of(context).textMuted)),
+        FilledButton(key: const ValueKey('open-plan'), onPressed: () => context.push('/hoc-tap'), child: const Text('Mở kế hoạch học tập')),
       ],
     ),
   );
 }
 
-class _LibraryTile extends StatelessWidget {
-  const _LibraryTile({required this.subjectId});
+/// Hàng điều hướng "Kho thẻ": nhập thẻ, thẻ khó nằm trong màn Kho thẻ.
+class _CardsTile extends StatelessWidget {
+  const _CardsTile({required this.subjectId, this.total});
 
   final String subjectId;
+  final int? total;
 
   @override
-  Widget build(BuildContext context) => InkWell(
-    key: const ValueKey('library-tile'),
-    onTap: () => context.push('/tra-dinh/hoc-tap/thu-vien?subjectId=$subjectId'),
-    child: ScrollCard(
-      glow: ScrollCardGlow.yugen,
-      child: Row(
-        children: [
-          const Icon(Icons.local_library_outlined, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Thư viện', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                Text('Khóa học, thẻ từ vựng, trình độ', style: TextStyle(fontSize: 12, color: Theme.of(context).textMuted)),
-              ],
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return InkWell(
+      key: const ValueKey('cards-tile'),
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => context.push('/tra-dinh/hoc-tap/the?subjectId=$subjectId'),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 56),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(color: scheme.surface, border: Border.all(color: scheme.onSurface.withValues(alpha: 0.12)), borderRadius: BorderRadius.circular(16)),
+        child: Row(
+          spacing: 12,
+          children: [
+            const Icon(Icons.style_outlined, size: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Kho thẻ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  Text(total == null ? 'Nhập thẻ, thẻ khó' : '$total thẻ · nhập thẻ, thẻ khó', key: const ValueKey('cards-tile-sub'), style: TextStyle(fontSize: 12, color: theme.textMuted)),
+                ],
+              ),
             ),
-          ),
-          Icon(Icons.chevron_right, color: Theme.of(context).textFaint),
-        ],
+            Text('›', style: TextStyle(fontSize: 20, color: theme.textMuted)),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }

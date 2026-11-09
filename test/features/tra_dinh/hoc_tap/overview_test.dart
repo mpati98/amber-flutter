@@ -4,7 +4,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart'
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/library_screen.dart';
+import 'package:amber_flutter/shared/router/app_router.dart' show traDinhLegacyTabRedirect;
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
@@ -79,15 +79,15 @@ void main() {
     });
   });
 
-  testWidgets('chưa có môn: thẻ "Tạo môn đầu tiên", không có thẻ chính / thư viện', (tester) async {
+  testWidgets('chưa có môn: lời mời mở kế hoạch, không có thẻ chính / Kho thẻ', (tester) async {
     final api = FakeHocTapApi(overview: StudyOverview(today: '2026-10-14', week: StudyOverview.fromJson(fixtureMap('overview')).week, subjects: const []), subjects: const []);
     await _pumpTab(tester, api);
-    expect(find.text('Tạo môn đầu tiên'), findsOneWidget);
+    expect(find.text('Mở kế hoạch học tập'), findsOneWidget);
     expect(_k('today-main'), findsNothing);
-    expect(_k('library-tile'), findsNothing);
+    expect(_k('cards-tile'), findsNothing);
   });
 
-  testWidgets('Hôm nay: thẻ chính (vòng, phút, tuần), 3 việc, ô Thư viện; chip môn chỉ hiện khi có ≥ 2 môn', (tester) async {
+  testWidgets('Hôm nay: thẻ chính (vòng, phút, tuần), 3 việc, hàng Kho thẻ; chip môn chỉ hiện khi có ≥ 2 môn', (tester) async {
     await _pumpTab(tester, FakeHocTapApi());
     expect(_k('today-ring'), findsOneWidget);
     expect(tester.widget<Text>(_k('today-minutes')).data, '30 / 60 phút');
@@ -99,7 +99,8 @@ void main() {
     expect(_k('task-lesson'), findsOneWidget);
     expect(find.text('First English Sentences'), findsOneWidget);
     expect(_k('task-practice'), findsOneWidget);
-    expect(_k('library-tile'), findsOneWidget);
+    expect(_k('cards-tile'), findsOneWidget);
+    expect(find.text('Thư viện'), findsNothing);
     expect(_k('subject-chip-${FakeHocTapApi().subjects.first.id}'), findsOneWidget, reason: 'fixture có 2 môn');
     expect(_k('week-chart'), findsNothing, reason: 'biểu đồ tuần đã chuyển sang dải chấm');
   });
@@ -239,7 +240,7 @@ void main() {
     expect(_k('set-goal'), findsOneWidget);
   });
 
-  testWidgets('nút "Ghi buổi học thủ công" mở sheet; Luyện AI và Thư viện điều hướng đúng', (tester) async {
+  testWidgets('nút "Ghi buổi học thủ công" mở sheet; Luyện AI và Kho thẻ điều hướng đúng', (tester) async {
     final api = FakeHocTapApi();
     await _pumpTab(tester, api);
     await tester.tap(_k('manual-log'));
@@ -254,10 +255,10 @@ void main() {
     GoRouter.of(tester.element(find.byType(Scaffold).first)).pop();
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(_k('library-tile'));
-    await tester.tap(_k('library-tile'));
+    await tester.ensureVisible(_k('cards-tile'));
+    await tester.tap(_k('cards-tile'));
     await tester.pumpAndSettle();
-    expect(visited.last, '/tra-dinh/hoc-tap/thu-vien?subjectId=${api.overview.subjects.first.subjectId}');
+    expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=${api.overview.subjects.first.subjectId}');
   });
 
   testWidgets('buổi đã ghi hôm nay vẫn hiện trong "Việc hôm nay", bấm → sheet sửa; lý do hiện "Dừng sớm"', (tester) async {
@@ -314,14 +315,11 @@ void main() {
     }
   });
 
-  testWidgets('shell: tab Hôm nay | Lịch | Thống kê, menu ⋯ có "+ Môn" và "Cài đặt môn"', (tester) async {
+  testWidgets('shell: màn Hôm nay không còn thanh tab, không còn menu ⋯ (quản lý môn dời sang Nghị Sự Đường)', (tester) async {
     tester.view.physicalSize = const Size(390, 2600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final router = GoRouter(
-      initialLocation: '/tra-dinh?tab=stats',
-      routes: [GoRoute(path: '/tra-dinh', builder: (_, state) => TraDinhHocTapScreen(tab: state.uri.queryParameters['tab']))],
-    );
+    final router = GoRouter(initialLocation: '/tra-dinh', routes: [GoRoute(path: '/tra-dinh', builder: (_, _) => const TraDinhHocTapScreen())]);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [hocTapApiProvider.overrideWithValue(FakeHocTapApi())],
@@ -329,76 +327,83 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(_k('tile-total'), findsOneWidget, reason: '?tab=stats mở đúng tab Thống kê');
-    expect(find.text('Tổng quan'), findsNothing);
-
-    await tester.tap(find.text('Lịch'));
-    await tester.pumpAndSettle();
-    expect(_k('view-toggle'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(Tab, 'Hôm nay'));
-    await tester.pumpAndSettle();
+    expect(find.byType(TabBar), findsNothing);
+    expect(find.byType(TabBarView), findsNothing);
+    expect(find.widgetWithText(Tab, 'Lịch'), findsNothing);
+    expect(find.text('Hôm nay'), findsWidgets);
+    expect(find.text('‹ Trà Đình'), findsOneWidget);
+    expect(_k('subject-menu'), findsNothing);
     expect(_k('today-main'), findsOneWidget);
-
-    await tester.tap(_k('subject-menu'));
-    await tester.pumpAndSettle();
-    expect(_k('add-subject'), findsOneWidget);
-    expect(_k('edit-subject'), findsOneWidget);
-    await tester.tap(_k('edit-subject'));
-    await tester.pumpAndSettle();
-    expect(find.byType(CloseButton), findsWidgets, reason: 'sheet cài đặt môn mở');
   });
 
-  group('Thư viện', () {
-    testWidgets('3 nhóm: Khóa học, Thẻ từ vựng, Trình độ; mỗi hàng điều hướng đúng môn', (tester) async {
+  group('hàng Kho thẻ và Ghi buổi học thủ công', () {
+    testWidgets('hàng "Kho thẻ" cao ≥ 56, dòng phụ có số thẻ, bấm mở Kho thẻ của môn', (tester) async {
       final api = FakeHocTapApi();
-      final id = api.overview.subjects.first.subjectId;
-      await pumpHocTap(tester, LibraryScreen(subjectId: id), api: api);
-      for (final k in ['active', 'queued', 'done', 'wishlist', 'add-course', 'cards', 'cards-import', 'cards-hard', 'placement']) {
-        expect(_k('lib-$k'), findsOneWidget, reason: k);
-      }
-      expect(find.descendant(of: _k('lib-queued'), matching: find.text('2')), findsOneWidget);
-      expect(find.descendant(of: _k('lib-wishlist'), matching: find.text('1')), findsOneWidget);
-
-      final expected = {
-        'queued': '/tra-dinh/hoc-tap/courses?subjectId=$id&status=QUEUED',
-        'done': '/tra-dinh/hoc-tap/courses?subjectId=$id&status=DONE',
-        'wishlist': '/tra-dinh/hoc-tap/wishlist?subjectId=$id',
-        'cards': '/tra-dinh/hoc-tap/the?subjectId=$id',
-        'cards-import': '/tra-dinh/hoc-tap/the/them?subjectId=$id',
-        'cards-hard': '/tra-dinh/hoc-tap/the/thong-ke?subjectId=$id',
-        'placement': '/tra-dinh/placement-test',
-      };
-      for (final e in expected.entries) {
-        await tester.ensureVisible(_k('lib-${e.key}'));
-        await tester.tap(_k('lib-${e.key}'));
-        await tester.pumpAndSettle();
-        expect(visited.last, e.value, reason: e.key);
-        GoRouter.of(tester.element(find.byType(Scaffold).first)).pop();
-        await tester.pumpAndSettle();
-      }
+      final first = api.overview.subjects.first;
+      await _pumpTab(tester, api);
+      await tester.ensureVisible(_k('cards-tile'));
+      expect(tester.getSize(_k('cards-tile')).height, greaterThanOrEqualTo(56));
+      expect(find.text('Kho thẻ'), findsOneWidget);
+      expect(find.text('Thư viện'), findsNothing);
+      expect(find.textContaining('hập thẻ, thẻ khó'), findsOneWidget);
+      await tester.tap(_k('cards-tile'));
+      await tester.pumpAndSettle();
+      expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=${first.subjectId}');
     });
 
-    testWidgets('"Đang học" mở chi tiết khóa đang học; "Thêm khóa" mở form khóa', (tester) async {
-      final api = FakeHocTapApi();
-      final active = api.overview.subjects.first.activeCourse!;
-      await pumpHocTap(tester, LibraryScreen(subjectId: api.overview.subjects.first.subjectId), api: api);
-      await tester.tap(_k('lib-active'));
+    testWidgets('"Ghi buổi học thủ công": liên kết căn giữa ở cuối màn (cao ≥ 44), mở form ghi buổi học', (tester) async {
+      await _pumpTab(tester, FakeHocTapApi());
+      await tester.ensureVisible(_k('manual-log'));
+      expect(tester.getSize(_k('manual-log')).height, greaterThanOrEqualTo(44));
+      expect(tester.getCenter(_k('manual-log')).dx, closeTo(195, 1.0), reason: 'căn giữa màn 390');
+      expect(tester.getTopLeft(_k('manual-log')).dy, greaterThan(tester.getTopLeft(_k('cards-tile')).dy), reason: 'dưới hàng Kho thẻ');
+      await tester.tap(_k('manual-log'));
       await tester.pumpAndSettle();
-      expect(visited.last, '/tra-dinh/hoc-tap/courses/${active.id}');
-      GoRouter.of(tester.element(find.byType(Scaffold).first)).pop();
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(_k('lib-add-course'));
-      await tester.tap(_k('lib-add-course'));
-      await tester.pumpAndSettle();
-      expect(find.byType(CloseButton), findsWidgets);
+      expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
     });
 
-    testWidgets('không tràn ở 320 px, chữ x2.0', (tester) async {
-      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await pumpHocTap(tester, const LibraryScreen(), api: FakeHocTapApi(), width: 320);
-      expect(tester.takeException(), isNull);
+    testWidgets('chưa có môn: lời mời dẫn tới kế hoạch /hoc-tap', (tester) async {
+      final empty = StudyOverview.fromJson({...fixtureMap('overview'), 'subjects': <Object>[]});
+      await _pumpTab(tester, FakeHocTapApi(overview: empty));
+      expect(_k('open-plan'), findsOneWidget);
+      expect(find.byType(FilledButton), findsOneWidget);
+    });
+  });
+
+  group('toàn màn Hôm nay chỉ có MỘT nút vàng, ở việc tiếp theo', () {
+    Future<void> pumpScreen(WidgetTester tester, StudyOverview o) =>
+        pumpHocTap(tester, const TraDinhHocTapScreen(), api: FakeHocTapApi(overview: o));
+
+    Map<String, dynamic> cards(Map<String, dynamic> s, Map<String, Object?> extra) => {...Map<String, dynamic>.from(s['cards'] as Map), ...extra};
+
+    testWidgets('có thẻ đến hạn → "Ôn thẻ"', (tester) async {
+      await pumpScreen(tester, _practiceOverview((s) => s['cards'] = cards(s, {'total': 10, 'planned': 5, 'finished': 2})));
+      expect(find.byType(FilledButton), findsOneWidget);
+      expect(tester.widget(_k('cards-start')), isA<FilledButton>());
+    });
+
+    testWidgets('hết thẻ nhưng còn bài tiếp → "Học bài tiếp"', (tester) async {
+      await pumpScreen(tester, _practiceOverview((s) => s['cards'] = cards(s, {'total': 10, 'planned': 5, 'finished': 5})));
+      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.descendant(of: _k('task-lesson'), matching: find.byType(FilledButton)), findsOneWidget);
+    });
+
+    testWidgets('chỉ còn Luyện AI → "Luyện nói với AI"', (tester) async {
+      await pumpScreen(tester, _practiceOverview((s) {
+        s['next'] = null;
+        s['cards'] = cards(s, {'total': 10, 'planned': 3, 'finished': 3});
+      }));
+      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.descendant(of: _k('task-practice'), matching: find.byType(FilledButton)), findsOneWidget);
+    });
+
+    testWidgets('mọi việc xong → không có nút vàng nào trên cả màn', (tester) async {
+      await pumpScreen(tester, _practiceOverview((s) {
+        s['next'] = null;
+        s['cards'] = cards(s, {'total': 10, 'planned': 3, 'finished': 3});
+        s['today'] = {...Map<String, dynamic>.from(s['today'] as Map), 'minutes': 60, 'done': true};
+      }));
+      expect(find.byType(FilledButton), findsNothing);
     });
   });
 
@@ -424,7 +429,8 @@ void main() {
         routes: [
           GoRoute(
             path: '/tra-dinh',
-            builder: (_, state) => TraDinhHocTapScreen(tab: state.uri.queryParameters['tab'], openLog: state.uri.queryParameters['openLog'] == '1', subjectId: state.uri.queryParameters['subjectId']),
+            redirect: (_, state) => traDinhLegacyTabRedirect(state.uri),
+            builder: (_, state) => TraDinhHocTapScreen(openLog: state.uri.queryParameters['openLog'] == '1', subjectId: state.uri.queryParameters['subjectId']),
           ),
         ],
       );
@@ -446,24 +452,22 @@ void main() {
       await tester.tap(find.byType(CloseButton));
       await tester.pumpAndSettle();
       expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsNothing);
-      // Không tự mở lại khi rebuild / chuyển tab.
-      await tester.tap(find.text('Lịch'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(Tab, 'Hôm nay'));
-      await tester.pumpAndSettle();
+      // Không tự mở lại khi rebuild.
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsNothing);
       expect(find.byKey(const ValueKey('today-main')), findsOneWidget);
     });
 
-    testWidgets('mở từ tab khác vẫn về Hôm nay; không có openLog thì không mở sheet', (tester) async {
+    testWidgets('liên kết cũ kèm ?tab= vẫn giữ openLog / subjectId; không có openLog thì không mở sheet', (tester) async {
       final api = FakeHocTapApi();
-      final router = await pumpRoute(tester, api, '/tra-dinh?tab=stats&openLog=1&subjectId=${api.subjects.first.id}');
+      final router = await pumpRoute(tester, api, '/tra-dinh?tab=today&openLog=1&subjectId=${api.subjects.first.id}');
       expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);
       expect(router.state.uri.toString(), '/tra-dinh');
 
       final api2 = FakeHocTapApi();
-      await pumpRoute(tester, api2, '/tra-dinh?tab=stats');
+      await pumpRoute(tester, api2, '/tra-dinh?tab=today');
       expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsNothing);
+      expect(find.byKey(const ValueKey('today-main')), findsOneWidget);
     });
   });
 }

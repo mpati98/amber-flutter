@@ -1,7 +1,7 @@
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_stats.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/providers/hoc_tap_provider.dart' show StatsQuery;
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
+import 'package:amber_flutter/features/nghi_su_duong/screens/hoc_tap_stats_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/stats_chart.dart';
 import 'package:amber_flutter/shared/theme/app_theme.dart';
@@ -24,7 +24,7 @@ StudyStats _stats(String name, [void Function(Map<String, dynamic> json)? edit])
 Finder _k(String key) => find.byKey(ValueKey(key));
 late GoRouter _router;
 
-Future<FakeHocTapApi> _pump(WidgetTester tester, {FakeHocTapApi? api, String location = '/tra-dinh?tab=stats', bool settle = true}) async {
+Future<FakeHocTapApi> _pump(WidgetTester tester, {FakeHocTapApi? api, String location = '/hoc-tap/thong-ke', bool settle = true}) async {
   final fake = api ?? FakeHocTapApi();
   tester.view.physicalSize = const Size(390, 4200);
   tester.view.devicePixelRatio = 1;
@@ -32,16 +32,7 @@ Future<FakeHocTapApi> _pump(WidgetTester tester, {FakeHocTapApi? api, String loc
   _router = GoRouter(
     initialLocation: location,
     routes: [
-      GoRoute(
-        path: '/tra-dinh',
-        builder: (_, state) => TraDinhHocTapScreen(
-          tab: state.uri.queryParameters['tab'],
-          view: state.uri.queryParameters['view'],
-          date: state.uri.queryParameters['date'],
-          range: state.uri.queryParameters['range'],
-          subject: state.uri.queryParameters['subject'],
-        ),
-      ),
+      GoRoute(path: '/hoc-tap/thong-ke', builder: (_, state) => HocTapStatsScreen(range: state.uri.queryParameters['range'], subject: state.uri.queryParameters['subject'])),
     ],
   );
   await tester.pumpWidget(ProviderScope(overrides: [hocTapApiProvider.overrideWithValue(fake)], child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: _router)));
@@ -130,14 +121,14 @@ void main() {
       await tester.tap(_k('range-7'));
       await tester.pumpAndSettle();
       expect(api.statsCalls.last, (subjectId: id, range: '7'));
-      expect(_router.state.uri.toString(), '/tra-dinh?tab=stats&range=7&subject=$id');
+      expect(_router.state.uri.toString(), '/hoc-tap/thong-ke?range=7&subject=$id');
       expect(find.byKey(const ValueKey('bar-6')), findsOneWidget);
       expect(find.byKey(const ValueKey('bar-7')), findsNothing, reason: '7 cột');
 
       await tester.tap(_k('stats-subject-all'));
       await tester.pumpAndSettle();
       expect(api.statsCalls.last, (subjectId: null, range: '7'));
-      expect(_router.state.uri.toString(), '/tra-dinh?tab=stats&range=7&subject=all');
+      expect(_router.state.uri.toString(), '/hoc-tap/thong-ke?range=7&subject=all');
 
       await tester.tap(_k('range-all'));
       await tester.pumpAndSettle();
@@ -150,10 +141,10 @@ void main() {
 
     testWidgets('URL có sẵn range + subject; subject lạ rơi về môn đầu', (tester) async {
       final api = FakeHocTapApi();
-      await _pump(tester, api: api, location: '/tra-dinh?tab=stats&range=7&subject=all');
+      await _pump(tester, api: api, location: '/hoc-tap/thong-ke?range=7&subject=all');
       expect(api.statsCalls.last, (subjectId: null, range: '7'));
       final api2 = FakeHocTapApi();
-      await _pump(tester, api: api2, location: '/tra-dinh?tab=stats&range=bậy&subject=khong-co');
+      await _pump(tester, api: api2, location: '/hoc-tap/thong-ke?range=bậy&subject=khong-co');
       expect(api2.statsCalls.last, (subjectId: api2.subjects.first.id, range: '30'));
     });
 
@@ -192,7 +183,7 @@ void main() {
     });
 
     testWidgets('bucket week (range=all): 18 cột theo tuần, tiêu đề và nhãn theo tuần', (tester) async {
-      final api = await _pump(tester, location: '/tra-dinh?tab=stats&range=all&subject=x');
+      final api = await _pump(tester, location: '/hoc-tap/thong-ke?range=all&subject=x');
       expect(api.statsCalls.last.range, 'all');
       expect(find.text('Phút theo tuần'), findsOneWidget);
       expect(find.byKey(const ValueKey('bar-17')), findsOneWidget);
@@ -281,7 +272,7 @@ void main() {
         list[2]['deltaDays'] = null; // môn chưa có mốc → không có dòng
       });
       api.statsResponses['30|all'] = stats;
-      await _pump(tester, api: api, location: '/tra-dinh?tab=stats&range=30&subject=all');
+      await _pump(tester, api: api, location: '/hoc-tap/thong-ke?range=30&subject=all');
       expect(find.text('Tiếng Anh · Cả lộ trình: sớm 2 ngày'), findsOneWidget);
       expect(find.text('Lập trình · Cả lộ trình: trễ 4 ngày'), findsOneWidget);
       expect(find.textContaining('Cả lộ trình'), findsNWidgets(2));
@@ -328,14 +319,6 @@ void main() {
       expect(find.textContaining('Không tải được thống kê'), findsNothing);
       expect(_k('tile-total'), findsOneWidget);
     });
-
-    testWidgets('chuyển sang tab Thống kê từ thanh tab; mutation không liên quan không phá URL', (tester) async {
-      await _pump(tester, location: '/tra-dinh');
-      await tester.tap(find.text('Thống kê'));
-      await tester.pumpAndSettle();
-      expect(_k('tile-total'), findsOneWidget);
-      expect(_router.state.uri.queryParameters['tab'], 'stats');
-    });
   });
 
   group('byCourse có hai mục không khóa: "Ôn tập" và "Ôn thẻ"', () {
@@ -374,7 +357,7 @@ void main() {
         ...(json['byCourse'] as List),
       ];
       final api = FakeHocTapApi()..statsResponses['7|one'] = StudyStats.fromJson(json);
-      await _pump(tester, api: api, location: '/tra-dinh?tab=stats&range=7');
+      await _pump(tester, api: api, location: '/hoc-tap/thong-ke?range=7');
       expect(tester.takeException(), isNull, reason: 'khoá trùng sẽ ném lỗi ở đây');
       expect(_k('by-course-review'), findsOneWidget);
       expect(_k('by-course-cards'), findsOneWidget);

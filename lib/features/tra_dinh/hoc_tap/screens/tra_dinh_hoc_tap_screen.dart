@@ -2,32 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../shared/theme/app_theme.dart';
+import '../../../../shared/widgets/app_bar_back.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../widgets/log_sheet.dart';
-import '../widgets/subject_sheet.dart';
 import 'overview_tab.dart';
-import 'schedule_tab.dart';
-import 'stats_tab.dart';
-import '../../../../shared/widgets/app_bar_back.dart';
 
-const hocTapTabs = ['overview', 'schedule', 'stats'];
-
-/// /tra-dinh: Học tập của Trà Đình, 3 tab Hôm nay | Lịch | Thống kê. Tab lưu ở `?tab=`.
+/// /tra-dinh: màn "Hôm nay" của Trà Đình (phòng học hằng ngày). Lịch dự kiến, Thống kê, quản lý khóa / môn nằm ở Nghị Sự Đường
+/// (/hoc-tap...). Các liên kết cũ `/tra-dinh?tab=…` được router chuyển hướng (xem app_router.dart).
 ///
-/// `?openLog=1&subjectId=…` (từ thẻ routine STUDY): mở tab Hôm nay, tự mở sheet ghi buổi học MỘT lần rồi xoá query khỏi URL.
+/// `?openLog=1&subjectId=…` (từ thẻ routine STUDY): chọn môn đó, tự mở sheet ghi buổi học MỘT lần rồi xoá query khỏi URL.
 class TraDinhHocTapScreen extends ConsumerStatefulWidget {
-  const TraDinhHocTapScreen({super.key, this.tab, this.openLog = false, this.subjectId, this.view, this.date, this.range, this.subject});
+  const TraDinhHocTapScreen({super.key, this.openLog = false, this.subjectId});
 
-  final String? tab;
-
-  /// Tab Lịch: `week` | `month` và ngày mốc "YYYY-MM-DD".
-  final String? view;
-  final String? date;
-
-  /// Tab Thống kê: `7` | `30` | `all` và môn (`all` = tất cả môn, không có = môn đang chọn).
-  final String? range;
-  final String? subject;
   final bool openLog;
   final String? subjectId;
 
@@ -35,101 +21,31 @@ class TraDinhHocTapScreen extends ConsumerStatefulWidget {
   ConsumerState<TraDinhHocTapScreen> createState() => _TraDinhHocTapScreenState();
 }
 
-class _TraDinhHocTapScreenState extends ConsumerState<TraDinhHocTapScreen> with SingleTickerProviderStateMixin {
-  late final _controller = TabController(length: hocTapTabs.length, vsync: this, initialIndex: _indexOf(widget.tab));
-
-  static int _indexOf(String? tab) {
-    final i = hocTapTabs.indexOf(tab ?? '');
-    return i < 0 ? 0 : i;
-  }
-
+class _TraDinhHocTapScreenState extends ConsumerState<TraDinhHocTapScreen> {
   @override
   void initState() {
     super.initState();
     if (widget.openLog) WidgetsBinding.instance.addPostFrameCallback((_) => _openLog());
-    _rememberSchedule();
-    _controller.addListener(() {
-      if (_controller.indexIsChanging) return;
-      final tab = hocTapTabs[_controller.index];
-      if (tab == (widget.tab ?? 'overview')) return;
-      // Quay lại tab Lịch: khôi phục chế độ + ngày đang xem (giữ trong provider, mất khi tải lại trang).
-      final nav = tab == 'schedule' ? ref.read(scheduleNavProvider) : null;
-      context.go(nav == null ? '/tra-dinh?tab=$tab' : '/tra-dinh?tab=$tab&view=${nav.view}&date=${nav.date}');
-    });
   }
 
   @override
   void didUpdateWidget(TraDinhHocTapScreen old) {
     super.didUpdateWidget(old);
-    _rememberSchedule();
     // Chỉ khi openLog vừa bật (false → true): sau khi mở sheet ta xoá query nên không lặp lại.
     if (widget.openLog && !old.openLog) WidgetsBinding.instance.addPostFrameCallback((_) => _openLog());
-    final i = _indexOf(widget.tab);
-    if (i != _controller.index) _controller.animateTo(i);
-  }
-
-  /// URL đang ở tab Lịch với view/date → nhớ lại cho lần chuyển tab sau.
-  void _rememberSchedule() {
-    final view = widget.view;
-    final date = widget.date;
-    if (widget.tab == 'schedule' && (view == 'week' || view == 'month') && date != null) {
-      Future.microtask(() {
-        if (mounted) ref.read(scheduleNavProvider.notifier).remember(view!, date);
-      });
-    }
   }
 
   void _openLog() {
     if (!mounted) return;
     final subjectId = widget.subjectId;
     if (subjectId != null) ref.read(selectedSubjectIdProvider.notifier).select(subjectId);
-    context.go('/tra-dinh'); // xoá openLog / subjectId / tab khỏi URL → Tổng quan
+    context.go('/tra-dinh'); // xoá openLog / subjectId khỏi URL → Hôm nay
     showLogSheet(context, subjectId: subjectId);
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(),
-        title: const Text('Trà Đình'),
-        actions: [_SubjectMenu()],
-        bottom: TabBar(
-          controller: _controller,
-          indicatorColor: AppColors.kincha400,
-          tabs: const [Tab(text: 'Hôm nay'), Tab(text: 'Lịch'), Tab(text: 'Thống kê')],
-        ),
-      ),
-      body: TabBarView(
-        controller: _controller,
-        children: [const OverviewTab(), ScheduleTab(view: widget.view, date: widget.date), StatsTab(range: widget.range, subject: widget.subject)],
-      ),
-    );
-  }
-}
-
-/// Menu ⋯ ở header: thêm môn và cài đặt môn đang chọn (môn đầu tiên nếu chưa chọn).
-class _SubjectMenu extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(selectedSubjectIdProvider);
-    final subjects = ref.watch(studyOverviewProvider).value?.subjects ?? const [];
-    final current = subjects.where((s) => s.subjectId == selected).firstOrNull ?? subjects.firstOrNull;
-    return PopupMenuButton<String>(
-      key: const ValueKey('subject-menu'),
-      tooltip: 'Môn học',
-      icon: const Icon(Icons.more_horiz),
-      onSelected: (v) => showSubjectSheet(context, subjectId: v == 'edit' ? current?.subjectId : null),
-      itemBuilder: (_) => [
-        const PopupMenuItem(value: 'add', key: ValueKey('add-subject'), child: Text('+ Môn')),
-        if (current != null) const PopupMenuItem(value: 'edit', key: ValueKey('edit-subject'), child: Text('Cài đặt môn')),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(leading: const AppBarBack(label: 'Trà Đình'), leadingWidth: 130, title: const Text('Hôm nay')),
+    body: const OverviewTab(),
+  );
 }

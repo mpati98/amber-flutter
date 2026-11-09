@@ -37,7 +37,7 @@ class CourseListScreen extends ConsumerWidget {
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyCoursesProvider(query).future),
         child: switch (async.settled) {
-          AsyncData(:final value) when value.isEmpty => ListView(children: [Padding(padding: const EdgeInsets.all(32), child: Center(child: Text('Chưa có khóa nào.', style: TextStyle(color: Theme.of(context).textMuted)))), const _TrashEntry()]),
+          AsyncData(:final value) when value.isEmpty => ListView(children: [Padding(padding: const EdgeInsets.all(32), child: Center(child: Text('Chưa có khóa nào.', style: TextStyle(color: Theme.of(context).textMuted))))]),
           AsyncData(:final value) => ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -46,7 +46,6 @@ class CourseListScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: _CourseTile(course: c, index: i, last: i == value.length - 1, ordered: queued),
                 ),
-              const _TrashEntry(),
             ],
           ),
           AsyncError() => ListView(children: [HocTapLoadError(what: 'danh sách khóa', onRetry: () => ref.invalidate(studyCoursesProvider(query)))]),
@@ -110,18 +109,4 @@ class _CourseTile extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Lối vào Thùng rác: hàng kín đáo ở cuối danh sách khóa. TẠM THỜI — sẽ dời về "Chi tiết kế hoạch" ở Nghị Sự Đường.
-class _TrashEntry extends StatelessWidget {
-  const _TrashEntry();
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    key: const ValueKey('trash-entry'),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-    title: Text('Thùng rác', style: TextStyle(fontSize: 14, color: Theme.of(context).textMuted)),
-    trailing: Icon(Icons.chevron_right, color: Theme.of(context).textMuted),
-    onTap: () => context.push('/tra-dinh/hoc-tap/thung-rac'),
-  );
 }

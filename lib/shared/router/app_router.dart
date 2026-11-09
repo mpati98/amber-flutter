@@ -32,7 +32,6 @@ import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart'
 import '../../features/tra_dinh/hoc_tap/screens/course_list_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/trash_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
-import '../../features/tra_dinh/hoc_tap/screens/library_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/wishlist_screen.dart';
 import '../../features/tra_dinh/screens/placement_test_screen.dart';
 import '../../features/tra_dinh/screens/practice_chat_screen.dart';
@@ -98,6 +97,27 @@ Uri _location(GoRouter router, GoRouterState state) {
   final current = router.routerDelegate.currentConfiguration;
   if (current.isNotEmpty && state.uri == current.uri) return router.state.uri;
   return state.uri;
+}
+
+/// Chuyển hướng liên kết cũ `/tra-dinh?tab=…`: schedule → /hoc-tap/lich (giữ view, date), stats → /hoc-tap/thong-ke (giữ range,
+/// subject), library / thu-vien → /hoc-tap; tab khác hoặc không xác định (kể cả today / overview) → /tra-dinh bỏ các tham số của tab cũ
+/// nhưng giữ `openLog` / `subjectId`. Không có `tab` → null (không chuyển hướng).
+String? traDinhLegacyTabRedirect(Uri uri) {
+  if (uri.path != '/tra-dinh') return null;
+  final params = uri.queryParameters;
+  final tab = params['tab'];
+  if (tab == null) return null;
+  String build(String path, Iterable<String> keep) {
+    final q = {for (final k in keep) if (params[k] != null) k: params[k]!};
+    return Uri(path: path, queryParameters: q.isEmpty ? null : q).toString();
+  }
+
+  return switch (tab) {
+    'schedule' => build('/hoc-tap/lich', const ['view', 'date']),
+    'stats' => build('/hoc-tap/thong-ke', const ['range', 'subject']),
+    'library' || 'thu-vien' => '/hoc-tap',
+    _ => build('/tra-dinh', const ['openLog', 'subjectId']),
+  };
 }
 
 /// Tạo 1 lần cho cả app — KHÔNG watch authControllerProvider ở đây (dựng lại
@@ -203,14 +223,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/tra-dinh',
+        // Liên kết cũ /tra-dinh?tab=… (Trà Đình từng có tab Lịch / Thống kê) → màn mới ở Nghị Sự Đường.
+        redirect: (_, state) => traDinhLegacyTabRedirect(state.uri),
         builder: (_, state) => TraDinhHocTapScreen(
-          tab: state.uri.queryParameters['tab'],
           openLog: state.uri.queryParameters['openLog'] == '1',
           subjectId: state.uri.queryParameters['subjectId'],
-          view: state.uri.queryParameters['view'],
-          date: state.uri.queryParameters['date'],
-          range: state.uri.queryParameters['range'],
-          subject: state.uri.queryParameters['subject'],
         ),
         routes: [
           // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.
@@ -244,10 +261,8 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'hoc-tap/thung-rac',
             builder: (_, _) => const TrashScreen(),
           ),
-          GoRoute(
-            path: 'hoc-tap/thu-vien',
-            builder: (_, state) => LibraryScreen(subjectId: state.uri.queryParameters['subjectId']),
-          ),
+          // Màn Thư viện đã gỡ: mọi mục của nó có đường vào mới (kế hoạch /hoc-tap, Chi tiết kế hoạch, Kho thẻ).
+          GoRoute(path: 'hoc-tap/thu-vien', redirect: (_, _) => '/hoc-tap'),
           GoRoute(
             path: 'hoc-tap/wishlist',
             builder: (_, state) => WishlistScreen(

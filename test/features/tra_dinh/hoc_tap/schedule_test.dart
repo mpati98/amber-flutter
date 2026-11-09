@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
+import 'package:amber_flutter/features/nghi_su_duong/screens/hoc_tap_schedule_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/schedule_day_row.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:amber_flutter/shared/widgets/progress_bar.dart';
@@ -38,16 +38,7 @@ Future<void> _pump(WidgetTester tester, FakeHocTapApi api, String location, {boo
   _router = GoRouter(
     initialLocation: location,
     routes: [
-      GoRoute(
-        path: '/tra-dinh',
-        builder: (_, state) => TraDinhHocTapScreen(
-          tab: state.uri.queryParameters['tab'],
-          openLog: state.uri.queryParameters['openLog'] == '1',
-          subjectId: state.uri.queryParameters['subjectId'],
-          view: state.uri.queryParameters['view'],
-          date: state.uri.queryParameters['date'],
-        ),
-      ),
+      GoRoute(path: '/hoc-tap/lich', builder: (_, state) => HocTapScheduleScreen(view: state.uri.queryParameters['view'], date: state.uri.queryParameters['date'])),
     ],
   );
   await tester.pumpWidget(ProviderScope(overrides: [hocTapApiProvider.overrideWithValue(api)], child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: _router)));
@@ -66,8 +57,8 @@ FakeHocTapApi _api({StudySchedule? week, StudySchedule? oct, StudySchedule? nov}
   return api;
 }
 
-const _weekUrl = '/tra-dinh?tab=schedule&view=week&date=2026-10-15';
-const _monthUrl = '/tra-dinh?tab=schedule&view=month&date=2026-10-15';
+const _weekUrl = '/hoc-tap/lich?view=week&date=2026-10-15';
+const _monthUrl = '/hoc-tap/lich?view=month&date=2026-10-15';
 
 void main() {
   group('model', () {
@@ -238,26 +229,6 @@ void main() {
       expect(_k('missing-reason-2026-10-14'), findsOneWidget);
     });
 
-    testWidgets('chuyển tab rồi quay lại Lịch: nhớ view + date (provider), không phải về tuần hôm nay', (tester) async {
-      await _pump(tester, _api(), _monthUrl);
-      expect(find.text('Tháng 10/2026'), findsOneWidget);
-      await tester.tap(find.widgetWithText(Tab, 'Hôm nay'));
-      await tester.pumpAndSettle();
-      expect(_router.state.uri.toString(), '/tra-dinh?tab=overview');
-      await tester.tap(find.text('Lịch'));
-      await tester.pumpAndSettle();
-      expect(_router.state.uri.toString(), '/tra-dinh?tab=schedule&view=month&date=2026-10-15');
-      expect(find.text('Tháng 10/2026'), findsOneWidget);
-      // điều hướng tiếp (tháng sau) cũng được nhớ
-      await tester.tap(_k('nav-next'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Thống kê'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Lịch'));
-      await tester.pumpAndSettle();
-      expect(_router.state.uri.toString(), '/tra-dinh?tab=schedule&view=month&date=2026-11-01');
-    });
-
     testWidgets('hôm nay chưa có buổi: hiện gợi ý từ plannedItems', (tester) async {
       final week = _sched('schedule_week', (j) {
         final d = _day(j, '2026-10-15');
@@ -279,7 +250,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.scheduleCalls.last.from, '2026-10-19');
       expect(api.scheduleCalls.last.to, '2026-10-25');
-      expect(_router.state.uri.toString(), '/tra-dinh?tab=schedule&view=week&date=2026-10-22');
+      expect(_router.state.uri.toString(), '/hoc-tap/lich?view=week&date=2026-10-22');
       expect(find.text('19/10 – 25/10'), findsOneWidget);
 
       await tester.tap(_k('nav-prev'));
@@ -296,7 +267,7 @@ void main() {
 
     testWidgets('URL không có view/date → tuần chứa hôm nay; date sai bị bỏ qua', (tester) async {
       final api = _api();
-      await _pump(tester, api, '/tra-dinh?tab=schedule&date=2026-02-30');
+      await _pump(tester, api, '/hoc-tap/lich?date=2026-02-30');
       final t = vnToday();
       expect(api.scheduleCalls.last.from.compareTo(t) <= 0 && api.scheduleCalls.last.to.compareTo(t) >= 0, isTrue);
     });
@@ -306,7 +277,7 @@ void main() {
       await _pump(tester, api, _weekUrl);
       await tester.tap(_k('view-month'));
       await tester.pumpAndSettle();
-      expect(_router.state.uri.toString(), '/tra-dinh?tab=schedule&view=month&date=2026-10-15');
+      expect(_router.state.uri.toString(), '/hoc-tap/lich?view=month&date=2026-10-15');
       expect((api.scheduleCalls.last.from, api.scheduleCalls.last.to), ('2026-09-28', '2026-11-01'));
       await tester.tap(_k('view-week'));
       await tester.pumpAndSettle();
@@ -385,7 +356,7 @@ void main() {
     });
 
     testWidgets('lưới 42 ngày (tháng 11/2026): 6 hàng, 6 ô mờ đầu và 6 ô mờ cuối', (tester) async {
-      await _pump(tester, _api(), '/tra-dinh?tab=schedule&view=month&date=2026-11-10');
+      await _pump(tester, _api(), '/hoc-tap/lich?view=month&date=2026-11-10');
       expect(find.descendant(of: _k('month-grid'), matching: find.byType(InkWell)).evaluate().length, 42);
       expect(find.byWidgetPredicate((w) => w is Opacity && w.key.toString().contains('dim-')).evaluate().length, 12);
     });

@@ -251,6 +251,48 @@ void main() {
       expect(routePath('/hoc-tap/thong-ke?range=7&subject=all'), 'thong-ke');
     });
 
+    test('liên kết cũ /tra-dinh?tab=… được chuyển hướng', () {
+      String? r(String u) => traDinhLegacyTabRedirect(Uri.parse(u));
+      expect(r('/tra-dinh'), isNull);
+      expect(r('/tra-dinh?openLog=1&subjectId=s1'), isNull, reason: 'liên kết sâu của routine STUDY không bị đụng');
+      expect(r('/tra-dinh?tab=schedule'), '/hoc-tap/lich');
+      expect(r('/tra-dinh?tab=schedule&view=month&date=2026-10-15'), '/hoc-tap/lich?view=month&date=2026-10-15');
+      expect(r('/tra-dinh?tab=stats'), '/hoc-tap/thong-ke');
+      expect(r('/tra-dinh?tab=stats&range=7&subject=all'), '/hoc-tap/thong-ke?range=7&subject=all');
+      expect(r('/tra-dinh?tab=library'), '/hoc-tap');
+      expect(r('/tra-dinh?tab=thu-vien'), '/hoc-tap');
+      expect(r('/tra-dinh?tab=today'), '/tra-dinh');
+      expect(r('/tra-dinh?tab=overview'), '/tra-dinh');
+      expect(r('/tra-dinh?tab=bậy'), '/tra-dinh');
+      expect(r('/tra-dinh?tab=today&openLog=1&subjectId=s1'), '/tra-dinh?openLog=1&subjectId=s1', reason: 'tab không xác định: giữ openLog / subjectId');
+      expect(r('/tra-dinh/luyen-tap?tab=stats'), isNull, reason: 'chỉ áp dụng cho đúng /tra-dinh');
+    });
+
+    testWidgets('GoRouter với redirect thật: ?tab=schedule | stats | library đổi route, ?tab=today giữ /tra-dinh và openLog', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const SizedBox()),
+          GoRoute(path: '/tra-dinh', redirect: (_, state) => traDinhLegacyTabRedirect(state.uri), builder: (_, _) => const SizedBox()),
+          GoRoute(path: '/hoc-tap', builder: (_, _) => const SizedBox()),
+          GoRoute(path: '/hoc-tap/lich', builder: (_, _) => const SizedBox()),
+          GoRoute(path: '/hoc-tap/thong-ke', builder: (_, _) => const SizedBox()),
+        ],
+      );
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      Future<String> go(String u) async {
+        router.go(u);
+        await tester.pumpAndSettle();
+        return router.routerDelegate.currentConfiguration.uri.toString();
+      }
+
+      expect(await go('/tra-dinh?tab=schedule&view=week&date=2026-10-15'), '/hoc-tap/lich?view=week&date=2026-10-15');
+      expect(await go('/tra-dinh?tab=stats&range=30&subject=all'), '/hoc-tap/thong-ke?range=30&subject=all');
+      expect(await go('/tra-dinh?tab=library'), '/hoc-tap');
+      expect(await go('/tra-dinh?tab=today&openLog=1&subjectId=s1'), '/tra-dinh?openLog=1&subjectId=s1');
+      expect(await go('/tra-dinh?openLog=1&subjectId=s1'), '/tra-dinh?openLog=1&subjectId=s1');
+    });
+
     testWidgets('các route Học tập của Trà Đình đứng trước :sessionId', (
       tester,
     ) async {

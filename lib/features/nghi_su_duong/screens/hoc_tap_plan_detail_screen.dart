@@ -6,7 +6,7 @@ import '../../tra_dinh/hoc_tap/widgets/hoc_tap_common.dart';
 import '../widgets/plan_widgets.dart';
 
 /// /hoc-tap/chi-tiet: các lối vào phần ít dùng của Học tập. Lịch dự kiến và Thống kê là màn của Nghị Sự Đường (/hoc-tap/lich,
-/// /hoc-tap/thong-ke); Muốn mua và Thùng rác là màn Trà Đình hiện có. Không nút vàng.
+/// /hoc-tap/thong-ke); Muốn mua, Khóa đã xong và Thùng rác là màn Trà Đình hiện có. Không nút vàng.
 /// Không có hàng "Lý do thiếu": lý do được nhập ở dòng ngày thiếu trong Lịch dự kiến, Thống kê chỉ tổng hợp lại.
 class HocTapPlanDetailScreen extends StatelessWidget {
   const HocTapPlanDetailScreen({super.key});
@@ -17,6 +17,7 @@ class HocTapPlanDetailScreen extends StatelessWidget {
       ('plan-schedule', 'Lịch dự kiến', '/hoc-tap/lich'),
       ('plan-stats', 'Thống kê', '/hoc-tap/thong-ke'),
       ('plan-wishlist', 'Muốn mua', '/tra-dinh/hoc-tap/wishlist'),
+      ('plan-done', 'Khóa đã xong', '/tra-dinh/hoc-tap/courses?status=DONE'),
       ('plan-trash', 'Thùng rác', '/tra-dinh/hoc-tap/thung-rac'),
     ];
     return Scaffold(

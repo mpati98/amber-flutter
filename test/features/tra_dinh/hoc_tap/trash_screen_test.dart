@@ -213,28 +213,23 @@ void main() {
 
   group('lối vào Thùng rác và xoá khóa', () {
     testWidgets(
-      'danh sách khóa có hàng "Thùng rác" kín đáo ở cuối, bấm mở /tra-dinh/hoc-tap/thung-rac',
+      'danh sách khóa không còn hàng "Thùng rác" (lối vào đã dời sang Chi tiết kế hoạch), kể cả khi rỗng',
       (tester) async {
-        final api = FakeHocTapApi();
         await pumpHocTap(
           tester,
           const CourseListScreen(statuses: []),
-          api: api,
+          api: FakeHocTapApi(),
         );
-        await tester.ensureVisible(find.byKey(const ValueKey('trash-entry')));
-        expect(find.text('Thùng rác'), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-        await tester.tap(find.byKey(const ValueKey('trash-entry')));
-        await tester.pumpAndSettle();
-        expect(visited, contains('/tra-dinh/hoc-tap/thung-rac'));
+        expect(find.byKey(const ValueKey('trash-entry')), findsNothing);
+        expect(find.text('Thùng rác'), findsNothing);
+        await pumpHocTap(
+          tester,
+          const CourseListScreen(statuses: []),
+          api: FakeHocTapApi(courses: []),
+        );
+        expect(find.byKey(const ValueKey('trash-entry')), findsNothing);
       },
     );
-
-    testWidgets('danh sách rỗng vẫn có lối vào Thùng rác', (tester) async {
-      final api = FakeHocTapApi(courses: []);
-      await pumpHocTap(tester, const CourseListScreen(statuses: []), api: api);
-      expect(find.byKey(const ValueKey('trash-entry')), findsOneWidget);
-    });
 
     testWidgets(
       'chi tiết khóa: nút "Xoá khóa" nằm trong khu "Nâng cao" thu gọn, viền đỏ, không phải nút vàng',

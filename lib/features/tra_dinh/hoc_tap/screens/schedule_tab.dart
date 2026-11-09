@@ -18,15 +18,15 @@ import '../widgets/schedule_parts.dart';
 import '../widgets/schedule_week_view.dart';
 import '../widgets/subject_sheet.dart';
 
-/// Tab Lịch: xem tuần / tháng của môn đang chọn. Chế độ và mốc ngày nằm trên URL: `?tab=schedule&view=week|month&date=YYYY-MM-DD`.
+/// Thân màn Lịch dự kiến (/hoc-tap/lich): xem tuần / tháng của môn đang chọn. Chế độ và mốc ngày nằm trên URL: `?view=week|month&date=YYYY-MM-DD`.
 class ScheduleTab extends ConsumerWidget {
-  const ScheduleTab({super.key, this.view, this.date, this.base = '/tra-dinh?tab=schedule', this.replaceRoute = false});
+  const ScheduleTab({super.key, this.view, this.date, this.base = '/hoc-tap/lich', this.replaceRoute = true});
 
   final String? view;
   final String? date;
 
-  /// URL gốc khi đổi tuần / tháng: tab của Trà Đình (mặc định) hoặc `/hoc-tap/lich` ở Nghị Sự Đường (kèm [replaceRoute]
-  /// để thay màn hiện tại thay vì xoá cả ngăn xếp, nút quay lại vẫn về "Chi tiết kế hoạch").
+  /// URL gốc khi đổi tuần / tháng: `/hoc-tap/lich` ở Nghị Sự Đường ([replaceRoute] thay màn hiện tại thay vì xoá cả ngăn xếp,
+  /// nút quay lại vẫn về "Chi tiết kế hoạch").
   final String base;
   final bool replaceRoute;
 

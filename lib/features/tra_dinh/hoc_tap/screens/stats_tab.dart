@@ -28,14 +28,14 @@ String formatFullDate(String iso) {
   return p.length == 3 ? '${p[2]}/${p[1]}/${p[0]}' : iso;
 }
 
-/// Tab Thống kê: khoảng + môn nằm trên URL `?tab=stats&range=7|30|all&subject=<id|all>`.
+/// Thân màn Thống kê (/hoc-tap/thong-ke): khoảng + môn nằm trên URL `?range=7|30|all&subject=<id|all>`.
 class StatsTab extends ConsumerWidget {
-  const StatsTab({super.key, this.range, this.subject, this.base = '/tra-dinh?tab=stats', this.replaceRoute = false});
+  const StatsTab({super.key, this.range, this.subject, this.base = '/hoc-tap/thong-ke', this.replaceRoute = true});
 
   final String? range;
   final String? subject;
 
-  /// Xem [ScheduleTab.base]: tab của Trà Đình (mặc định) hoặc `/hoc-tap/thong-ke` ở Nghị Sự Đường.
+  /// Xem [ScheduleTab.base]: mặc định `/hoc-tap/thong-ke`.
   final String base;
   final bool replaceRoute;
 
