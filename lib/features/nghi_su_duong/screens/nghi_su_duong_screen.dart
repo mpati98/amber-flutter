@@ -6,10 +6,11 @@ import '../../../shared/theme/app_theme.dart';
 import '../../../shared/utils/currency.dart';
 import '../../../shared/widgets/progress_bar.dart';
 import '../../../shared/widgets/scroll_card.dart';
+import '../../tra_dinh/hoc_tap/providers/hoc_tap_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../../../shared/widgets/app_bar_back.dart';
 
-/// Port /nghi-su-duong: trang chính 2 mảng Dự án / Tài chính.
+/// Port /nghi-su-duong: trang chính 3 mảng Dự án / Tài chính / Học tập.
 /// Xếp 1 cột thay cho lưới 1–3 cột bên web.
 class NghiSuDuongScreen extends ConsumerWidget {
   const NghiSuDuongScreen({super.key});
@@ -28,6 +29,8 @@ class NghiSuDuongScreen extends ConsumerWidget {
             onRefresh: () => Future.wait([
               ref.refresh(duAnOverviewProvider.future),
               ref.refresh(financeOverviewProvider.future),
+              // Học tập: lỗi tải không được làm hỏng việc làm mới hai mảng kia.
+              ref.refresh(studyOverviewProvider.future).then<void>((_) {}, onError: (_) {}),
             ]),
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -35,6 +38,8 @@ class NghiSuDuongScreen extends ConsumerWidget {
                 _DuAnCard(onTap: () => push('/du-an')),
                 const SizedBox(height: 20), // gap-5
                 _FinanceCard(onTap: () => push('/finance')),
+                const SizedBox(height: 20),
+                _LearnCard(onTap: () => push('/hoc-tap')),
               ],
             ),
           ),
@@ -44,15 +49,15 @@ class NghiSuDuongScreen extends ConsumerWidget {
   }
 }
 
-/// Khung chung của các card: tiêu đề serif + chữ nhỏ bên phải, thân tuỳ mảng.
+/// Khung chung của các card: tiêu đề serif + chữ nhỏ bên phải, thân tuỳ mảng ([child] null = chỉ tiêu đề).
 class _HubCard extends StatelessWidget {
-  const _HubCard({required this.title, this.trailing, required this.glow, required this.onTap, required this.child});
+  const _HubCard({required this.title, this.trailing, required this.glow, required this.onTap, this.child});
 
   final String title;
   final String? trailing;
   final ScrollCardGlow glow;
   final VoidCallback onTap;
-  final Widget child;
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -75,8 +80,10 @@ class _HubCard extends StatelessWidget {
                 if (trailing != null) Text(trailing!, style: _muted(11)),
               ],
             ),
-            const SizedBox(height: 12), // mb-3
-            child,
+            if (child != null) ...[
+              const SizedBox(height: 12), // mb-3
+              child!,
+            ],
           ],
         ),
       ),
@@ -191,6 +198,28 @@ class _FinanceCard extends ConsumerWidget {
                 ),
               ],
             ),
+    );
+  }
+}
+
+/// Card Học tập (kế hoạch). Dòng phụ lấy từ studyOverviewProvider; đang tải hoặc lỗi thì chỉ có tiêu đề, không chặn card.
+class _LearnCard extends ConsumerWidget {
+  const _LearnCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final subjects = ref.watch(studyOverviewProvider).value?.subjects ?? const [];
+    final active = subjects.map((s) => s.activeCourse).nonNulls.firstOrNull;
+    final queued = subjects.fold<int>(0, (n, s) => n + s.counts.queued);
+    final line = active != null ? 'Đang học: ${active.title}' : (queued > 0 ? '$queued khóa chờ' : null);
+
+    return _HubCard(
+      title: '🎓 Học tập',
+      glow: ScrollCardGlow.shuiro,
+      onTap: onTap,
+      child: line == null ? null : Text(line, key: const ValueKey('learn-card-line'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8))),
     );
   }
 }

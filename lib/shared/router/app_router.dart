@@ -12,6 +12,8 @@ import '../../features/kieu_lau/screens/music_screen.dart';
 import '../../features/nghi_su_duong/screens/du_an_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_screen.dart';
+import '../../features/nghi_su_duong/screens/hoc_tap_plan_detail_screen.dart';
+import '../../features/nghi_su_duong/screens/hoc_tap_plan_screen.dart';
 import '../../features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
 import '../../features/nghi_su_duong/screens/project_detail_screen.dart';
 import '../../features/tang_kinh_cac/screens/ke_hoach_doc_screen.dart';
@@ -180,6 +182,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+      // Học tập ở Nghị Sự Đường (kế hoạch): cấp gốc như /du-an, /finance. Màn đích đều là màn Trà Đình.
+      GoRoute(
+        path: '/hoc-tap',
+        builder: (_, _) => const HocTapPlanScreen(),
+        routes: [GoRoute(path: 'chi-tiet', builder: (_, _) => const HocTapPlanDetailScreen())],
       ),
       GoRoute(
         path: '/tra-dinh',

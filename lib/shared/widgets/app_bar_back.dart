@@ -18,11 +18,25 @@ void goBackOr(BuildContext context, [String fallback = '/']) {
 }
 
 /// `AppBar.leading` dùng chung cho mọi màn có AppBar: luôn có nút quay lại. [fallback] là trang cha khi không pop được.
+/// [label] (tuỳ chọn): hiện "‹ label" dạng chữ thay cho mũi tên; nhớ đặt `AppBar.leadingWidth` đủ rộng.
 class AppBarBack extends StatelessWidget {
-  const AppBarBack({super.key, this.fallback = '/'});
+  const AppBarBack({super.key, this.fallback = '/', this.label});
 
   final String fallback;
+  final String? label;
 
   @override
-  Widget build(BuildContext context) => BackButton(onPressed: () => goBackOr(context, fallback));
+  Widget build(BuildContext context) {
+    final label = this.label;
+    if (label == null) return BackButton(onPressed: () => goBackOr(context, fallback));
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton(
+        key: const ValueKey('app-bar-back-label'),
+        onPressed: () => goBackOr(context, fallback),
+        style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7), padding: const EdgeInsets.symmetric(horizontal: 12)),
+        child: Text('‹ $label', maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+    );
+  }
 }

@@ -231,6 +231,22 @@ void main() {
       );
     });
 
+    testWidgets('route Học tập của Nghị Sự Đường: /hoc-tap và /hoc-tap/chi-tiet', (
+      tester,
+    ) async {
+      final c = await pumpApp(tester, token: 'saved-access');
+      String? routePath(String location) => c
+          .read(routerProvider)
+          .configuration
+          .findMatch(Uri.parse(location))
+          .last
+          .route
+          .path;
+
+      expect(routePath('/hoc-tap'), '/hoc-tap');
+      expect(routePath('/hoc-tap/chi-tiet'), 'chi-tiet');
+    });
+
     testWidgets('các route Học tập của Trà Đình đứng trước :sessionId', (
       tester,
     ) async {
