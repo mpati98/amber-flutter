@@ -30,12 +30,19 @@ String formatFullDate(String iso) {
 
 /// Tab Thống kê: khoảng + môn nằm trên URL `?tab=stats&range=7|30|all&subject=<id|all>`.
 class StatsTab extends ConsumerWidget {
-  const StatsTab({super.key, this.range, this.subject});
+  const StatsTab({super.key, this.range, this.subject, this.base = '/tra-dinh?tab=stats', this.replaceRoute = false});
 
   final String? range;
   final String? subject;
 
-  void _go(BuildContext context, String range, String? subjectId) => context.go('/tra-dinh?tab=stats&range=$range&subject=${subjectId ?? 'all'}');
+  /// Xem [ScheduleTab.base]: tab của Trà Đình (mặc định) hoặc `/hoc-tap/thong-ke` ở Nghị Sự Đường.
+  final String base;
+  final bool replaceRoute;
+
+  void _go(BuildContext context, String range, String? subjectId) {
+    final url = '$base${base.contains('?') ? '&' : '?'}range=$range&subject=${subjectId ?? 'all'}';
+    replaceRoute ? context.replace(url) : context.go(url);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

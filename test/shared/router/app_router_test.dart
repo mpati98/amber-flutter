@@ -231,7 +231,7 @@ void main() {
       );
     });
 
-    testWidgets('route Học tập của Nghị Sự Đường: /hoc-tap và /hoc-tap/chi-tiet', (
+    testWidgets('route Học tập của Nghị Sự Đường: /hoc-tap, chi-tiet, lich, thong-ke', (
       tester,
     ) async {
       final c = await pumpApp(tester, token: 'saved-access');
@@ -245,6 +245,10 @@ void main() {
 
       expect(routePath('/hoc-tap'), '/hoc-tap');
       expect(routePath('/hoc-tap/chi-tiet'), 'chi-tiet');
+      expect(routePath('/hoc-tap/lich'), 'lich');
+      expect(routePath('/hoc-tap/lich?view=month&date=2026-10-15'), 'lich');
+      expect(routePath('/hoc-tap/thong-ke'), 'thong-ke');
+      expect(routePath('/hoc-tap/thong-ke?range=7&subject=all'), 'thong-ke');
     });
 
     testWidgets('các route Học tập của Trà Đình đứng trước :sessionId', (

@@ -20,15 +20,22 @@ import '../widgets/subject_sheet.dart';
 
 /// Tab Lịch: xem tuần / tháng của môn đang chọn. Chế độ và mốc ngày nằm trên URL: `?tab=schedule&view=week|month&date=YYYY-MM-DD`.
 class ScheduleTab extends ConsumerWidget {
-  const ScheduleTab({super.key, this.view, this.date});
+  const ScheduleTab({super.key, this.view, this.date, this.base = '/tra-dinh?tab=schedule', this.replaceRoute = false});
 
   final String? view;
   final String? date;
 
+  /// URL gốc khi đổi tuần / tháng: tab của Trà Đình (mặc định) hoặc `/hoc-tap/lich` ở Nghị Sự Đường (kèm [replaceRoute]
+  /// để thay màn hiện tại thay vì xoá cả ngăn xếp, nút quay lại vẫn về "Chi tiết kế hoạch").
+  final String base;
+  final bool replaceRoute;
+
   bool get _month => view == 'month';
 
-  void _go(BuildContext context, {bool? month, required String date}) =>
-      context.go('/tra-dinh?tab=schedule&view=${(month ?? _month) ? 'month' : 'week'}&date=$date');
+  void _go(BuildContext context, {bool? month, required String date}) {
+    final url = '$base${base.contains('?') ? '&' : '?'}view=${(month ?? _month) ? 'month' : 'week'}&date=$date';
+    replaceRoute ? context.replace(url) : context.go(url);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

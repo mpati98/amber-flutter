@@ -5,6 +5,7 @@ import 'package:amber_flutter/features/nghi_su_duong/providers/nghi_su_duong_pro
 import 'package:amber_flutter/features/nghi_su_duong/screens/hoc_tap_plan_detail_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/hoc_tap_plan_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
+import 'package:amber_flutter/features/nghi_su_duong/widgets/plan_widgets.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:flutter/material.dart';
@@ -67,6 +68,8 @@ Future<FakeHocTapApi> _pump(
         path: '/hoc-tap',
         builder: (_, _) => const HocTapPlanScreen(),
         routes: [
+          GoRoute(path: 'lich', builder: (_, _) => const Scaffold(body: Text('lịch'))),
+          GoRoute(path: 'thong-ke', builder: (_, _) => const Scaffold(body: Text('thống kê'))),
           GoRoute(
             path: 'chi-tiet',
             builder: (_, _) => const HocTapPlanDetailScreen(),
@@ -228,13 +231,15 @@ void main() {
     );
 
     testWidgets(
-      'hàng "Hàng chờ và Muốn mua": tổng khóa chờ; một môn → hàng chờ của môn; nhiều môn → hàng chờ chung',
+      'hàng "Hàng chờ": tổng khóa chờ; một môn → hàng chờ của môn; nhiều môn → hàng chờ chung',
       (tester) async {
         await _pump(
           tester,
           '/hoc-tap',
           overview: _overview([_subject(_first, queued: 2)]),
         );
+        expect(find.text('Hàng chờ'), findsOneWidget);
+        expect(find.text('Hàng chờ và Muốn mua'), findsNothing, reason: 'nhãn cũ đã đổi');
         expect(find.text('2 khóa chờ'), findsOneWidget);
         expect(
           tester.getSize(find.byKey(const ValueKey('plan-queue'))).height,
@@ -294,7 +299,7 @@ void main() {
           overview: _overview([_subject(_first)]),
         );
         expect(
-          find.text('Lịch dự kiến · Thống kê · Lý do thiếu'),
+          find.text('Lịch dự kiến · Thống kê · Muốn mua · Thùng rác'),
           findsOneWidget,
         );
         expect(find.byType(Divider), findsOneWidget);
@@ -327,36 +332,45 @@ void main() {
 
   group('màn Chi tiết kế hoạch', () {
     testWidgets(
-      'bốn hàng cao ≥ 52, không nút vàng; mỗi hàng đi đúng route Trà Đình',
+      'đúng bốn hàng theo thứ tự, cao ≥ 52, không nút vàng, không còn "Lý do thiếu"; mỗi hàng đi đúng route và Back về lại màn này',
       (tester) async {
-        final expected = {
-          'plan-schedule': '/tra-dinh?tab=schedule',
-          'plan-stats': '/tra-dinh?tab=stats',
-          'plan-reasons': '/tra-dinh?tab=schedule',
-          'plan-trash': '/tra-dinh/hoc-tap/thung-rac',
-        };
+        // Lịch / Thống kê là màn của Nghị Sự Đường; Muốn mua / Thùng rác là màn Trà Đình (stub ghi lại đường dẫn).
+        final rows = [
+          ('plan-schedule', 'Lịch dự kiến', '/hoc-tap/lich'),
+          ('plan-stats', 'Thống kê', '/hoc-tap/thong-ke'),
+          ('plan-wishlist', 'Muốn mua', '/tra-dinh/hoc-tap/wishlist'),
+          ('plan-trash', 'Thùng rác', '/tra-dinh/hoc-tap/thung-rac'),
+        ];
         await _pump(tester, '/hoc-tap/chi-tiet');
         expect(find.text('‹ Học tập'), findsOneWidget);
         expect(find.text('Chi tiết kế hoạch'), findsOneWidget);
         expect(find.byType(FilledButton), findsNothing);
-        for (final t in [
-          'Lịch dự kiến',
-          'Thống kê',
-          'Lý do thiếu',
-          'Thùng rác',
-        ]) {
-          expect(find.text(t), findsOneWidget);
-        }
-        for (final e in expected.entries) {
+        expect(find.text('Lý do thiếu'), findsNothing);
+        expect(find.byType(PlanNavRow), findsNWidgets(4));
+        final ys = [
+          for (final r in rows) tester.getTopLeft(find.byKey(ValueKey(r.$1))).dy,
+        ];
+        expect(ys, [...ys]..sort(), reason: 'đúng thứ tự từ trên xuống');
+        for (final (key, label, route) in rows) {
+          expect(find.text(label), findsOneWidget);
           expect(
-            tester.getSize(find.byKey(ValueKey(e.key))).height,
+            tester.getSize(find.byKey(ValueKey(key))).height,
             greaterThanOrEqualTo(52),
           );
-          await tester.tap(find.byKey(ValueKey(e.key)));
+          await tester.tap(find.byKey(ValueKey(key)));
           await tester.pumpAndSettle();
-          expect(_visited.last, e.value, reason: e.key);
+          if (route.startsWith('/tra-dinh')) {
+            expect(_visited.last, route, reason: key);
+          } else {
+            expect(
+              GoRouterState.of(tester.element(find.byType(Scaffold).last)).uri.toString(),
+              route,
+              reason: key,
+            );
+          }
           GoRouter.of(tester.element(find.byType(Scaffold).last)).pop();
           await tester.pumpAndSettle();
+          expect(find.byType(HocTapPlanDetailScreen), findsOneWidget, reason: '$key: Back về Chi tiết kế hoạch');
         }
       },
     );

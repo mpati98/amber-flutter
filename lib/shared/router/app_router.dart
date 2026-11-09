@@ -14,6 +14,8 @@ import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_plan_detail_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_plan_screen.dart';
+import '../../features/nghi_su_duong/screens/hoc_tap_schedule_screen.dart';
+import '../../features/nghi_su_duong/screens/hoc_tap_stats_screen.dart';
 import '../../features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
 import '../../features/nghi_su_duong/screens/project_detail_screen.dart';
 import '../../features/tang_kinh_cac/screens/ke_hoach_doc_screen.dart';
@@ -187,7 +189,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/hoc-tap',
         builder: (_, _) => const HocTapPlanScreen(),
-        routes: [GoRoute(path: 'chi-tiet', builder: (_, _) => const HocTapPlanDetailScreen())],
+        routes: [
+          GoRoute(path: 'chi-tiet', builder: (_, _) => const HocTapPlanDetailScreen()),
+          GoRoute(
+            path: 'lich',
+            builder: (_, state) => HocTapScheduleScreen(view: state.uri.queryParameters['view'], date: state.uri.queryParameters['date']),
+          ),
+          GoRoute(
+            path: 'thong-ke',
+            builder: (_, state) => HocTapStatsScreen(range: state.uri.queryParameters['range'], subject: state.uri.queryParameters['subject']),
+          ),
+        ],
       ),
       GoRoute(
         path: '/tra-dinh',

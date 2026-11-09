@@ -84,7 +84,7 @@ class HocTapPlanScreen extends ConsumerWidget {
               PlanNavRow(
                 key: const ValueKey('plan-details'),
                 label: 'Chi tiết kế hoạch',
-                subtitle: 'Lịch dự kiến · Thống kê · Lý do thiếu',
+                subtitle: 'Lịch dự kiến · Thống kê · Muốn mua · Thùng rác',
                 onTap: () => context.push('/hoc-tap/chi-tiet'),
               ),
             ],
@@ -124,7 +124,7 @@ class _Body extends StatelessWidget {
           ),
         PlanNavRow(
           key: const ValueKey('plan-queue'),
-          label: 'Hàng chờ và Muốn mua',
+          label: 'Hàng chờ',
           trailing: '$queued khóa chờ',
           onTap: () => context.push(queueRoute),
         ),
