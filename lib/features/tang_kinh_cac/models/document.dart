@@ -32,6 +32,8 @@ class Document {
     this.sourceUrl,
     this.topicId,
     this.topic,
+    this.studyCourseId,
+    this.studyCourseTitle,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -47,6 +49,8 @@ class Document {
         sourceUrl: json['sourceUrl'] as String?,
         topicId: json['topicId'] as String?,
         topic: json['topic'] == null ? null : Topic.fromJson(json['topic'] as Map<String, dynamic>),
+        studyCourseId: json['studyCourseId'] as String?,
+        studyCourseTitle: json['studyCourseTitle'] as String?,
         createdAt: parseDbTimestamp(json['createdAt'] as String),
         updatedAt: parseDbTimestamp(json['updatedAt'] as String),
       );
@@ -71,6 +75,10 @@ class Document {
 
   /// Mọi response documents đều kèm quan hệ topic (null nếu không gán topic).
   final Topic? topic;
+
+  /// Ghi chú theo khóa học (Trà Đình): khóa gắn với tài liệu này. null = tài liệu thường. Title còn cả khi khóa đang trong Thùng rác.
+  final String? studyCourseId;
+  final String? studyCourseTitle;
   final DateTime createdAt;
 
   /// Danh sách sắp xếp theo trường này (mới nhất trước).

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:amber_flutter/features/tang_kinh_cac/models/document.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/parsed_sections.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
@@ -241,6 +242,23 @@ class FakeHocTapApi extends HocTapApi {
       courses = [for (final c in courses) c.id == a.id ? b : (c.id == b.id ? a : c)];
     }
     return courses;
+  }
+
+  final noteCalls = <String>[];
+  Object? noteError;
+  Completer<void>? noteGate;
+  bool noteCreated = true;
+  Document? noteDoc;
+
+  @override
+  Future<({Document document, bool created})> noteDocument(String courseId) async {
+    noteCalls.add(courseId);
+    await noteGate?.future;
+    if (noteError case final e?) throw e;
+    return (
+      document: noteDoc ?? Document.fromJson({'id': 'doc-1', 'title': 'Ghi chú', 'type': 'TEXT', 'content': '# x\n\n', 'tags': <String>[], 'pinned': false, 'createdAt': '2026-11-09 10:00:00', 'updatedAt': '2026-11-09 10:00:00', 'studyCourseId': courseId, 'studyCourseTitle': 'Khóa'}),
+      created: noteCreated,
+    );
   }
 
   final deletes = <({String id, String password})>[];

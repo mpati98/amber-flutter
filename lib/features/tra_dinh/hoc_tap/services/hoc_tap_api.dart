@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/services/api_client.dart';
+import '../../../tang_kinh_cac/models/document.dart';
 import '../models/course.dart';
 import '../models/parsed_sections.dart';
 import '../models/study_enums.dart';
@@ -102,6 +103,13 @@ class HocTapApi {
 
   /// Xoá HẲN khóa đang trong Thùng rác, bắt buộc [password]; cùng mã lỗi như [deleteCourse].
   Future<void> purgeCourse(String id, {required String password}) => _dio.delete<void>('$_base/courses/$id/purge', data: {'password': password});
+
+  /// "Ghi chú khóa": tạo (201, [created] = true) hoặc mở lại (200) tài liệu ghi chú duy nhất của khóa trong Tàng Kinh Các.
+  /// 404 `course_not_found` khi khóa đã xoá hoặc không thuộc người dùng.
+  Future<({Document document, bool created})> noteDocument(String courseId) async {
+    final res = await _dio.post<Map<String, dynamic>>('$_base/courses/$courseId/note-document');
+    return (document: Document.fromJson(res.data!), created: res.statusCode == 201);
+  }
 
   /// Thay cả danh sách phần; trả chi tiết (không kèm recentLogs).
   Future<CourseDetail> putSections(String courseId, List<SectionInput> sections) async {

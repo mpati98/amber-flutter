@@ -1,15 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/services/file_opener.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/widgets/api_image.dart';
+import '../../tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import '../models/document.dart';
 import '../providers/document_provider.dart';
 import '../services/document_api.dart';
 import '../services/upload_api.dart';
 import '../utils/document_content.dart';
+import '../../../shared/utils/api_error.dart';
+
+/// Đoạn đề mục nối vào cuối ghi chú khóa; con trỏ đặt ngay sau "— ".
+const videoSummaryHeading = '\n\n## Module _ · Video _ — ';
 
 /// Mỗi lần gọi tạo 1 route + 1 State MỚI cho đúng [doc] được bấm — không có
 /// instance nào sống lâu hơn 1 lần mở (xem lỗi 1 bên dưới).
@@ -44,9 +50,85 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
   late bool _pinned = widget.doc.pinned;
   bool _busy = false;
   bool _opening = false;
+  bool _openingCourse = false;
+  bool _editing = false;
+  bool _saving = false;
   String? _error;
+  final _editor = TextEditingController();
+  final _editorFocus = FocusNode();
 
   Document get _doc => widget.doc;
+
+  /// Ghi chú khóa (TEXT gắn khóa) mới có chế độ sửa và nút "Thêm tóm tắt video".
+  bool get _isCourseNote => _doc.studyCourseId != null && _doc.type == DocumentType.text;
+
+  @override
+  void dispose() {
+    _editor.dispose();
+    _editorFocus.dispose();
+    super.dispose();
+  }
+
+  /// Vào chế độ sửa; [append] nối thêm vào cuối nội dung (đề mục video), con trỏ ở cuối (hoặc sau "— ").
+  void _startEditing({String append = ''}) {
+    final text = _content + append;
+    _editor.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    setState(() {
+      _editing = true;
+      _error = null;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _editorFocus.requestFocus();
+    });
+  }
+
+  Future<void> _saveEdit() async {
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final saved = await ref.read(documentApiProvider).updateDocument(_doc.id, content: _editor.text);
+      ref.invalidate(documentsProvider);
+      if (mounted) {
+        setState(() {
+          _content = saved.content ?? '';
+          _editing = false;
+          _saving = false;
+        });
+      }
+    } on DioException {
+      if (mounted) {
+        setState(() => _saving = false);
+        _showError('Không lưu được ghi chú.'); // giữ nguyên nội dung đang sửa
+      }
+    }
+  }
+
+  /// Chip tên khóa: kiểm khóa còn truy cập được (404 = đang trong Thùng rác hoặc đã xoá hẳn) rồi mở chi tiết khóa.
+  Future<void> _openCourse() async {
+    final id = _doc.studyCourseId!;
+    final router = GoRouter.of(context);
+    setState(() {
+      _openingCourse = true;
+      _error = null;
+    });
+    try {
+      await ref.read(hocTapApiProvider).getCourseDetail(id);
+    } catch (e) {
+      if (apiErrorCode(e) == 'course_not_found') {
+        if (mounted) {
+          setState(() => _openingCourse = false);
+          _showError('Khóa này đã được xoá');
+        }
+        return;
+      }
+      // Lỗi khác (mạng...): vẫn mở, màn chi tiết khóa tự báo lỗi và có nút thử lại.
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    router.push('/tra-dinh/hoc-tap/courses/$id');
+  }
 
   void _showError(String message) => setState(() => _error = message);
 
@@ -142,6 +224,7 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 16, // space-y-4
         children: [
+          if (_doc.studyCourseId != null) _CourseHeader(title: _doc.studyCourseTitle, busy: _openingCourse, onTap: _openCourse),
           Row(
             children: [
               Expanded(
@@ -155,6 +238,7 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
             ],
           ),
           _buildBody(),
+          if (_isCourseNote) _noteActions(),
           if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
           Row(
@@ -180,8 +264,56 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
     );
   }
 
+  Widget _noteActions() {
+    if (_editing) {
+      return Row(
+        spacing: 12,
+        children: [
+          Expanded(
+            child: OutlinedButton(key: const ValueKey('note-cancel'), style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)), onPressed: _saving ? null : () => setState(() => _editing = false), child: const Text('Huỷ')),
+          ),
+          Expanded(
+            child: FilledButton(
+              key: const ValueKey('note-save'),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+              onPressed: _saving ? null : _saveEdit,
+              child: _saving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Lưu'),
+            ),
+          ),
+        ],
+      );
+    }
+    // Nút vàng duy nhất là "Sửa"; "Thêm tóm tắt video" là nút viền.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 8,
+      children: [
+        FilledButton(key: const ValueKey('note-edit'), style: FilledButton.styleFrom(minimumSize: const Size(0, 48)), onPressed: () => _startEditing(), child: const Text('Sửa')),
+        OutlinedButton(
+          key: const ValueKey('add-video-summary'),
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+          onPressed: () => _startEditing(append: videoSummaryHeading),
+          child: const Text('Thêm tóm tắt video'),
+        ),
+      ],
+    );
+  }
+
   Widget _buildBody() {
     final attachmentUrl = _doc.attachmentUrl;
+    if (_editing) {
+      return TextField(
+        key: const ValueKey('note-editor'),
+        controller: _editor,
+        focusNode: _editorFocus,
+        enabled: !_saving,
+        minLines: 8,
+        maxLines: null,
+        keyboardType: TextInputType.multiline,
+        style: const TextStyle(fontSize: 14, height: 1.6),
+        decoration: const InputDecoration(border: OutlineInputBorder()),
+      );
+    }
     return switch (_doc.type) {
       // Nguyên văn, giữ xuống dòng — không dùng preview đã lọc của card.
       DocumentType.text => SelectableText(
@@ -298,6 +430,37 @@ class _OutlineTree extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16),
       decoration: BoxDecoration(border: Border(left: BorderSide(color: Colors.white.withValues(alpha: 0.1)))),
       child: list,
+    );
+  }
+}
+
+/// Đầu màn ghi chú khóa: nhãn nhỏ "GHI CHÚ KHÓA" + chip viền mảnh "tên khóa ›" mở chi tiết khóa trong Học tập.
+class _CourseHeader extends StatelessWidget {
+  const _CourseHeader({required this.title, required this.busy, required this.onTap});
+
+  final String? title;
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 6,
+      children: [
+        Text('GHI CHÚ KHÓA', key: const ValueKey('course-label'), style: TextStyle(fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w500, color: theme.textMuted)),
+        InkWell(
+          key: const ValueKey('course-chip'),
+          borderRadius: BorderRadius.circular(999),
+          onTap: busy ? null : onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.25)), borderRadius: BorderRadius.circular(999)),
+            child: Text('${title ?? 'Khóa học'} ›', style: const TextStyle(fontSize: 13)),
+          ),
+        ),
+      ],
     );
   }
 }

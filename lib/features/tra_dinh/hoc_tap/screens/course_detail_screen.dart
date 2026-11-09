@@ -10,9 +10,12 @@ import '../../../../shared/utils/vn_time.dart';
 import '../../../../shared/widgets/progress_bar.dart';
 import '../../../../shared/widgets/scroll_card.dart';
 import '../../../../shared/widgets/tag.dart';
+import '../../../tang_kinh_cac/providers/document_provider.dart';
+import '../../../tang_kinh_cac/widgets/document_viewer_modal.dart';
 import '../models/course.dart';
 import '../models/study_enums.dart';
 import '../providers/hoc_tap_provider.dart';
+import '../services/hoc_tap_api.dart';
 import '../utils/async_view.dart';
 import '../utils/hoc_tap_errors.dart';
 import '../utils/open_course_link.dart';
@@ -268,6 +271,8 @@ class _Detail extends StatelessWidget {
           icon: const Icon(Icons.edit_note),
           label: const Text('Ghi buổi học'),
         ),
+        const SizedBox(height: 12),
+        _NoteButton(courseId: c.id),
         const SizedBox(height: 16),
         // Khu thứ yếu thu gọn: thao tác nguy hiểm không nằm ngang hàng nút chính.
         Theme(
@@ -337,4 +342,49 @@ class _SectionRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Ghi chú khóa": tạo hoặc mở tài liệu ghi chú duy nhất của khóa (Tàng Kinh Các). Nút VIỀN vì màn này đã có nút vàng "Ghi buổi học".
+class _NoteButton extends ConsumerStatefulWidget {
+  const _NoteButton({required this.courseId});
+
+  final String courseId;
+
+  @override
+  ConsumerState<_NoteButton> createState() => _NoteButtonState();
+}
+
+class _NoteButtonState extends ConsumerState<_NoteButton> {
+  bool _busy = false;
+
+  Future<void> _open() async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    try {
+      final r = await ref.read(hocTapApiProvider).noteDocument(widget.courseId);
+      if (r.created) ref.invalidate(documentsProvider); // tài liệu mới hiện ở danh sách Tàng Kinh Các
+      if (!mounted) return;
+      setState(() => _busy = false);
+      await showDocumentViewerModal(context, r.document);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (apiErrorCode(e) == 'course_not_found') {
+        messenger.showSnackBar(const SnackBar(content: Text('Không tìm thấy khóa này')));
+        ref.invalidate(studyCourseDetailProvider(widget.courseId));
+        ref.invalidate(studyCoursesProvider);
+        ref.invalidate(studyOverviewProvider);
+      } else {
+        messenger.showSnackBar(const SnackBar(content: Text('Không mở được ghi chú, thử lại')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton(
+    key: const ValueKey('course-note'),
+    onPressed: _busy ? null : _open,
+    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+    child: _busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Ghi chú khóa'),
+  );
 }
