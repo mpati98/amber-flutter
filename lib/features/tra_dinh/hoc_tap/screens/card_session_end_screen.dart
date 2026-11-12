@@ -1,10 +1,10 @@
 import 'package:material_ui/material_ui.dart';
+import '../../../../shared/widgets/design_page.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/app_theme.dart';
-import '../../../../shared/widgets/app_bar_back.dart';
 import '../models/study_enums.dart';
 import '../providers/card_review_provider.dart';
 import '../providers/hoc_tap_provider.dart';
@@ -81,8 +81,9 @@ class _CardSessionEndScreenState extends ConsumerState<CardSessionEndScreen> {
     final practice = logs?.where((l) => l.activity == LogActivity.practice).fold<int>(0, (n, l) => n + l.minutes) ?? 0;
     final total = lesson + cards + practice;
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: const Text('Xong phiên ôn')),
+    return DesignScaffold(
+      title: 'Xong phiên ôn',
+      backFallback: '/tra-dinh',
       body: HocTapBody(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

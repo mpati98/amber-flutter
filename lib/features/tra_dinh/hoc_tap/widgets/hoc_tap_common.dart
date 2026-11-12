@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../../shared/theme/design_tokens.dart';
+
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/date_format.dart';
 
@@ -53,7 +55,8 @@ class HocTapLoadError extends StatelessWidget {
   );
 }
 
-/// Khung màn con của Học tập: nền, giới hạn bề ngang 640 như các màn Trà Đình khác.
+/// Khung thân màn con của Học tập theo bộ thiết kế mới: nền [DesignBackground] (gradient + chữ Gelasio), nội dung căn giữa,
+/// rộng tối đa 760 (máy tính bảng / web) — các màn này là danh sách / form một cột nên không dùng cột 1120.
 class HocTapBody extends StatelessWidget {
   const HocTapBody({super.key, required this.child, this.onRefresh});
 
@@ -62,7 +65,14 @@ class HocTapBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = onRefresh == null ? child : RefreshIndicator(onRefresh: onRefresh!, child: child);
-    return Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 640), child: content));
+    final content = onRefresh == null
+        ? child
+        : RefreshIndicator(onRefresh: onRefresh!, color: DesignColors.gold, child: child);
+    return DesignBackground(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 760), child: content),
+      ),
+    );
   }
 }

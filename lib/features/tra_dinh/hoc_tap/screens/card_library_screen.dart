@@ -4,8 +4,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/theme/design_tokens.dart';
+import '../../../../shared/widgets/design_page.dart';
 import '../../../../shared/theme/app_theme.dart';
-import '../../../../shared/widgets/app_bar_back.dart';
 import '../models/study_card.dart';
 import '../providers/card_provider.dart';
 import '../utils/async_view.dart';
@@ -105,27 +106,40 @@ class _LibraryState extends ConsumerState<_Library> {
   Widget build(BuildContext context) {
     final async = ref.watch(cardLibraryProvider(widget.subjectId));
     final state = async.value;
-    final theme = Theme.of(context);
     // Danh sách ngắn hơn màn hình thì không có cuộn để kích hoạt: kiểm tra sau mỗi lần dựng.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _maybeLoadMore();
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(fallback: '/tra-dinh'),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Kho thẻ'),
-            if (state != null) Text('${state.counts.total} thẻ${widget.subjectName == null ? '' : ' · ${widget.subjectName}'}', key: const ValueKey('library-total'), style: TextStyle(fontSize: 12, color: theme.textMuted)),
-          ],
-        ),
-        actions: [
-          IconButton(key: const ValueKey('card-stats'), tooltip: 'Thống kê', icon: const Icon(Icons.insights_outlined), onPressed: () => context.push('/tra-dinh/hoc-tap/the/thong-ke?subjectId=${widget.subjectId}')),
-          IconButton(key: const ValueKey('card-add'), tooltip: 'Thêm một thẻ', icon: const Icon(Icons.add), onPressed: () => _openCard(null)),
+    return DesignScaffold(
+      title: 'Kho thẻ',
+      backFallback: '/tra-dinh',
+      // Màn có nút "+ Thêm thẻ từ Claude" cố định ở đáy → không gắn nút chat nổi (sẽ che nút).
+      chat: false,
+      // Tiêu đề 2 dòng: thu nhỏ khi không vừa thanh trên cao 52 (màn hẹp / chữ phóng to).
+      titleWidget: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Kho thẻ', style: DesignText.serif(fontSize: 16, fontWeight: FontWeight.w700, color: DesignColors.text)),
+          if (state != null)
+            Text(
+              '${state.counts.total} thẻ${widget.subjectName == null ? '' : ' · ${widget.subjectName}'}',
+              key: const ValueKey('library-total'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: DesignColors.muted),
+            ),
         ],
       ),
+      ),
+      actions: [
+        IconButton(key: const ValueKey('card-stats'), tooltip: 'Thống kê', color: DesignColors.gold, icon: const Icon(Icons.insights_outlined), onPressed: () => context.push('/tra-dinh/hoc-tap/the/thong-ke?subjectId=${widget.subjectId}')),
+        IconButton(key: const ValueKey('card-add'), tooltip: 'Thêm một thẻ', color: DesignColors.gold, icon: const Icon(Icons.add), onPressed: () => _openCard(null)),
+      ],
       bottomNavigationBar: SafeArea(
         child: Center(
           heightFactor: 1,

@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'design_tokens.dart';
+
 /// Toàn bộ hex lấy nguyên văn từ amber-v3/src/app/globals.css (không làm tròn).
 abstract final class AppColors {
   // Theme tối "Âm Dương Giới"
@@ -70,8 +72,11 @@ extension AppThemeColors on ThemeData {
 abstract final class AppTheme {
   /// Thay cho `GoogleFonts.interTextTheme`: hàm đó nhận/trả `TextTheme` của `flutter/material`, còn app đã chuyển sang
   /// `material_ui` (TextTheme khác kiểu). Áp Inter cho từng style giống hệt cách google_fonts làm bên trong.
-  static TextTheme _interTextTheme(TextTheme t) {
-    TextStyle? inter(TextStyle? s) => GoogleFonts.inter(textStyle: s);
+  static TextTheme _interTextTheme(TextTheme t) => _fontTextTheme(t, (s) => GoogleFonts.inter(textStyle: s));
+
+  /// Áp một font Google cho từng style của [t] (google_fonts không trả TextTheme của material_ui — xem [_interTextTheme]).
+  static TextTheme _fontTextTheme(TextTheme t, TextStyle Function(TextStyle?) font) {
+    TextStyle? inter(TextStyle? s) => font(s);
     return TextTheme(
       displayLarge: inter(t.displayLarge),
       displayMedium: inter(t.displayMedium),
@@ -97,48 +102,99 @@ abstract final class AppTheme {
 
   /// --radius-sm = 0.6 × --radius = 6px (globals.css) — bo góc của theme tối.
   static const double darkRadius = 6;
-  static final _darkShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(darkRadius));
 
-  /// Theme tối — trang chủ + 4 tòa. Inter cho nội dung, Noto Serif cho
-  /// display/headline (tương đương font-sans / font-serif-display bên web).
-  // Bo góc 6px lấy từ rounded-sm thật trong tang-kinh-cac/ui.tsx (ScrollCard) —
-  // --radius-sm bị globals.css ghi đè còn 0.6× thay vì mặc định Tailwind, không phải 4px.
+  /// Theme tối của cả app theo bộ thiết kế mới (design/DESIGN.md): chữ Gelasio (thay Georgia), vàng `#f0d68a` cho nút chính /
+  /// điểm nhấn, nền panel `#0e1430`, viền `#2c3766`, chữ phụ `#a9b0d0`, đỏ `#ff7b7b`. Màn đã làm lại dùng thẳng [DesignColors];
+  /// theme này để các màn / form / hộp thoại cũ (dùng colorScheme) cũng cùng tông.
   static ThemeData get darkTheme {
     final base = ThemeData(brightness: Brightness.dark);
-    final inter = _interTextTheme(base.textTheme);
-    final textTheme = inter.copyWith(
-      displayLarge: GoogleFonts.notoSerif(textStyle: inter.displayLarge),
-      displayMedium: GoogleFonts.notoSerif(textStyle: inter.displayMedium),
-      displaySmall: GoogleFonts.notoSerif(textStyle: inter.displaySmall),
-      headlineLarge: GoogleFonts.notoSerif(textStyle: inter.headlineLarge),
-      headlineMedium: GoogleFonts.notoSerif(textStyle: inter.headlineMedium),
-      headlineSmall: GoogleFonts.notoSerif(textStyle: inter.headlineSmall),
-    );
+    final textTheme = _fontTextTheme(base.textTheme, (s) => GoogleFonts.gelasio(textStyle: s))
+        .apply(bodyColor: DesignColors.text, displayColor: DesignColors.text);
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(6));
+    OutlineInputBorder border(Color c) =>
+        OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: c));
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.ink950,
-      cardColor: AppColors.ink900,
+      scaffoldBackgroundColor: DesignColors.bgTop,
+      cardColor: DesignColors.panel,
+      canvasColor: DesignColors.panel,
+      dividerColor: DesignColors.rowDivider,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.kincha400,
-        onPrimary: AppColors.ink950,
-        secondary: AppColors.yugen500,
-        onSecondary: AppColors.ink950,
-        tertiary: AppColors.yugen300,
-        error: AppColors.shuiro500,
-        onError: AppColors.ink950,
-        surface: AppColors.ink900,
-        onSurface: Colors.white,
-        surfaceContainerHighest: AppColors.ink800,
+        primary: DesignColors.gold,
+        onPrimary: Color(0xFF1A1A1A),
+        secondary: DesignColors.info,
+        onSecondary: Color(0xFF1A1A1A),
+        tertiary: DesignColors.muted,
+        error: DesignColors.danger,
+        onError: Color(0xFF1A1A1A),
+        surface: DesignColors.panel,
+        onSurface: DesignColors.text,
+        onSurfaceVariant: DesignColors.muted,
+        outline: DesignColors.panelBorder,
+        outlineVariant: DesignColors.rowDivider,
+        surfaceContainerHighest: DesignColors.frame,
       ),
       textTheme: textTheme,
-      extensions: const [AppSemanticColors(success: AppColors.emerald400)],
-      cardTheme: CardThemeData(shape: _darkShape),
-      elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(shape: _darkShape)),
-      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(shape: _darkShape)),
-      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(shape: _darkShape)),
-      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(shape: _darkShape)),
+      extensions: const [AppSemanticColors(success: DesignColors.success)],
+      appBarTheme: AppBarTheme(
+        backgroundColor: DesignColors.panel,
+        foregroundColor: DesignColors.text,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: GoogleFonts.gelasio(fontSize: 16, fontWeight: FontWeight.w700, color: DesignColors.text),
+        shape: const Border(bottom: BorderSide(color: DesignColors.topBarBorder)),
+      ),
+      cardTheme: CardThemeData(
+        color: DesignColors.panel,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: DesignColors.panelBorder),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: DesignColors.panel,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: DesignColors.frameBorder),
+        ),
+      ),
+      popupMenuTheme: const PopupMenuThemeData(color: DesignColors.panel, surfaceTintColor: Colors.transparent),
+      bottomSheetTheme: const BottomSheetThemeData(backgroundColor: DesignColors.panel, surfaceTintColor: Colors.transparent),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: DesignColors.frame,
+        hintStyle: GoogleFonts.gelasio(color: DesignColors.muted),
+        border: border(DesignColors.panelBorder),
+        enabledBorder: border(DesignColors.panelBorder),
+        focusedBorder: border(DesignColors.gold),
+        errorBorder: border(DesignColors.danger),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: DesignColors.gold),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? DesignColors.gold : DesignColors.muted),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? DesignColors.gold.withValues(alpha: 0.35) : DesignColors.frame,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(shape: shape)),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: shape,
+          backgroundColor: DesignColors.gold,
+          foregroundColor: const Color(0xFF1A1A1A),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: shape,
+          foregroundColor: DesignColors.gold,
+          side: const BorderSide(color: DesignColors.gold),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(shape: shape, foregroundColor: DesignColors.gold)),
     );
   }
 

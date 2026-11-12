@@ -42,7 +42,7 @@ void main() {
   testWidgets('màn đầu: ô dán JSON, nút Xem trước bị khoá khi trống, chưa có nút Lưu, có nút quay lại', (tester) async {
     await _pump(tester, FakeHocTapApi());
     expect(find.text('Nhập thẻ từ Claude'), findsOneWidget);
-    expect(find.byType(BackButton), findsOneWidget);
+    expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
     expect(tester.widget<FilledButton>(_k('import-preview')).onPressed, isNull);
     expect(_k('import-save'), findsNothing);
     expect(find.text('Sao chép lời nhắc cho Claude'), findsOneWidget);

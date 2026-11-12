@@ -139,7 +139,7 @@ void main() {
 
     testWidgets('có nút quay lại', (tester) async {
       await _pump(tester, _api());
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
     });
   });
 

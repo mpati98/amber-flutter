@@ -30,7 +30,7 @@ void main() {
   group('đầu màn và số tổng', () {
     testWidgets('nút quay lại, tiêu đề "Nhóm khó", điều khiển 7 / 30 / 90 ngày (mặc định 30), gọi API đúng kỳ', (tester) async {
       final api = await _pump(tester);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       expect(find.text('Nhóm khó'), findsOneWidget);
       for (final d in [7, 30, 90]) {
         expect(find.text('$d ngày'), findsOneWidget);
@@ -150,7 +150,7 @@ void main() {
     testWidgets('môn không có thẻ nào (JSON thật của môn trống) hiện trạng thái trống, không lỗi', (tester) async {
       await _pump(tester, api: FakeHocTapApi()..cardInsights = _fix('card_insights_empty'));
       expect(tester.takeException(), isNull);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
     });
   });
 
@@ -244,7 +244,7 @@ void main() {
       await _pump(tester, api: api, settle: false);
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       expect(_k('insights-copy'), findsNothing);
     });
 

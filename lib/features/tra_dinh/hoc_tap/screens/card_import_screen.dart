@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import '../../../../shared/widgets/design_page.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -103,9 +104,10 @@ class _ImportState extends ConsumerState<_Import> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final parsed = _parsed;
-    return Scaffold(
+    return DesignScaffold(
       // fallback hằng số (test chặn tái phát yêu cầu `const AppBarBack`): mở thẳng URL rồi bấm quay lại → kho thẻ của môn đầu tiên.
-      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh/hoc-tap/the'), title: const Text('Nhập thẻ từ Claude')),
+      title: 'Nhập thẻ từ Claude',
+      backFallback: '/tra-dinh/hoc-tap/the',
       bottomNavigationBar: parsed == null
           ? null
           : SafeArea(

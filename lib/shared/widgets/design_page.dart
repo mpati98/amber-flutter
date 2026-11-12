@@ -118,18 +118,46 @@ class DesignPage extends StatelessWidget {
 /// Chỉ phần khung chung của bộ thiết kế mới (thanh trên ← + tên + menu tài khoản, nền, chat nổi) quanh [body] có sẵn —
 /// cho màn mà thân tự cuộn / tự bố cục (vd ScheduleTab, StatsTab nhúng lại), không đặt được vào danh sách của [DesignPage].
 class DesignScaffold extends StatelessWidget {
-  const DesignScaffold({super.key, required this.title, required this.body, this.backFallback = '/'});
+  const DesignScaffold({
+    super.key,
+    required this.title,
+    required this.body,
+    this.backFallback = '/',
+    this.actions = const [],
+    this.titleWidget,
+    this.floatingActionButton,
+    this.bottomNavigationBar,
+    this.chat = true,
+  });
 
   final String title;
   final String? backFallback;
   final Widget body;
 
+  /// Nút thêm trên thanh trên, trước logo Amber (vd ⋯ của màn chi tiết khóa).
+  final List<Widget> actions;
+
+  /// Thay chữ [title] (vd tiêu đề 2 dòng); [title] vẫn dùng cho trợ năng.
+  final Widget? titleWidget;
+  final Widget? floatingActionButton;
+  final Widget? bottomNavigationBar;
+
+  /// false = không gắn nút chat nổi (màn có ô nhập / nút riêng ở góc dưới, vd chat luyện nói).
+  final bool chat;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DesignColors.bgTop,
-      appBar: DesignTopBar(title: title, backFallback: backFallback, trailing: const AccountMenu()),
-      body: DesignBackground(child: AmberChatDock(child: body)),
+      appBar: DesignTopBar(
+        title: title,
+        titleWidget: titleWidget,
+        backFallback: backFallback,
+        trailing: Row(mainAxisSize: MainAxisSize.min, spacing: 4, children: [...actions, const AccountMenu()]),
+      ),
+      floatingActionButton: floatingActionButton,
+      bottomNavigationBar: bottomNavigationBar,
+      body: DesignBackground(child: chat ? AmberChatDock(child: body) : body),
     );
   }
 }

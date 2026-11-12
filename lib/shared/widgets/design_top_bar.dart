@@ -10,9 +10,12 @@ import 'app_bar_back.dart';
 /// [trailing] mặc định là logo Amber tĩnh; các màn đã đăng nhập truyền `AccountMenu` (logo bấm ra menu tài khoản).
 /// Nội dung thanh căn theo cùng cột với thân màn ([DesignLayout]) để trên web rộng không bị dạt ra hai mép.
 class DesignTopBar extends StatelessWidget implements PreferredSizeWidget {
-  const DesignTopBar({super.key, required this.title, this.backFallback, this.trailing});
+  const DesignTopBar({super.key, required this.title, this.backFallback, this.trailing, this.titleWidget});
 
   final String title;
+
+  /// Thay chữ [title] (vd tiêu đề 2 dòng của kho thẻ).
+  final Widget? titleWidget;
   final String? backFallback;
   final Widget? trailing;
 
@@ -50,12 +53,13 @@ class DesignTopBar extends StatelessWidget implements PreferredSizeWidget {
                       visualDensity: VisualDensity.compact,
                     ),
                   Expanded(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: DesignText.serif(fontSize: 16, fontWeight: FontWeight.w700, color: DesignColors.text, height: 1.45),
-                    ),
+                    child: titleWidget ??
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: DesignText.serif(fontSize: 16, fontWeight: FontWeight.w700, color: DesignColors.text, height: 1.45),
+                        ),
                   ),
                   trailing ?? const AmberLogo(),
                 ],

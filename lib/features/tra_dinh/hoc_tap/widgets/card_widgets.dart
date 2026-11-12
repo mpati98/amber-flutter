@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/widgets/app_bar_back.dart';
+import '../../../../shared/widgets/design_page.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../utils/async_view.dart';
 import 'hoc_tap_common.dart';
@@ -145,8 +145,9 @@ class CardSubjectGate extends ConsumerWidget {
       final name = subjects.where((s) => s.subjectId == subjectId).map((s) => s.name).firstOrNull;
       return builder(context, subjectId!, name);
     }
-    Widget frame(Widget body) => Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: Text(title)),
+    Widget frame(Widget body) => DesignScaffold(
+      title: title,
+      backFallback: '/tra-dinh',
       body: Center(child: body),
     );
     return switch (overview.settled) {

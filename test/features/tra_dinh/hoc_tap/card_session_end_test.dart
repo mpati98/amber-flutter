@@ -51,7 +51,7 @@ void main() {
     final t = _api();
     await _pump(tester, t.api, t.withGoal);
     expect(find.text('Xong phiên ôn'), findsOneWidget);
-    expect(find.byType(BackButton), findsOneWidget);
+    expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
     expect(tester.widget<Text>(_k('end-title')).data, 'Hôm nay đã ôn 12 / 12 thẻ');
     expect(find.text('Chưa nhớ 2'), findsOneWidget);
     expect(find.text('Cần ôn lại 3'), findsOneWidget);
@@ -75,7 +75,7 @@ void main() {
       expect(_k('end-save'), findsOneWidget);
       expect(_k('end-skip'), findsOneWidget);
       expect(_k('end-goal-bar'), findsOneWidget);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
     });
 
     testWidgets('vẫn lưu được số phút như bình thường', (tester) async {

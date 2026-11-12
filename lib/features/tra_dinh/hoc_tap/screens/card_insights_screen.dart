@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
+import '../../../../shared/widgets/design_page.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/theme/app_theme.dart';
-import '../../../../shared/widgets/app_bar_back.dart';
 import '../models/study_card.dart';
 import '../models/study_card_insights.dart';
 import '../providers/card_provider.dart';
@@ -45,8 +45,9 @@ class _Insights extends ConsumerWidget {
     final insights = s?.insights;
     final canCopy = insights != null && s?.error == null && !(s?.loading ?? true) && (insights.hasGroups || insights.hardestCards.isNotEmpty);
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh/hoc-tap/the'), title: const Text('Nhóm khó')),
+    return DesignScaffold(
+      title: 'Nhóm khó',
+      backFallback: '/tra-dinh/hoc-tap/the',
       bottomNavigationBar: insights == null
           ? null
           : SafeArea(

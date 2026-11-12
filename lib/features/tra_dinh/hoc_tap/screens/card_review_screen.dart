@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import '../../../../shared/widgets/app_bar_back.dart';
+import '../../../../shared/theme/design_tokens.dart';
+import '../../../../shared/widgets/design_page.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../shared/widgets/app_bar_back.dart';
 import '../models/study_card_queue.dart';
 import '../providers/card_review_provider.dart';
 import '../utils/card_format.dart';
@@ -80,8 +82,9 @@ class _Frame extends StatelessWidget {
   final Widget body;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(leading: const AppBarBack(fallback: _libraryPath), title: const Text('Ôn thẻ')),
+  Widget build(BuildContext context) => DesignScaffold(
+    title: 'Ôn thẻ',
+    backFallback: _libraryPath,
     body: HocTapBody(child: body),
   );
 }
@@ -97,17 +100,17 @@ class _Active extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = state.progress;
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(fallback: _libraryPath),
-        title: const Text('Ôn thẻ'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(child: Text('${p.finished} / ${p.planned}', key: const ValueKey('review-count'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
-          ),
-        ],
-      ),
+    return DesignScaffold(
+      title: 'Ôn thẻ',
+      backFallback: _libraryPath,
+      // Ba nút đánh giá nằm ở đáy → không gắn nút chat nổi.
+      chat: false,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Center(child: Text('${p.finished} / ${p.planned}', key: const ValueKey('review-count'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: DesignColors.gold))),
+        ),
+      ],
       body: HocTapBody(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

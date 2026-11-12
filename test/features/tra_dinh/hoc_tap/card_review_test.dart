@@ -118,7 +118,7 @@ void main() {
     testWidgets('tiêu đề, "đã ôn / kế hoạch", thanh tiến độ mảnh, ba chip đếm, nhãn, câu có chỗ trống gạch chân, gợi ý, nút Hiện đáp án', (tester) async {
       final api = FakeHocTapApi()..cardQueue = _queue([_fixtureCard, _qc('c2', 'break the ice', 'A joke can break the ice.', bucket: CardBucket.due), _qc('c3', 'pick up on', 'She picks up on moods.', bucket: CardBucket.random)], planned: 5, finished: 2);
       await _pump(tester, api);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       expect(find.text('Ôn thẻ'), findsOneWidget);
       expect(tester.widget<Text>(_k('review-count')).data, '2 / 5');
       expect(tester.widget<LinearProgressIndicator>(_k('review-progress')).value, closeTo(0.4, 1e-9));
@@ -356,7 +356,7 @@ void main() {
     testWidgets('hết thẻ hiện ngay mà còn thẻ "Chưa nhớ": "N thẻ quay lại sau X phút" + đếm ngược chạy từng giây', (tester) async {
       final api = FakeHocTapApi()..cardQueue = _queue(const [], planned: 3, finished: 1, soonest: _now.add(const Duration(minutes: 5)));
       final clock = await _pump(tester, api);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       expect(tester.widget<Text>(_k('review-waiting-title')).data, '2 thẻ quay lại sau 5 phút');
       expect(tester.widget<Text>(_k('review-countdown')).data, '5:00');
       expect(tester.widget<Text>(_k('review-count')).data, '1 / 3');
@@ -416,7 +416,7 @@ void main() {
       final api = FakeHocTapApi()..cardQueue = CardQueue.fromJson(fixtureMap('card_queue_empty'));
       await _pump(tester, api);
       expect(find.text('Hôm nay chưa có thẻ cần ôn'), findsOneWidget);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       await tester.tap(_k('review-empty-library'));
       await tester.pumpAndSettle();
       expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=$_sid');
@@ -426,7 +426,7 @@ void main() {
       final api = FakeHocTapApi()..queueError = apiError(500, {'error': 'x'});
       await _pump(tester, api);
       expect(find.textContaining('Không tải được hàng ôn thẻ'), findsOneWidget);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       api.queueError = null;
       await tester.tap(find.text('Thử lại'));
       await tester.pumpAndSettle();
@@ -439,7 +439,7 @@ void main() {
       await _pump(tester, api, settle: false);
       await tester.pump();
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       gate.complete();
       await tester.pumpAndSettle();
       expect(_k('review-show-answer'), findsOneWidget);

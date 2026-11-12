@@ -1,10 +1,13 @@
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
+import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../amber_brain/fake_brain.dart';
 
 /// Đường dẫn đã mở bằng push/go trong test (để kiểm tra điều hướng).
 final visited = <String>[];
@@ -45,7 +48,13 @@ Future<void> pumpHocTap(
   );
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [hocTapApiProvider.overrideWithValue(api), ?routinesApiOverride(routinesApi), ...overrides],
+      overrides: [
+        hocTapApiProvider.overrideWithValue(api),
+        ?routinesApiOverride(routinesApi),
+        // Màn theo bộ thiết kế mới có nút chat nổi (theo dõi trạng thái amber-brain bằng timer) → trạng thái cố định, không timer.
+        brainStatusProvider.overrideWith(() => FixedBrainStatus()),
+        ...overrides,
+      ],
       child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),
     ),
   );
