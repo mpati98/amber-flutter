@@ -26,14 +26,17 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    for (final other in ['Sách', 'Tài liệu', 'Kế hoạch đọc']) {
-      expect(find.text(other), findsOneWidget);   // 3 mục cũ còn nguyên
+    for (final (key, title) in [('sach', 'Sách'), ('tai-lieu', 'Tài liệu'), ('ke-hoach-doc', 'Kế hoạch đọc')]) {
+      // 3 tầng cũ còn nguyên (tên cũng là nhãn dòng tổng quan nên tìm trong đúng tầng).
+      expect(find.descendant(of: find.byKey(ValueKey('tkc-$key')), matching: find.text(title)), findsOneWidget);
     }
-    expect(find.text('Dữ liệu huấn luyện'), findsOneWidget);
+    final floor = find.byKey(const ValueKey('tkc-du-lieu-huan-luyen'));
+    expect(find.descendant(of: floor, matching: find.text('Dữ liệu huấn luyện')), findsOneWidget);
+    // Số mẫu nằm ở dòng "Huấn luyện" của tổng quan.
     expect(find.text('3 mẫu đủ điều kiện · 5 dòng'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Dữ liệu huấn luyện'));
-    await tester.tap(find.text('Dữ liệu huấn luyện'));
+    await tester.ensureVisible(floor);
+    await tester.tap(floor);
     await tester.pumpAndSettle();
     expect(find.byType(TrainingLogsScreen), findsOneWidget);
     expect(find.text('3 mẫu đủ điều kiện train · 5 dòng nhật ký'), findsOneWidget);

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:amber_flutter/features/amber_brain/models/brain_models.dart';
 import 'package:amber_flutter/features/amber_brain/providers/brain_chat_provider.dart';
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
-import 'package:amber_flutter/features/amber_brain/screens/amber_brain_screen.dart';
+import 'package:amber_flutter/features/amber_brain/widgets/amber_chat_dock.dart';
 import 'package:amber_flutter/features/amber_brain/services/brain_api.dart';
 import 'package:amber_flutter/shared/services/api_client.dart';
 import 'package:amber_flutter/shared/utils/currency.dart';
@@ -22,7 +22,11 @@ Future<void> _pump(WidgetTester tester, FakeBrain brain, {Dio? dio, BrainConnect
         brainDioProvider.overrideWithValue(d),
         if (connection != null) brainStatusProvider.overrideWith(() => FixedBrainStatus(connection)),
       ],
-      child: MaterialApp(theme: ThemeData.dark(), home: const AmberBrainScreen()),
+      // Khung chat Amber (thay màn /amber cũ) đặt sẵn đúng cỡ khung trên web.
+      child: MaterialApp(
+        theme: ThemeData.dark(),
+        home: Scaffold(body: Center(child: SizedBox(width: 360, height: 600, child: AmberChatPanel(onClose: () {})))),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -31,13 +35,17 @@ Future<void> _pump(WidgetTester tester, FakeBrain brain, {Dio? dio, BrainConnect
 /// Gỡ cây widget để provider hủy Timer.periodic của status — test không còn timer treo.
 Future<void> _unmount(WidgetTester tester) => tester.pumpWidget(const SizedBox());
 
+final _send = find.byKey(const ValueKey('amber-chat-send'));
+
+IconButton _sendButton(WidgetTester tester) => tester.widget<IconButton>(_send);
+
 bool _inputEnabled(WidgetTester tester) =>
     tester.widget<TextField>(find.byKey(const Key('brain-input'))).enabled ?? true;
 
 Future<void> _type(WidgetTester tester, String text) async {
   await tester.enterText(find.byKey(const Key('brain-input')), text);
   await tester.pump();
-  await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+  await tester.tap(_send);
 }
 
 String? _hint(WidgetTester tester) => tester.widget<TextField>(find.byKey(const Key('brain-input'))).decoration?.hintText;
@@ -59,8 +67,8 @@ void main() {
     await _pump(tester, brain);
     expect(find.text('Amber is offline'), findsOneWidget);
     expect(_inputEnabled(tester), isFalse);
-    expect(find.widgetWithText(FilledButton, 'Send').evaluate().isNotEmpty, isTrue);
-    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNull);
+    expect(_send, findsOneWidget);
+    expect(_sendButton(tester).onPressed, isNull);
     expect(_hint(tester), "Amber isn't ready");
 
     // Brain is back: tap "Retry" → unlocked.
@@ -333,10 +341,10 @@ void main() {
   });
 
   group('English input chrome and fixed error line', () {
-    testWidgets('ready: "Type a message..." hint and "Send" button; no Vietnamese chrome left', (tester) async {
+    testWidgets('ready: "Type a message..." hint and "Send" button (tooltip); no Vietnamese chrome left', (tester) async {
       await _pump(tester, _brain());
       expect(_hint(tester), 'Type a message...');
-      expect(find.widgetWithText(FilledButton, 'Send'), findsOneWidget);
+      expect(_sendButton(tester).tooltip, 'Send');
       expect(find.text('Gửi'), findsNothing);
       expect(find.text('Nhập tin nhắn...'), findsNothing);
       await _unmount(tester);
@@ -350,7 +358,7 @@ void main() {
       await _unmount(tester);
     });
 
-    testWidgets('while waiting: input locked, button shows "..." and the hint stays English', (tester) async {
+    testWidgets('while waiting: input and send button locked, the hint stays English', (tester) async {
       final gate = Completer<void>();
       final brain = _brain()
         ..chatGate = gate
@@ -360,10 +368,10 @@ void main() {
       await tester.pump();
       expect(_inputEnabled(tester), isFalse);
       expect(_hint(tester), 'Type a message...');
-      expect(find.widgetWithText(FilledButton, '...'), findsOneWidget);
+      expect(_sendButton(tester).onPressed, isNull);
       gate.complete();
       await tester.pumpAndSettle();
-      expect(find.widgetWithText(FilledButton, 'Send'), findsOneWidget);
+      expect(_inputEnabled(tester), isTrue);
       await _unmount(tester);
     });
 

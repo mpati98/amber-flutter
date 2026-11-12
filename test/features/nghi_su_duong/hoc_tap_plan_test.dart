@@ -104,23 +104,29 @@ Map<String, dynamic> get _second =>
     (fixtureMap('overview')['subjects'] as List)[1] as Map<String, dynamic>;
 
 void main() {
-  group('card Học tập ở Nghị Sự Đường', () {
+  group('mục Học tập ở Nghị Sự Đường', () {
+    final row = find.byKey(const ValueKey('nsd-hoc-tap'));
+    Finder inRow(String text) => find.descendant(of: row, matching: find.text(text));
+
     testWidgets(
-      'hiện sau Dự án và Tài chính (ba card), dòng phụ là khóa đang học, bấm mở /hoc-tap',
+      'đứng sau Dự án và Tài chính (ba mục trong khung), dòng phụ là khóa đang học + nhãn, bấm mở /hoc-tap',
       (tester) async {
         await _pump(tester, '/nghi-su-duong');
-        double y(String t) => tester.getTopLeft(find.textContaining(t)).dy;
-        expect(y('Dự án thông thường'), lessThan(y('Tài chính')));
-        expect(y('Tài chính'), lessThan(y('Học tập')));
-        expect(find.textContaining('Học tập'), findsOneWidget);
-        expect(find.text('Đang học: English Tenses 101'), findsOneWidget);
-        await tester.tap(find.textContaining('Học tập'));
+        double y(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
+        expect(y('nsd-du-an'), lessThan(y('nsd-finance')));
+        expect(y('nsd-finance'), lessThan(y('nsd-hoc-tap')));
+        expect(inRow('Học tập'), findsOneWidget);
+        expect(inRow('Đang học: English Tenses 101'), findsOneWidget);
+        expect(inRow('Đang học'), findsOneWidget); // nhãn
+        // Tổng quan cũng có dòng Học tập cùng nội dung.
+        expect(find.text('Đang học: English Tenses 101'), findsNWidgets(2));
+        await tester.tap(row);
         await tester.pumpAndSettle();
         expect(find.byType(HocTapPlanScreen), findsOneWidget);
       },
     );
 
-    testWidgets('không có khóa đang học: dòng phụ là "N khóa chờ"', (
+    testWidgets('không có khóa đang học: dòng phụ "N khóa chờ" + nhãn "Chờ"', (
       tester,
     ) async {
       await _pump(
@@ -128,14 +134,16 @@ void main() {
         '/nghi-su-duong',
         overview: _overview([_subject(_first, active: false, queued: 3)]),
       );
-      expect(find.text('3 khóa chờ'), findsOneWidget);
+      expect(inRow('3 khóa chờ'), findsOneWidget);
+      expect(inRow('Chờ'), findsOneWidget);
     });
 
-    testWidgets('lỗi tải: chỉ có tiêu đề, card vẫn bấm được', (tester) async {
+    testWidgets('lỗi tải: mục chỉ có tiêu đề, vẫn bấm được; tổng quan báo không tải được', (tester) async {
       await _pump(tester, '/nghi-su-duong', overviewError: apiError(500, 'x'));
-      expect(find.textContaining('Học tập'), findsOneWidget);
-      expect(find.byKey(const ValueKey('learn-card-line')), findsNothing);
-      await tester.tap(find.textContaining('Học tập'));
+      expect(inRow('Học tập'), findsOneWidget);
+      expect(find.descendant(of: row, matching: find.byType(Text)), findsNWidgets(2)); // chữ Hán + tiêu đề, không có dòng phụ
+      expect(find.text('Không tải được số liệu.'), findsOneWidget);
+      await tester.tap(row);
       await tester.pumpAndSettle();
       expect(find.byType(HocTapPlanScreen), findsOneWidget);
     });
@@ -146,7 +154,7 @@ void main() {
       'đầu màn: "‹ Nghị Sự Đường", tiêu đề, dòng phụ; quay lại về Nghị Sự Đường',
       (tester) async {
         await _pump(tester, '/nghi-su-duong');
-        await tester.tap(find.textContaining('Học tập'));
+        await tester.tap(find.byKey(const ValueKey('nsd-hoc-tap')));
         await tester.pumpAndSettle();
         expect(find.text('‹ Nghị Sự Đường'), findsOneWidget);
         expect(find.text('Học tập'), findsOneWidget);

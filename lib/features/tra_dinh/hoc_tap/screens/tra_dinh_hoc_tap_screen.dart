@@ -2,7 +2,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../shared/widgets/app_bar_back.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../widgets/log_sheet.dart';
 import 'overview_tab.dart';
@@ -43,9 +42,7 @@ class _TraDinhHocTapScreenState extends ConsumerState<TraDinhHocTapScreen> {
     showLogSheet(context, subjectId: subjectId);
   }
 
+  // Toàn trang (thanh trên, tổng quan, khung) nằm trong OverviewTab theo bộ thiết kế mới.
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(leading: const AppBarBack(label: 'Trà Đình'), leadingWidth: 130, title: const Text('Hôm nay')),
-    body: const OverviewTab(),
-  );
+  Widget build(BuildContext context) => const OverviewTab();
 }

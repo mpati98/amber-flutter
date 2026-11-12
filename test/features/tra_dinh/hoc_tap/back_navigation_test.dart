@@ -42,8 +42,9 @@ Future<void> _pump(WidgetTester tester, String location, {bool pushed = false}) 
 String _loc() => _router.routeInformationProvider.value.uri.toString();
 
 Future<void> _back(WidgetTester tester) async {
-  expect(find.byKey(const ValueKey('app-bar-back-label')), findsOneWidget);
-  await tester.tap(find.byKey(const ValueKey('app-bar-back-label')));
+  // Thanh trên mới (DesignTopBar): nút ← vàng, cùng logic goBackOr như AppBarBack.
+  expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
+  await tester.tap(find.byKey(const ValueKey('design-top-bar-back')));
   await tester.pumpAndSettle();
 }
 
@@ -51,7 +52,7 @@ void main() {
   testWidgets('mở thẳng /tra-dinh (app đã cài mở lại): có nút quay lại, bấm → Âm Dương Giới', (tester) async {
     await _pump(tester, '/tra-dinh');
     expect(_router.canPop(), isFalse);
-    expect(find.text('‹ Trà Đình'), findsOneWidget);
+    expect(find.text('Trà Đình'), findsOneWidget);
     expect(find.text('Hôm nay'), findsWidgets);
     expect(find.byType(TabBar), findsNothing);
     await _back(tester);

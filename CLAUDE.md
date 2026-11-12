@@ -108,7 +108,7 @@ lib/
 test/                         cấu trúc song song lib/ (features/, shared/)
 ```
 
-Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau`, `tra_dinh`, `amber` (chat với amber-brain); feature `du_lieu_huan_luyen` (mục con của Tàng Kinh Các, không dùng chung model/API với sách và tài liệu).
+Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau`, `tra_dinh`, `amber_brain` (chat với amber-brain: không có route riêng, là khung chat nổi `AmberChatDock` bật từ nút tròn góc phải dưới; Home đã gắn, màn khác gắn khi làm lại theo bộ thiết kế mới); feature `du_lieu_huan_luyen` (mục con của Tàng Kinh Các, không dùng chung model/API với sách và tài liệu).
 
 ### amber-brain hybrid: trạng thái hiện tại
 
@@ -122,7 +122,7 @@ Tòa: `auth`, `du_do` (trang chủ), `nghi_su_duong`, `tang_kinh_cac`, `kieu_lau
 |---|---|
 | Dư Đồ (trang chủ) | `/` |
 | Đăng nhập | `/login` |
-| Amber (chat AI) | `/amber` |
+| Amber (chat AI) | không còn route (đã bỏ `/amber` ngày 12/11/2026) — khung chat nổi `AmberChatDock` |
 | Nghị Sự Đường | `/nghi-su-duong`, `/du-an[/:projectId]`, `/finance[/:projectId]`, `/hoc-tap[/:courseId]` — 3 mảng ở **cấp gốc** |
 | Tàng Kinh Các | `/tang-kinh-cac`, `/tang-kinh-cac/{sach,tai-lieu,ke-hoach-doc}`, `/tang-kinh-cac/du-lieu-huan-luyen[/:logId]` (nhật ký amber-brain, feature `du_lieu_huan_luyen` riêng, gọi `/api/brain-logs` của amber-v4, không gọi brain) |
 | Kiều Lâu | `/kieu-lau`, `/kieu-lau/nhac-thu-nghiem` (trình phát MP3 tạm thời) |
@@ -142,6 +142,17 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
 
 ## Quy ước
 
+- **Bộ thiết kế mới (12/11/2026, `design/DESIGN.md` + bản mẫu `design/ref/*.html` ở thư mục workspace)** — đã áp cho Home, Đăng nhập, Nghị Sự Đường,
+  Tàng Kinh Các, Kiều Lâu, Trà Đình (Hôm nay); các màn con còn giao diện cũ. Màn mới / màn làm lại dùng:
+  - `DesignPage` (`shared/widgets/design_page.dart`): thanh trên (← vàng + tên + logo Amber mở `AccountMenu`) → `overview` → `content(context, DesignSize)` → `hint` / `footer`;
+    tự gắn nền, chat nổi `AmberChatDock`, responsive (`DesignLayout` trong `design_tokens.dart`: < 600 dọc lề 14, 600–1024 cột 760, ≥ 1024 cột 1120 với tổng quan rộng 380 bên trái).
+  - `OverviewBlock` + `OverviewRow` (nhãn rộng 70 ở Home, 90 ở các tòa; `footer` cho hộp cảnh báo), `ListFrame` + `FrameRows` + `FrameRow` (chữ Hán trong `GlyphCircle`),
+    `DesignChipRow` (chip lọc cuộn ngang), `DesignPill`, `DesignProgressBar` — đều ở `shared/widgets/list_frame.dart` / `overview_block.dart`.
+  - Màu / chữ: `DesignColors`, `DesignText` (font Gelasio qua google_fonts thay Georgia — Flutter web không dùng được font cài trên máy). Chữ đậm dùng `DesignText.bold`
+    hoặc `DesignText.serif(fontWeight: …)`, KHÔNG `copyWith(fontWeight:)` (ra chữ đậm giả).
+  - Thông báo: `showToast(context, msg, type: ToastType.error|success|warning|info)` (`shared/widgets/app_toast.dart`) thay SnackBar trắng mặc định.
+  - Test của màn dùng `DesignPage`: chữ tên mục thường xuất hiện 2 lần (nhãn tổng quan + dòng trong khung) → tìm trong đúng key của dòng; hàng chip cuộn ngang → `ensureVisible` trước khi bấm.
+
 - **Mọi `Scaffold` có AppBar phải đặt `leading: const AppBarBack(...)`** (`shared/widgets/app_bar_back.dart`; `fallback` = trang cha, mặc định `/`). Flutter chỉ tự thêm mũi tên
   khi Navigator còn trang để pop, mà `context.go` (đổi tab của Trà Đình, xoá query) thay cả stack → màn mất đường về Âm Dương Giới (lỗi trên iPhone 22/10/2026).
   `test/shared/widgets/app_bar_back_test.dart` quét `lib/features` và fail nếu có `appBar: AppBar(` không dùng nó. URL của app là dạng hash (`/#/tra-dinh`), đường dẫn
@@ -157,7 +168,7 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
 - Tiền từ backend là chuỗi — tự parse; hiển thị bằng `formatVnd` (`shared/utils/currency.dart`).
 - Giờ Việt Nam: `shared/utils/vn_time.dart`.
 - **Màn kho thẻ (06/11/2026) dùng màu của theme**, không dùng token `AppColors`: `Theme.of(context).colorScheme` (primary = vàng, secondary, error, surface), `theme.success`,
-  `theme.textMuted` / `textFaint`. Ngoại lệ có chủ ý: "Cần ôn lại" dùng `Colors.amber` (ColorScheme không có hổ phách). `ScrollCard` (widget cũ, nội bộ dùng token) vẫn dùng ở khối "Thẻ hôm nay" của Tổng quan cho đồng bộ với các thẻ cạnh nó.
+  `theme.textMuted` / `textFaint`. Ngoại lệ có chủ ý: "Cần ôn lại" dùng `Colors.amber` (ColorScheme không có hổ phách). `ScrollCard` là widget cũ của các màn chưa làm lại theo bộ thiết kế mới.
 - **Hàng chip / bộ lọc phải cuộn NGANG, không bao giờ xuống dòng**: dùng `ChipScrollRow` (`tra_dinh/hoc_tap/widgets/card_widgets.dart`), không dùng `Wrap` (lỗi bố cục trên iPhone cũ). `SegmentedButton` bọc trong `SingleChildScrollView` ngang.
   Hai nút phụ đặt cạnh nhau (Kho thẻ / Thống kê thẻ) dùng `Wrap` để xuống dòng khi hẹp.
 - **Không dùng lookbehind (`(?<!…)`, `(?<=…)`) trong `RegExp`** của code chạy trên web: Safari iOS cũ (trước 16.4) không hỗ trợ và `RegExp` ném lỗi lúc chạy. `maskPhrase` tự kiểm ranh giới từ bằng mã thay vì lookbehind.
@@ -224,7 +235,7 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   - **Test**: `test/features/tra_dinh/hoc_tap/` — `card_*_test.dart`, `cards_today_block_test.dart`, `log_sheet_card_review_test.dart`; `FakeHocTapApi` (`hoc_tap_test_support.dart`) có sẵn móc cho thẻ, hàng ôn, review, insights. Fixture JSON thật chụp từ backend dev ở
     `test/fixtures/hoc_tap/` (`card*.json`, `cards_*.json`, `card_queue*.json`, `card_review*.json`, `card_insights_*.json`, `overview_cards.json`, `stats_card_review.json`, `schedule_card_review.json`, `logs_today_*.json`); chụp bằng script `tsx` tạm ở amber-v4
     với user thử (xoá sau), không chụp từ production. **Contract test** `test/integration/hoc_tap_backend_contract_test.dart` (5 ca: học tập, kho thẻ, ôn thẻ, buổi CARD_REVIEW, thống kê nhóm khó): chỉ chạy với backend DEV, cần `NSD_API_BASE_URL` và
-    `NSD_API_TOKEN` (access token của một user thử trên dev, tạo bằng script tạm ở amber-v4 rồi xoá user); tự dọn dữ liệu (xoá môn thử, cascade); riêng ca "Ôn thẻ" tự bỏ qua khi còn < 10 phút tới nửa đêm giờ VN. Tổng: `flutter test` = 825 test (12 bỏ qua khi không có `--dart-define`).
+    `NSD_API_TOKEN` (access token của một user thử trên dev, tạo bằng script tạm ở amber-v4 rồi xoá user); tự dọn dữ liệu (xoá môn thử, cascade); riêng ca "Ôn thẻ" tự bỏ qua khi còn < 10 phút tới nửa đêm giờ VN. Tổng (12/11/2026, sau bộ thiết kế mới): `flutter test` = 1042 test qua, 13 bỏ qua khi không có `--dart-define`.
   - **Giới hạn đã biết**: mặt sau thẻ chưa có nhãn nguồn buổi học (backend chỉ trả `sourceLogId`); màn Nhóm khó không có trạng thái riêng "môn chưa có thẻ nào"; thứ tự thẻ trong hàng ôn là thứ tự suy ra của backend (kế hoạch không lưu vị trí);
     chưa có liên kết giữa các thẻ; layout chưa đối chiếu mockup (agent không mở được canvas) — cần xem trên iPhone thật.
 - **Routine kind STUDY** (nhãn "Học"): `Routine.isStudy`; thẻ `widgets/study_routine_row.dart` — vòng tiến độ, "X / Y phút · chuỗi N ngày", không tick;

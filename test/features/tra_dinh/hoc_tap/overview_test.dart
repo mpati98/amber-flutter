@@ -87,15 +87,15 @@ void main() {
     expect(_k('cards-tile'), findsNothing);
   });
 
-  testWidgets('Hôm nay: thẻ chính (vòng, phút, tuần), 3 việc, hàng Kho thẻ; chip môn chỉ hiện khi có ≥ 2 môn', (tester) async {
+  testWidgets('Hôm nay: tổng quan (phút, còn bao nhiêu, tuần), 3 việc, hàng Kho thẻ; chip môn chỉ hiện khi có ≥ 2 môn', (tester) async {
     await _pumpTab(tester, FakeHocTapApi());
-    expect(_k('today-ring'), findsOneWidget);
     expect(tester.widget<Text>(_k('today-minutes')).data, '30 / 60 phút');
-    expect(tester.widget<Text>(_k('week-summary')).data, 'Tuần này: 1h 15p / 7h');
-    expect(_k('week-dots'), findsOneWidget);
-    for (final d in ['2026-10-12', '2026-10-14', '2026-10-18']) {
-      expect(_k('week-dot-$d'), findsOneWidget);
-    }
+    expect(tester.widget<Text>(_k('today-remaining')).data, '· còn 30 phút để đủ mục tiêu');
+    expect(tester.widget<Text>(_k('week-summary')).data, '1h 15p / 7h');
+    expect(find.text('Tuần này'), findsOneWidget);
+    // Bản mẫu bỏ vòng tiến độ và dải 7 chấm.
+    expect(_k('today-ring'), findsNothing);
+    expect(_k('week-dots'), findsNothing);
     expect(_k('task-lesson'), findsOneWidget);
     expect(find.text('First English Sentences'), findsOneWidget);
     expect(_k('task-practice'), findsOneWidget);
@@ -139,9 +139,15 @@ void main() {
       s['pendingReasonDates'] = ['2026-10-12', '2026-10-13'];
     });
     await _pumpTab(tester, FakeHocTapApi(overview: o));
-    expect(tester.widget<Text>(_k('today-streak')).data, 'Chuỗi 4 ngày');
-    expect(find.textContaining('Thiếu lý do ngày 13/10, 12/10'), findsOneWidget);
+    expect(tester.widget<Text>(_k('today-streak')).data, '4 ngày');
+    expect(find.text('Chuỗi'), findsOneWidget);
+    // Hộp cảnh báo: bấm mở danh sách ngày (mới trước), rồi "Nhập lý do ›" mở sheet.
+    expect(find.text('⚠ Thiếu lý do 2 ngày gần đây · bấm để xem'), findsOneWidget);
+    expect(_k('today-pending-dates'), findsNothing);
     await tester.tap(_k('today-pending'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(_k('today-pending-dates')).data, '13/10, 12/10');
+    await tester.tap(_k('today-pending-open'));
     await tester.pumpAndSettle();
     expect(find.byType(CloseButton), findsWidgets, reason: 'sheet lý do đã mở');
   });
@@ -154,7 +160,7 @@ void main() {
 
   testWidgets('streak 0 vẫn hiện "Chuỗi 0 ngày" khi môn có mục tiêu; môn không mục tiêu thì ẩn', (tester) async {
     await _pumpTab(tester, FakeHocTapApi(overview: _practiceOverview()));
-    expect(tester.widget<Text>(_k('today-streak')).data, 'Chuỗi 0 ngày');
+    expect(tester.widget<Text>(_k('today-streak')).data, '0 ngày');
   });
 
   group('hàng Học bài tiếp và Luyện AI', () {
@@ -209,7 +215,7 @@ void main() {
       await _pumpTab(tester, FakeHocTapApi(overview: o));
       expect(tester.widget<Text>(_k('cards-status')).data, 'Chưa có thẻ');
       expect(_k('cards-start'), findsNothing);
-      expect(tester.widget(_k('cards-import')), isA<TextButton>());
+      expect(tester.widget(_k('cards-import')), isA<OutlinedButton>()); // nút viền như bản mẫu, không vàng
       // Nút vàng chuyển sang việc kế tiếp (Học tiếp), không phải Ôn thẻ.
       expect(find.descendant(of: _k('task-lesson'), matching: find.byType(FilledButton)), findsOneWidget);
       await tester.tap(_k('cards-import'));
@@ -331,7 +337,8 @@ void main() {
     expect(find.byType(TabBarView), findsNothing);
     expect(find.widgetWithText(Tab, 'Lịch'), findsNothing);
     expect(find.text('Hôm nay'), findsWidgets);
-    expect(find.text('‹ Trà Đình'), findsOneWidget);
+    expect(find.text('Trà Đình'), findsOneWidget); // tên màn trên thanh trên mới
+    expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
     expect(_k('subject-menu'), findsNothing);
     expect(_k('today-main'), findsOneWidget);
   });

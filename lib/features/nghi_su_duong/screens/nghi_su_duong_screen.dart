@@ -2,224 +2,205 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/utils/currency.dart';
-import '../../../shared/widgets/progress_bar.dart';
-import '../../../shared/widgets/scroll_card.dart';
+import '../../../shared/widgets/design_page.dart';
+import '../../../shared/widgets/list_frame.dart';
+import '../../../shared/widgets/overview_block.dart';
+import '../../tra_dinh/hoc_tap/models/study_overview.dart';
 import '../../tra_dinh/hoc_tap/providers/hoc_tap_provider.dart';
+import '../models/finance_summary.dart';
+import '../models/overview.dart';
+import '../providers/finance_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
-import '../../../shared/widgets/app_bar_back.dart';
 
-/// Port /nghi-su-duong: trang chính 3 mảng Dự án / Tài chính / Học tập.
-/// Xếp 1 cột thay cho lưới 1–3 cột bên web.
+/// /nghi-su-duong theo design/ref/nghi-su-duong.html: Tổng quan (Dự án · Tài chính · Học tập) → 3 mục Dự án / Tài chính / Học tập.
+/// 3 mảng mở ở cấp gốc (/du-an, /finance, /hoc-tap) như web.
 class NghiSuDuongScreen extends ConsumerWidget {
   const NghiSuDuongScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Đường dẫn cấp gốc như web (không nằm dưới /nghi-su-duong).
-    void push(String path) => context.push(path);
+    final projects = ref.watch(duAnOverviewProvider);
+    final finance = ref.watch(financeOverviewProvider);
+    final activeMonth = finance.value?.activeProjectId;
+    final month = activeMonth == null ? null : ref.watch(financeSummaryProvider(activeMonth));
+    final study = ref.watch(studyOverviewProvider);
+    final learn = _LearnInfo.from(study.value);
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(), title: const Text('Nghị Sự Đường')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: RefreshIndicator(
-            onRefresh: () => Future.wait([
-              ref.refresh(duAnOverviewProvider.future),
-              ref.refresh(financeOverviewProvider.future),
-              // Học tập: lỗi tải không được làm hỏng việc làm mới hai mảng kia.
-              ref.refresh(studyOverviewProvider.future).then<void>((_) {}, onError: (_) {}),
-            ]),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _DuAnCard(onTap: () => push('/du-an')),
-                const SizedBox(height: 20), // gap-5
-                _FinanceCard(onTap: () => push('/finance')),
-                const SizedBox(height: 20),
-                _LearnCard(onTap: () => push('/hoc-tap')),
-              ],
-            ),
+    return DesignPage(
+      title: 'Nghị Sự Đường',
+      onRefresh: () => Future.wait([
+        ref.refresh(duAnOverviewProvider.future),
+        ref.refresh(financeOverviewProvider.future),
+        // Học tập: lỗi tải không được làm hỏng việc làm mới hai mảng kia.
+        ref.refresh(studyOverviewProvider.future).then<void>((_) {}, onError: (_) {}),
+      ]),
+      overview: OverviewBlock(
+        title: 'Tổng quan',
+        labelWidth: 90,
+        rows: [
+          OverviewRow.muted(label: 'Dự án', text: _projectsLine(projects)),
+          OverviewRow(label: 'Tài chính', child: _FinanceLine(finance: finance)),
+          OverviewRow.muted(
+            label: 'Học tập',
+            text: study.hasError && study.value == null ? 'Không tải được số liệu.' : (learn?.line ?? 'Đang tải…'),
           ),
-        ),
+        ],
       ),
-    );
-  }
-}
-
-/// Khung chung của các card: tiêu đề serif + chữ nhỏ bên phải, thân tuỳ mảng ([child] null = chỉ tiêu đề).
-class _HubCard extends StatelessWidget {
-  const _HubCard({required this.title, this.trailing, required this.glow, required this.onTap, this.child});
-
-  final String title;
-  final String? trailing;
-  final ScrollCardGlow glow;
-  final VoidCallback onTap;
-  final Widget? child;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: ScrollCard(
-        glow: glow,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      content: (context, _) => ListFrame(
+        child: FrameRows(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-                if (trailing != null) Text(trailing!, style: _muted(11)),
-              ],
+            _ProjectsRow(projects: projects, onTap: () => context.push('/du-an')),
+            _FinanceRow(finance: finance, month: month, onTap: () => context.push('/finance')),
+            FrameRow(
+              key: const ValueKey('nsd-hoc-tap'),
+              glyph: '學',
+              title: 'Học tập',
+              subtitle: learn?.line,
+              trailing: learn?.pill,
+              onTap: () => context.push('/hoc-tap'),
             ),
-            if (child != null) ...[
-              const SizedBox(height: 12), // mb-3
-              child!,
-            ],
           ],
         ),
       ),
+      hint: 'Chạm vào một mục để vào',
     );
   }
 }
 
-TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
-
-/// Ngày "YYYY-MM-DD" → "d/M/yyyy" như toLocaleDateString("vi-VN").
-String _viDate(String iso) {
-  final p = iso.split('-');
-  return '${int.parse(p[2])}/${int.parse(p[1])}/${p[0]}';
+String _projectsLine(AsyncValue<DuAnOverview> projects) {
+  final d = projects.value;
+  if (d == null) return projects.hasError ? 'Không tải được số liệu.' : 'Đang tải…';
+  return '${d.activeProjects.length} đang chạy · ${d.completedThisYear} xong năm nay';
 }
 
-class _DuAnCard extends ConsumerWidget {
-  const _DuAnCard({required this.onTap});
+/// Số dư hiện tại của mọi ví (đỏ khi âm) · tên tháng tài chính đang mở.
+class _FinanceLine extends StatelessWidget {
+  const _FinanceLine({required this.finance});
 
-  final VoidCallback onTap;
+  final AsyncValue<FinanceOverview> finance;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final overview = ref.watch(duAnOverviewProvider);
-    final data = overview.value;
-    final upcoming = data?.upcomingProjects.firstOrNull;
-
-    return _HubCard(
-      title: '📋 Dự án thông thường',
-      trailing: '${data?.completedThisYear ?? 0} xong năm nay',
-      glow: ScrollCardGlow.yugen,
-      onTap: onTap,
-      child: overview.hasError
-          ? Text('Không tải được số liệu.', style: _muted(14))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 12, // gap-3
-              children: [
-                if (data == null)
-                  Text('Đang tải...', style: _muted(14))
-                else if (data.activeProjects.isEmpty)
-                  Text('Chưa có dự án nào đang triển khai.', style: _muted(14))
-                else
-                  for (final p in data.activeProjects.take(3))
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      spacing: 4,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                p.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8)),
-                              ),
-                            ),
-                            Text('${p.progressPct}%', style: _muted(12)),
-                          ],
-                        ),
-                        ProgressBar(value: p.progressPct.toDouble(), max: 100),
-                      ],
-                    ),
-                if (upcoming != null)
-                  Text('Sắp tới: ${upcoming.name} (${_viDate(upcoming.startDate)})', style: _muted(12)),
-              ],
-            ),
+  Widget build(BuildContext context) {
+    final d = finance.value;
+    if (d == null) return Text(finance.hasError ? 'Không tải được số liệu.' : 'Đang tải…', style: DesignText.muted);
+    final month = d.activeProjectName;
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: formatVnd(d.currentBalance), style: d.currentBalance < 0 ? const TextStyle(color: DesignColors.danger) : null),
+          if (month != null) TextSpan(text: ' · $month', style: DesignText.muted),
+        ],
+      ),
     );
   }
 }
 
-class _FinanceCard extends ConsumerWidget {
-  const _FinanceCard({required this.onTap});
+class _ProjectsRow extends StatelessWidget {
+  const _ProjectsRow({required this.projects, required this.onTap});
 
+  final AsyncValue<DuAnOverview> projects;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final overview = ref.watch(financeOverviewProvider);
-    final data = overview.value;
-
-    return _HubCard(
-      title: '💰 Tài chính',
-      trailing: data?.activeProjectName,
-      glow: ScrollCardGlow.kincha,
+  Widget build(BuildContext context) {
+    final d = projects.value;
+    final String sub;
+    num? progress;
+    if (d == null) {
+      sub = projects.hasError ? 'Không tải được số liệu.' : 'Đang tải…';
+    } else if (d.activeProjects.isEmpty) {
+      sub = 'Chưa có dự án nào đang triển khai.';
+    } else if (d.activeProjects.length == 1) {
+      final p = d.activeProjects.single;
+      sub = '${p.name} · ${p.progressPct}%';
+      progress = p.progressPct;
+    } else {
+      sub = '${d.activeProjects.length} dự án · trung bình ${d.averageProgress}%';
+      progress = d.averageProgress;
+    }
+    return FrameRow(
+      key: const ValueKey('nsd-du-an'),
+      glyph: '案',
+      title: 'Dự án thông thường',
+      subtitle: sub,
+      below: progress == null ? null : DesignProgressBar(progress),
       onTap: onTap,
-      // Web hiện "0₫" trong lúc chờ (`currentBalance ?? 0`) — dễ tưởng nhầm là hết tiền.
-      child: overview.hasError
-          ? Text('Không tải được số liệu.', style: _muted(14))
-          : data == null
-          ? Text('Đang tải...', style: _muted(14))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  formatVnd(data.currentBalance),
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: AppColors.kincha400),
-                ),
-                const SizedBox(height: 8), // mt-2
-                Row(
-                  spacing: 12,
-                  children: [
-                    Text(
-                      '+${formatVnd(data.totalIncome)}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.emerald300),
-                    ),
-                    Text(
-                      '−${formatVnd(data.totalExpense)}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.shuiro500),
-                    ),
-                  ],
-                ),
-              ],
-            ),
     );
   }
 }
 
-/// Card Học tập (kế hoạch). Dòng phụ lấy từ studyOverviewProvider; đang tải hoặc lỗi thì chỉ có tiêu đề, không chặn card.
-class _LearnCard extends ConsumerWidget {
-  const _LearnCard({required this.onTap});
+/// Số dư lớn (đỏ + "Âm quỹ" + viền đỏ sẫm khi âm) · Thu / Chi của tháng tài chính đang mở.
+class _FinanceRow extends StatelessWidget {
+  const _FinanceRow({required this.finance, required this.month, required this.onTap});
 
+  final AsyncValue<FinanceOverview> finance;
+  final AsyncValue<FinanceSummary>? month;
   final VoidCallback onTap;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final subjects = ref.watch(studyOverviewProvider).value?.subjects ?? const [];
-    final active = subjects.map((s) => s.activeCourse).nonNulls.firstOrNull;
-    final queued = subjects.fold<int>(0, (n, s) => n + s.counts.queued);
-    final line = active != null ? 'Đang học: ${active.title}' : (queued > 0 ? '$queued khóa chờ' : null);
+  static const _negativeBorder = Color(0xFF7A2F2F);
 
-    return _HubCard(
-      title: '🎓 Học tập',
-      glow: ScrollCardGlow.shuiro,
+  @override
+  Widget build(BuildContext context) {
+    final d = finance.value;
+    if (d == null) {
+      return FrameRow(
+        key: const ValueKey('nsd-finance'),
+        glyph: '財',
+        title: 'Tài chính',
+        subtitle: finance.hasError ? 'Không tải được số liệu.' : 'Đang tải…',
+        onTap: onTap,
+      );
+    }
+    final negative = d.currentBalance < 0;
+    final m = month?.value;
+    final String detail = month == null
+        ? 'Chưa mở tháng tài chính này.'
+        : m == null
+            ? (month!.hasError ? 'Không tải được tháng này.' : 'Đang tải…')
+            : 'Thu ${formatVnd(m.totalIncome)} · Chi ${formatVnd(m.totalExpense)}';
+    return FrameRow(
+      key: const ValueKey('nsd-finance'),
+      glyph: '財',
+      title: 'Tài chính',
+      borderColor: negative ? _negativeBorder : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            formatVnd(d.currentBalance),
+            key: const ValueKey('nsd-balance'),
+            style: TextStyle(fontSize: 20, color: negative ? DesignColors.danger : DesignColors.text),
+          ),
+          Wrap(
+            spacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (negative) const DesignPill('Âm quỹ', color: DesignColors.danger),
+              Text(detail, style: DesignText.muted),
+            ],
+          ),
+        ],
+      ),
       onTap: onTap,
-      child: line == null ? null : Text(line, key: const ValueKey('learn-card-line'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8))),
     );
+  }
+}
+
+/// Dòng phụ + nhãn của mục Học tập (kế hoạch): đang học → "Đang học: …"; không thì "N khóa chờ".
+class _LearnInfo {
+  const _LearnInfo(this.line, this.pill);
+
+  final String? line;
+  final Widget? pill;
+
+  static _LearnInfo? from(StudyOverview? o) {
+    if (o == null) return null;
+    final active = o.subjects.map((s) => s.activeCourse).nonNulls.firstOrNull;
+    final queued = o.subjects.fold<int>(0, (n, s) => n + s.counts.queued);
+    if (active != null) return _LearnInfo('Đang học: ${active.title}', const DesignPill('Đang học', color: DesignColors.info));
+    if (queued > 0) return _LearnInfo('$queued khóa chờ', const DesignPill('Chờ'));
+    return const _LearnInfo('Chưa có khóa nào', null);
   }
 }

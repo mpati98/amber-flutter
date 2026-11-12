@@ -1,10 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/utils/currency.dart';
 import '../providers/brain_chat_provider.dart';
 
-TextStyle muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
+// Thẻ giao dịch trong khung chat Amber, theo bộ thiết kế mới (Gelasio, màu DesignColors).
+// Nhãn trên thẻ giữ tiếng Việt; câu chat của Amber là tiếng Anh.
+
+const _gold = Color(0xFFE8C987); // nền nút chính, cùng nút Đăng nhập
 
 class _CardShell extends StatelessWidget {
   const _CardShell({required this.title, required this.rows, required this.status, this.actions});
@@ -23,45 +26,53 @@ class _CardShell extends StatelessWidget {
       CardStatus.cancelled => 'Đã hủy',
       CardStatus.expired => 'Đã bỏ qua',
     };
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Opacity(
-        opacity: done ? 0.55 : 1,
-        child: Container(
-          constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.9),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.kincha400.withValues(alpha: 0.06),
-            border: Border.all(color: AppColors.kincha400.withValues(alpha: 0.35)),
-            borderRadius: BorderRadius.circular(AppTheme.darkRadius),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            spacing: 6,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.kincha400),
-              ),
-              for (final (k, v) in rows)
-                Row(
+    return Opacity(
+      opacity: done ? 0.55 : 1,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        decoration: BoxDecoration(
+          color: DesignColors.panel,
+          border: Border.all(color: DesignColors.gold.withValues(alpha: 0.45)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(title, style: DesignText.serif(fontSize: 13.5, fontWeight: FontWeight.w700, color: DesignColors.gold)),
+            ),
+            for (final (i, (k, v)) in rows.indexed)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                decoration: BoxDecoration(
+                  border: i == 0 ? null : const Border(top: BorderSide(color: DesignColors.rowDivider)),
+                ),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 8,
                   children: [
-                    SizedBox(width: 84, child: Text(k, style: muted(12))),
-                    Expanded(child: Text(v, style: const TextStyle(fontSize: 13))),
+                    SizedBox(width: 72, child: Text(k, style: DesignText.serif(fontSize: 12.5, color: DesignColors.muted))),
+                    Expanded(child: Text(v, style: DesignText.serif(fontSize: 13.5, color: DesignColors.text))),
                   ],
                 ),
-              if (statusText != null) Text(statusText, style: muted(12)),
-              if (!done && actions != null) actions!,
-            ],
-          ),
+              ),
+            if (statusText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(statusText, style: DesignText.serif(fontSize: 12.5, color: DesignColors.muted)),
+              ),
+            if (!done && actions != null) actions!,
+          ],
         ),
       ),
     );
   }
 }
 
+/// Nút chính (vàng) + nút Hủy (viền); xuống dòng khi khung hẹp / chữ phóng to.
 class _Buttons extends StatelessWidget {
   const _Buttons({required this.confirmLabel, required this.onConfirm, required this.onCancel, required this.enabled});
 
@@ -72,16 +83,43 @@ class _Buttons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 4),
-    child: Row(
+    padding: const EdgeInsets.only(top: 10),
+    child: Wrap(
       spacing: 8,
+      runSpacing: 8,
       children: [
-        FilledButton(onPressed: enabled ? onConfirm : null, child: Text(confirmLabel)),
-        OutlinedButton(onPressed: enabled ? onCancel : null, child: const Text('Hủy')),
+        FilledButton(onPressed: enabled ? onConfirm : null, style: _primary, child: Text(confirmLabel)),
+        OutlinedButton(onPressed: enabled ? onCancel : null, style: _secondary, child: const Text('Hủy')),
       ],
     ),
   );
 }
+
+final _shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(6));
+const _pad = EdgeInsets.symmetric(horizontal: 14, vertical: 8);
+
+final _primary = FilledButton.styleFrom(
+  backgroundColor: _gold,
+  foregroundColor: const Color(0xFF1A1A1A),
+  disabledBackgroundColor: _gold.withValues(alpha: 0.4),
+  disabledForegroundColor: const Color(0xFF1A1A1A),
+  padding: _pad,
+  minimumSize: Size.zero,
+  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  shape: _shape,
+  textStyle: DesignText.serif(fontSize: 13.5),
+);
+
+final _secondary = OutlinedButton.styleFrom(
+  foregroundColor: DesignColors.text,
+  disabledForegroundColor: DesignColors.muted,
+  side: const BorderSide(color: DesignColors.panelBorder),
+  padding: _pad,
+  minimumSize: Size.zero,
+  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  shape: _shape,
+  textStyle: DesignText.serif(fontSize: 13.5),
+);
 
 /// Thẻ xác nhận ghi giao dịch, vẽ từ `draft` của brain.
 class DraftCard extends StatelessWidget {
@@ -149,7 +187,7 @@ class UndoCard extends StatelessWidget {
   }
 }
 
-/// Kết quả ghi/xóa kèm số dư mới; nút Hoàn tác khi [onUndo] khác null.
+/// Kết quả ghi/xóa kèm số dư mới (tông xanh thành công); nút Hoàn tác khi [onUndo] khác null.
 class ResultCard extends StatelessWidget {
   const ResultCard({super.key, required this.entry, this.onUndo});
 
@@ -158,25 +196,29 @@ class ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.9),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).success.withValues(alpha: 0.08),
-          border: Border.all(color: Theme.of(context).success.withValues(alpha: 0.35)),
-          borderRadius: BorderRadius.circular(AppTheme.darkRadius),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          spacing: 6,
-          children: [
-            Text(entry.text, style: const TextStyle(fontSize: 13, height: 1.45)),
-            if (onUndo != null) OutlinedButton(onPressed: onUndo, child: const Text('Hoàn tác')),
-          ],
-        ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: DesignColors.success.withValues(alpha: 0.08),
+        border: Border.all(color: DesignColors.success.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 8,
+            children: [
+              Icon(entry.recorded ? Icons.check_circle_outline : Icons.delete_outline, size: 18, color: DesignColors.success),
+              Expanded(child: Text(entry.text, style: DesignText.serif(fontSize: 13.5, height: 1.45, color: DesignColors.text))),
+            ],
+          ),
+          if (onUndo != null) OutlinedButton(onPressed: onUndo, style: _secondary, child: const Text('Hoàn tác')),
+        ],
       ),
     );
   }

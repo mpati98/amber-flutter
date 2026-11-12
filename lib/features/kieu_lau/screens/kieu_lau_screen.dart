@@ -4,290 +4,224 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../shared/providers/auth_provider.dart';
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/scroll_card.dart';
-import '../models/activity_log_entry.dart';
+import '../../../shared/theme/design_tokens.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/design_page.dart';
+import '../../../shared/widgets/list_frame.dart';
+import '../../../shared/widgets/overview_block.dart';
 import '../models/alert.dart';
 import '../models/feed_article.dart';
 import '../models/feed_source.dart';
 import '../providers/kieu_lau_provider.dart';
 import '../providers/music_player_provider.dart';
 import '../services/kieu_lau_api.dart';
+import '../utils/activity_groups.dart';
 import '../widgets/add_feed_source_dialog.dart';
 import '../widgets/music_mini_player.dart';
-import '../../../shared/widgets/app_bar_back.dart';
 
-// Giá trị `source` thật của activity_logs (xem logActivity bên amber-v4).
-const _sourceIcon = {
-  'DU_AN': '📋',
-  'FINANCE': '💰',
-  'LEARN': '🎓',
-  'TRA_DINH': '🍵',
-  'KIEU_LAU': '📰',
+/// Bộ lọc của khung: nhật ký theo nguồn, hoặc Tin tức (RSS).
+enum KieuLauFilter { all, finance, learn, news }
+
+const _filters = [
+  (KieuLauFilter.all, 'Tất cả'),
+  (KieuLauFilter.finance, 'Tài chính'),
+  (KieuLauFilter.learn, 'Học tập'),
+  (KieuLauFilter.news, 'Tin tức'),
+];
+
+/// Giá trị `source` thật của activity_logs (xem logActivity bên amber-v4) → chữ Hán + màn mở khi bấm (null = không mở gì).
+const _sources = <String, (String, String?)>{
+  'FINANCE': ('財', '/finance'),
+  'TRA_DINH': ('學', '/tra-dinh'),
+  'LEARN': ('訓', '/tang-kinh-cac/du-lieu-huan-luyen'), // nhật ký sửa đáp án amber-brain
+  'DU_AN': ('案', '/du-an'),
+  'MUSIC': ('樂', '/kieu-lau/nhac'),
+  'KIEU_LAU': ('樓', null),
 };
 
-/// Giống `toLocaleDateString("vi-VN")` bên web: d/M/yyyy, giờ địa phương.
-String _formatDate(DateTime d) {
-  final local = d.toLocal();
-  return '${local.day}/${local.month}/${local.year}';
-}
+bool _matches(KieuLauFilter f, String source) => switch (f) {
+  KieuLauFilter.all => true,
+  KieuLauFilter.finance => source == 'FINANCE',
+  KieuLauFilter.learn => source == 'TRA_DINH' || source == 'LEARN',
+  KieuLauFilter.news => false,
+};
 
-/// Trung tâm thông báo & tin tức — port từ amber-v3/src/app/kieu-lau/page.tsx,
-/// xếp dọc 3 khối thay cho lưới 3 cột bên web.
-class KieuLauScreen extends ConsumerWidget {
+/// /kieu-lau theo design/ref/kieu-lau.html: Tổng quan (Nhạc · Cần chú ý) → khung có chip lọc:
+/// nhật ký gần đây đã gộp ([groupActivity]) hoặc Tin tức (bài RSS + quản lý nguồn). Trình phát mini cố định dưới đáy.
+class KieuLauScreen extends ConsumerStatefulWidget {
   const KieuLauScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(),
-        title: const Text('Kiều Lâu'),
-        actions: [
-          // TODO: tạm để test luồng auth — chuyển sang màn Cài đặt khi có router.
-          IconButton(
-            tooltip: 'Đăng xuất',
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(authControllerProvider.notifier).logout();
-              if (!context.mounted) return;
-              // Redirect cũng tự đưa về /login, nhưng kèm ?from=/kieu-lau — đăng
-              // xuất chủ động thì không cần quay lại đây sau khi đăng nhập lại.
-              context.go('/login');
-            },
+  ConsumerState<KieuLauScreen> createState() => _KieuLauScreenState();
+}
+
+class _KieuLauScreenState extends ConsumerState<KieuLauScreen> {
+  KieuLauFilter _filter = KieuLauFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
+    return DesignPage(
+      title: 'Kiều Lâu',
+      onRefresh: () async {
+        ref.invalidate(notificationsProvider);
+        if (_filter == KieuLauFilter.news) {
+          ref.invalidate(feedSourcesProvider);
+          ref.invalidate(feedArticlesProvider);
+        }
+        await ref.read(notificationsProvider.future).then<void>((_) {}, onError: (_) {});
+      },
+      overview: OverviewBlock(
+        title: 'Tổng quan',
+        labelWidth: 90,
+        rows: [
+          OverviewRow(
+            key: const ValueKey('kl-music'),
+            label: 'Nhạc',
+            onTap: () => context.push('/kieu-lau/nhac'),
+            child: const Text('Tải lên và phát bộ sưu tập MP3 riêng ›', style: DesignText.muted),
           ),
+          const OverviewRow(label: 'Cần chú ý', child: _Alerts()),
         ],
       ),
-      body: Column(
-        children: [
-          const Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                spacing: 20,
-                children: [
-                  _MusicPlayerCard(),
-                  _AlertsCard(),
-                  _ActivityCard(),
-                  _NewsCard(),
-                ],
-              ),
+      content: (context, _) => ListFrame(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 8,
+          children: [
+            DesignChipRow<KieuLauFilter>(
+              items: _filters,
+              selected: _filter,
+              onSelected: (f) => setState(() => _filter = f),
             ),
-          ),
-          MusicMiniPlayer(controller: ref.watch(musicPlayerProvider)),
-        ],
+            if (_filter == KieuLauFilter.news) const _News() else _Activity(filter: _filter),
+          ],
+        ),
       ),
+      hint: 'Chạm vào một mục để xem chi tiết',
+      bottomBar: MusicMiniPlayer(controller: ref.watch(musicPlayerProvider)),
     );
   }
 }
 
-class _MusicPlayerCard extends StatelessWidget {
-  const _MusicPlayerCard();
+String _loadError(Object error) =>
+    error is DioException ? 'Không tải được (${error.response?.statusCode ?? error.type.name}).' : 'Không tải được.';
 
-  @override
-  Widget build(BuildContext context) {
-    return ScrollCard(
-      glow: ScrollCardGlow.yugen,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.music_note),
-        title: const Text('Nhạc của tôi'),
-        subtitle: const Text('Tải lên và phát bộ sưu tập MP3 riêng'),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push('/kieu-lau/nhac'),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: AppColors.kincha400,
-      ),
-    );
-  }
-}
-
-class _Muted extends StatelessWidget {
-  const _Muted(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 12,
-        color: Colors.white.withValues(alpha: 0.4),
-      ),
-    );
-  }
-}
-
-Widget _loadError(Object error) => _Muted(
-  error is DioException
-      ? 'Không tải được (${error.response?.statusCode ?? error.type.name}).'
-      : 'Không tải được.',
-);
-
-class _AlertsCard extends ConsumerWidget {
-  const _AlertsCard();
+/// Cảnh báo (task trễ hạn, vượt ngân sách, thiếu tháng tài chính…); bấm mở đúng màn qua `href`.
+class _Alerts extends ConsumerWidget {
+  const _Alerts();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ScrollCard(
-      glow: ScrollCardGlow.shuiro,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 12,
-        children: [
-          const _SectionTitle('Cần chú ý'),
-          ref
-              .watch(notificationsProvider)
-              .when(
-                loading: () => const _Muted('Đang tải...'),
-                error: (e, _) => _loadError(e),
-                data: (n) => n.alerts.isEmpty
-                    ? const _Muted('Không có gì cần chú ý — mọi thứ ổn.')
-                    : Column(
-                        children: [for (final a in n.alerts) _AlertTile(a)],
-                      ),
-              ),
-        ],
-      ),
+    return ref.watch(notificationsProvider).when(
+      loading: () => const Text('Đang tải…', style: DesignText.muted),
+      error: (e, _) => Text(_loadError(e), style: DesignText.muted),
+      data: (n) => n.alerts.isEmpty
+          ? const Text('Không có gì cần chú ý. Mọi thứ ổn.', style: TextStyle(color: DesignColors.success))
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 4,
+              children: [for (final a in n.alerts) _AlertLine(a)],
+            ),
     );
   }
 }
 
-class _AlertTile extends StatelessWidget {
-  const _AlertTile(this.alert);
+class _AlertLine extends StatelessWidget {
+  const _AlertLine(this.alert);
 
   final Alert alert;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      title: Text(alert.title),
-      subtitle: alert.detail == null ? null : Text(alert.detail!),
-      // Route table khớp đường dẫn web nên dùng thẳng href (/du-an, /finance/<id>...).
-      // push (không go) để back được về Kiều Lâu.
-      onTap: () => context.push(alert.href),
-    );
-  }
-}
-
-class _ActivityCard extends ConsumerWidget {
-  const _ActivityCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ScrollCard(
-      glow: ScrollCardGlow.yugen,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 12,
-        children: [
-          const _SectionTitle('Nhật ký gần đây'),
-          ref
-              .watch(notificationsProvider)
-              .when(
-                loading: () => const _Muted('Đang tải...'),
-                error: (e, _) => _loadError(e),
-                data: (n) => n.recentActivity.isEmpty
-                    ? const _Muted('Chưa có hoạt động nào.')
-                    : Column(
-                        spacing: 8,
-                        children: [
-                          for (final r in n.recentActivity) _ActivityRow(r),
-                        ],
-                      ),
-              ),
-        ],
+    return Semantics(
+      button: true,
+      child: InkWell(
+        key: ValueKey('kl-alert-${alert.id}'),
+        // Route table khớp đường dẫn web nên dùng thẳng href; push để back về Kiều Lâu.
+        onTap: () => context.push(alert.href),
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: alert.title, style: const TextStyle(color: DesignColors.danger)),
+              if (alert.detail case final d?) TextSpan(text: ' · $d', style: DesignText.muted),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _ActivityRow extends StatelessWidget {
-  const _ActivityRow(this.entry);
+class _Activity extends ConsumerWidget {
+  const _Activity({required this.filter});
 
-  final ActivityLogEntry entry;
+  final KieuLauFilter filter;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 8,
-      children: [
-        Text(_sourceIcon[entry.source] ?? '•'),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                entry.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withValues(alpha: 0.8),
-                ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(notificationsProvider).when(
+      loading: () => const Text('Đang tải…', style: DesignText.muted),
+      error: (e, _) => Text(_loadError(e), style: DesignText.muted),
+      data: (n) {
+        if (n.recentActivity.isEmpty) return const Text('Chưa có hoạt động nào.', style: DesignText.muted);
+        final groups = groupActivity(n.recentActivity).where((g) => _matches(filter, g.source)).toList();
+        if (groups.isEmpty) return const Text('Không có mục nào.', style: DesignText.muted);
+        return FrameRows(
+          children: [
+            for (final (i, g) in groups.indexed)
+              FrameRow(
+                key: ValueKey('kl-activity-$i'),
+                glyph: _sources[g.source]?.$1 ?? '•',
+                glyphSize: 30,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                title: g.title,
+                subtitle: g.repeat == null
+                    ? g.subtitle
+                    : Wrap(
+                        spacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          DesignPill('×${g.repeat}', color: DesignColors.info),
+                          Text(g.shortDate, style: DesignText.muted),
+                        ],
+                      ),
+                onTap: switch (_sources[g.source]?.$2) {
+                  final path? => () => context.push(path),
+                  null => null,
+                },
               ),
-              Text(
-                _formatDate(entry.createdAt),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
 
-class _NewsCard extends ConsumerStatefulWidget {
-  const _NewsCard();
+/// Tin tức: nguồn (xoá được) + "+ Nguồn" + Làm mới, rồi danh sách bài (bấm mở trình duyệt).
+class _News extends ConsumerStatefulWidget {
+  const _News();
 
   @override
-  ConsumerState<_NewsCard> createState() => _NewsCardState();
+  ConsumerState<_News> createState() => _NewsState();
 }
 
-class _NewsCardState extends ConsumerState<_NewsCard> {
+class _NewsState extends ConsumerState<_News> {
   bool _refreshing = false;
-
-  void _showSnack(String message) =>
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
 
   Future<void> _refresh() async {
     setState(() => _refreshing = true);
     try {
       final result = await ref.read(kieuLauApiProvider).refreshFeeds();
+      if (!mounted) return;
       if (result.failed.isNotEmpty) {
-        _showSnack('Không làm mới được: ${result.failed.join(', ')}');
+        showToast(context, 'Không làm mới được: ${result.failed.join(', ')}', type: ToastType.warning);
+      } else {
+        showToast(context, 'Đã cập nhật ${result.refreshed} nguồn', type: ToastType.success);
       }
       ref.invalidate(feedArticlesProvider);
       ref.invalidate(notificationsProvider); // backend vừa ghi activity log
     } on DioException {
-      _showSnack('Không làm mới được tin tức, thử lại nhé.');
+      if (mounted) showToast(context, 'Không làm mới được tin tức, thử lại nhé.', type: ToastType.error);
     } finally {
       if (mounted) setState(() => _refreshing = false);
     }
@@ -304,20 +238,16 @@ class _NewsCardState extends ConsumerState<_NewsCard> {
     try {
       await ref.read(kieuLauApiProvider).deleteFeedSource(source.id);
     } on DioException {
-      _showSnack('Không xoá được nguồn "${source.name}".');
+      if (mounted) showToast(context, 'Không xoá được nguồn "${source.name}".', type: ToastType.error);
     }
     ref.invalidate(feedSourcesProvider);
-    // Bài của nguồn bị xoá cũng mất theo (cascade).
-    ref.invalidate(feedArticlesProvider);
+    ref.invalidate(feedArticlesProvider); // bài của nguồn bị xoá mất theo (cascade)
     ref.invalidate(notificationsProvider);
   }
 
-  Future<void> _openArticle(FeedArticle article) async {
-    final ok = await launchUrl(
-      Uri.parse(article.url),
-      mode: LaunchMode.externalApplication,
-    );
-    if (!ok) _showSnack('Không mở được liên kết.');
+  Future<void> _open(FeedArticle article) async {
+    final ok = await launchUrl(Uri.parse(article.url), mode: LaunchMode.externalApplication);
+    if (!ok && mounted) showToast(context, 'Không mở được liên kết.', type: ToastType.error);
   }
 
   @override
@@ -325,76 +255,120 @@ class _NewsCardState extends ConsumerState<_NewsCard> {
     final sources = ref.watch(feedSourcesProvider);
     final hasSources = sources.value?.isNotEmpty ?? false;
 
-    return ScrollCard(
-      glow: ScrollCardGlow.kincha,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 12,
-        children: [
-          Row(
-            children: [
-              const Expanded(child: _SectionTitle('Tin tức')),
-              TextButton(
-                onPressed: _refreshing || !hasSources ? null : _refresh,
-                child: Text(_refreshing ? 'Đang làm mới...' : 'Làm mới'),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 8,
+      children: [
+        Row(
+          spacing: 8,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  spacing: 6,
+                  children: [
+                    for (final s in sources.value ?? const <FeedSource>[])
+                      _SourceChip(source: s, onDelete: () => _deleteSource(s)),
+                    _SmallButton(key: const ValueKey('kl-add-source'), label: '+ Nguồn', onTap: _addSource),
+                  ],
+                ),
               ),
-            ],
-          ),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              for (final s in sources.value ?? const <FeedSource>[])
-                Chip(label: Text(s.name), onDeleted: () => _deleteSource(s)),
-              ActionChip(label: const Text('+ Nguồn'), onPressed: _addSource),
-            ],
-          ),
-          if (sources.hasError) _loadError(sources.error!),
-          ref
-              .watch(feedArticlesProvider)
-              .when(
-                loading: () => const _Muted('Đang tải...'),
-                error: (e, _) => _loadError(e),
-                data: (articles) => articles.isEmpty
-                    ? const _Muted(
-                        'Chưa có tin nào — thêm nguồn rồi bấm "Làm mới".',
-                      )
-                    : ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 320),
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: articles.length,
-                          itemBuilder: (_, i) => _ArticleTile(
-                            articles[i],
-                            onTap: () => _openArticle(articles[i]),
-                          ),
-                        ),
+            ),
+            _SmallButton(
+              key: const ValueKey('kl-refresh'),
+              label: _refreshing ? 'Đang làm mới...' : 'Làm mới',
+              onTap: _refreshing || !hasSources ? null : _refresh,
+            ),
+          ],
+        ),
+        if (sources.hasError) Text(_loadError(sources.error!), style: DesignText.muted),
+        ref.watch(feedArticlesProvider).when(
+          loading: () => const Text('Đang tải…', style: DesignText.muted),
+          error: (e, _) => Text(_loadError(e), style: DesignText.muted),
+          data: (articles) => articles.isEmpty
+              ? const Text('Chưa có tin nào — thêm nguồn rồi bấm "Làm mới".', style: DesignText.muted)
+              : FrameRows(
+                  children: [
+                    for (final a in articles)
+                      FrameRow(
+                        key: ValueKey('kl-article-${a.id}'),
+                        glyph: '聞',
+                        glyphSize: 30,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        title: a.title,
+                        subtitle: [a.sourceName, if (a.publishedAt case final d?) _date(d)].join(' · '),
+                        onTap: () => _open(a),
                       ),
-              ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// d/M/yyyy theo giờ máy, như `toLocaleDateString("vi-VN")` bên web.
+String _date(DateTime d) {
+  final l = d.toLocal();
+  return '${l.day}/${l.month}/${l.year}';
+}
+
+class _SourceChip extends StatelessWidget {
+  const _SourceChip({required this.source, required this.onDelete});
+
+  final FeedSource source;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: ValueKey('kl-source-${source.id}'),
+      padding: const EdgeInsets.only(left: 10, right: 2),
+      decoration: const ShapeDecoration(
+        color: DesignColors.panel,
+        shape: StadiumBorder(side: BorderSide(color: DesignColors.panelBorder)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(source.name, style: const TextStyle(fontSize: 13, color: Color(0xFFCFD3EA))),
+          IconButton(
+            tooltip: 'Xoá nguồn ${source.name}',
+            onPressed: onDelete,
+            icon: const Icon(Icons.close, size: 14, color: DesignColors.muted),
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+            padding: EdgeInsets.zero,
+          ),
         ],
       ),
     );
   }
 }
 
-class _ArticleTile extends StatelessWidget {
-  const _ArticleTile(this.article, {required this.onTap});
+/// Nút chữ viền vàng nhỏ (như `.btn.o` của bản mẫu).
+class _SmallButton extends StatelessWidget {
+  const _SmallButton({super.key, required this.label, required this.onTap});
 
-  final FeedArticle article;
-  final VoidCallback onTap;
+  final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final date = article.publishedAt == null
-        ? ''
-        : ' · ${_formatDate(article.publishedAt!)}';
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      dense: true,
-      title: Text(article.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: Text('${article.sourceName}$date'),
-      onTap: onTap,
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: DesignColors.gold,
+        disabledForegroundColor: DesignColors.muted,
+        side: BorderSide(color: onTap == null ? DesignColors.panelBorder : DesignColors.gold),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        minimumSize: const Size(0, 30),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+        textStyle: DesignText.serif(fontSize: 13),
+      ),
+      child: Text(label),
     );
   }
 }

@@ -2,6 +2,17 @@ import 'package:material_ui/material_ui.dart';
 
 import '../models/brain_models.dart';
 
+/// Câu báo đồng bộ nhật ký; null = không cần báo. Dùng chung cho [LogPushBanner] và dòng cảnh báo của khung chat Amber.
+String? logPushMessage(LogPushStatus? status, {bool vietnamese = false}) {
+  if (status == null || !status.shouldWarn) return null;
+  return switch (status.lastError) {
+    'auth' => vietnamese ? 'Vui lòng đăng nhập lại để đồng bộ nhật ký.' : 'Please sign in again to sync logs.',
+    'network' || 'server' || 'unknown' =>
+      vietnamese ? 'Chưa gửi được nhật ký, hệ thống sẽ thử lại.' : 'Log sync failed. It will be retried.',
+    _ => vietnamese ? 'Còn ${status.pending} dòng nhật ký đang chờ gửi.' : '${status.pending} log entries are waiting to sync.',
+  };
+}
+
 /// Shared warning for log delivery problems on screens that expose brain status.
 class LogPushBanner extends StatelessWidget {
   const LogPushBanner({
@@ -15,23 +26,10 @@ class LogPushBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (status == null || !status!.shouldWarn) return const SizedBox.shrink();
+    final message = logPushMessage(status, vietnamese: vietnamese);
+    if (message == null) return const SizedBox.shrink();
 
     final colorScheme = Theme.of(context).colorScheme;
-    final message = switch (status!.lastError) {
-      'auth' =>
-        vietnamese
-            ? 'Vui lòng đăng nhập lại để đồng bộ nhật ký.'
-            : 'Please sign in again to sync logs.',
-      'network' || 'server' || 'unknown' =>
-        vietnamese
-            ? 'Chưa gửi được nhật ký, hệ thống sẽ thử lại.'
-            : 'Log sync failed. It will be retried.',
-      _ =>
-        vietnamese
-            ? 'Còn ${status!.pending} dòng nhật ký đang chờ gửi.'
-            : '${status!.pending} log entries are waiting to sync.',
-    };
 
     return Container(
       key: const Key('log-push-banner'),
