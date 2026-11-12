@@ -2,7 +2,7 @@ import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_logs_
 import 'package:amber_flutter/features/du_lieu_huan_luyen/models/training_log.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

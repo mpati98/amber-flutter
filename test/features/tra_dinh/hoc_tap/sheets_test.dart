@@ -1,7 +1,7 @@
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/course.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/sections_editor_sheet.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/subject_sheet.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'hoc_tap_test_support.dart';

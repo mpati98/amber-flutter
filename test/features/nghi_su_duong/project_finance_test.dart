@@ -9,7 +9,7 @@ import 'package:amber_flutter/shared/utils/date_format.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:amber_flutter/shared/widgets/scroll_card.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'detail_test_support.dart';

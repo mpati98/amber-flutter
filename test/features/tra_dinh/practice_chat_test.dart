@@ -6,7 +6,7 @@ import 'package:amber_flutter/features/tra_dinh/screens/practice_chat_screen.dar
 import 'package:amber_flutter/features/tra_dinh/services/recording_service.dart';
 import 'package:amber_flutter/features/tra_dinh/services/tra_dinh_api.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

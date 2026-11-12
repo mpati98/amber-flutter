@@ -6,7 +6,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dar
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/log_sheet.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/schedule_day_row.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'hoc_tap_test_support.dart';

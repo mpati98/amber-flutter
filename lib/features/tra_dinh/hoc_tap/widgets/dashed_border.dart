@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Viền nét đứt bo góc bọc quanh [child] (kế hoạch dự kiến, khác với buổi học thật có viền liền).
 class DashedBorder extends StatelessWidget {

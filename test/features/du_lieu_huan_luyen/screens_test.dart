@@ -5,7 +5,7 @@ import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_
 import 'package:amber_flutter/features/amber_brain/models/brain_models.dart';
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

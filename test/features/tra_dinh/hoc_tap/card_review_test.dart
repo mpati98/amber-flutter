@@ -7,7 +7,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/card_review_scre
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/speech_service.dart';
 import 'package:amber_flutter/shared/theme/app_theme.dart';
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 

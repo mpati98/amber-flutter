@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../shared/widgets/api_image.dart';
 import '../../../shared/widgets/progress_bar.dart';

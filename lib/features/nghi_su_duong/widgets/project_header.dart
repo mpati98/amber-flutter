@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../shared/utils/date_format.dart';
 import '../../../shared/widgets/scroll_card.dart';

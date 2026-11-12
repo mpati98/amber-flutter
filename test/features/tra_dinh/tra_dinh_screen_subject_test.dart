@@ -5,7 +5,7 @@ import 'package:amber_flutter/features/tra_dinh/models/skill_score.dart';
 import 'package:amber_flutter/features/tra_dinh/screens/tra_dinh_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/services/tra_dinh_api.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

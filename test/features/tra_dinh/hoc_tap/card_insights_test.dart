@@ -4,7 +4,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card_insights.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/card_insights_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/card_insights_prompt.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -6,7 +6,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/schedule_day_row
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:amber_flutter/shared/widgets/progress_bar.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

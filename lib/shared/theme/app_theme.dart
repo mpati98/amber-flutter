@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Toàn bộ hex lấy nguyên văn từ amber-v3/src/app/globals.css (không làm tròn).
@@ -68,6 +68,29 @@ extension AppThemeColors on ThemeData {
 }
 
 abstract final class AppTheme {
+  /// Thay cho `GoogleFonts.interTextTheme`: hàm đó nhận/trả `TextTheme` của `flutter/material`, còn app đã chuyển sang
+  /// `material_ui` (TextTheme khác kiểu). Áp Inter cho từng style giống hệt cách google_fonts làm bên trong.
+  static TextTheme _interTextTheme(TextTheme t) {
+    TextStyle? inter(TextStyle? s) => GoogleFonts.inter(textStyle: s);
+    return TextTheme(
+      displayLarge: inter(t.displayLarge),
+      displayMedium: inter(t.displayMedium),
+      displaySmall: inter(t.displaySmall),
+      headlineLarge: inter(t.headlineLarge),
+      headlineMedium: inter(t.headlineMedium),
+      headlineSmall: inter(t.headlineSmall),
+      titleLarge: inter(t.titleLarge),
+      titleMedium: inter(t.titleMedium),
+      titleSmall: inter(t.titleSmall),
+      bodyLarge: inter(t.bodyLarge),
+      bodyMedium: inter(t.bodyMedium),
+      bodySmall: inter(t.bodySmall),
+      labelLarge: inter(t.labelLarge),
+      labelMedium: inter(t.labelMedium),
+      labelSmall: inter(t.labelSmall),
+    );
+  }
+
   /// --radius: 0.625rem ≈ 10px (globals.css).
   static const double radius = 10;
   static final _shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
@@ -82,7 +105,7 @@ abstract final class AppTheme {
   // --radius-sm bị globals.css ghi đè còn 0.6× thay vì mặc định Tailwind, không phải 4px.
   static ThemeData get darkTheme {
     final base = ThemeData(brightness: Brightness.dark);
-    final inter = GoogleFonts.interTextTheme(base.textTheme);
+    final inter = _interTextTheme(base.textTheme);
     final textTheme = inter.copyWith(
       displayLarge: GoogleFonts.notoSerif(textStyle: inter.displayLarge),
       displayMedium: GoogleFonts.notoSerif(textStyle: inter.displayMedium),
@@ -124,7 +147,7 @@ abstract final class AppTheme {
   /// --background = bg-light, --secondary = secondary-300, --border = primary-100.
   static ThemeData get lightTheme {
     final base = ThemeData(brightness: Brightness.light);
-    final textTheme = GoogleFonts.interTextTheme(base.textTheme).apply(
+    final textTheme = _interTextTheme(base.textTheme).apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );
