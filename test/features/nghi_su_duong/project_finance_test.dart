@@ -50,7 +50,7 @@ Finder _field(String label) => find.widgetWithText(TextField, label);
 
 Future<void> _openAddForm(WidgetTester tester) async {
   await _openFinanceTab(tester);
-  await tester.tap(find.text('Thêm giao dịch'));
+  await tester.tap(find.text('+ Thêm giao dịch'));
   await tester.pumpAndSettle();
   expect(find.widgetWithText(AppBar, 'Thêm giao dịch'), findsOneWidget);
 }
@@ -137,15 +137,15 @@ void main() {
     testWidgets('ẩn "x / y việc xong" và "Thêm việc", có "Thêm giao dịch"; đổi lại Bảng thì hiện lại', (tester) async {
       await pumpDetail(tester, tasks: [mkTask('a', 'A', TaskStatus.done)], finance: FakeFinanceApi(transactions: _txs));
       expect(find.text('1 / 1 việc xong'), findsOneWidget);
-      expect(find.text('Thêm việc'), findsOneWidget);
+      expect(find.text('+ Thêm việc'), findsOneWidget);
       await _openFinanceTab(tester);
       expect(find.text('1 / 1 việc xong'), findsNothing);
-      expect(find.text('Thêm việc'), findsNothing);
-      expect(find.text('Thêm giao dịch'), findsOneWidget);
+      expect(find.text('+ Thêm việc'), findsNothing);
+      expect(find.text('+ Thêm giao dịch'), findsOneWidget);
       await tester.tap(find.widgetWithText(ChoiceChip, 'Bảng'));
       await tester.pumpAndSettle();
       expect(find.text('1 / 1 việc xong'), findsOneWidget);
-      expect(find.text('Thêm giao dịch'), findsNothing);
+      expect(find.text('+ Thêm giao dịch'), findsNothing);
     });
 
     testWidgets('dòng tổng và danh sách: dòng chính, dòng phụ, số tiền + / −', (tester) async {

@@ -73,7 +73,7 @@ Future<void> _openEditForm(WidgetTester tester) async {
 }
 
 Future<void> _openNewForm(WidgetTester tester) async {
-  await tester.tap(find.text('Thêm việc'));
+  await tester.tap(find.text('+ Thêm việc'));
   await tester.pumpAndSettle();
   expect(find.widgetWithText(AppBar, 'Thêm việc'), findsOneWidget);
 }

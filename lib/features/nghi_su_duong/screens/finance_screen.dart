@@ -3,18 +3,17 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/utils/currency.dart';
-import '../../../shared/widgets/scroll_card.dart';
-import '../../../shared/widgets/tag.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/design_page.dart';
+import '../../../shared/widgets/list_frame.dart';
+import '../../../shared/widgets/overview_block.dart';
 import '../models/project.dart';
 import '../providers/finance_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/finance_api.dart';
 import '../utils/finance_month.dart';
-import '../../../shared/widgets/app_bar_back.dart';
-
-TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
 /// "YYYY-MM-DD" → "d/M/yyyy" như toLocaleDateString("vi-VN").
 String _viDate(String iso) {
@@ -43,10 +42,7 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
       ref.invalidate(financeOverviewProvider); // card Tài chính ở trang chính
       if (mounted) _openMonth(month);
     } on DioException {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Không bắt đầu được tháng mới, thử lại nhé.')));
-      }
+      if (mounted) showToast(context, 'Không bắt đầu được tháng mới, thử lại nhé.', type: ToastType.error);
     } finally {
       if (mounted) setState(() => _starting = false);
     }
@@ -55,60 +51,92 @@ class _FinanceScreenState extends ConsumerState<FinanceScreen> {
   @override
   Widget build(BuildContext context) {
     final months = ref.watch(financeProjectsProvider);
+    final overview = ref.watch(financeOverviewProvider);
     // Chỉ hiện nút khi đã tải xong và tháng hiện tại (lịch VN) chưa có.
     final showStart = months.hasValue && !hasCurrentFinanceMonth(months.value!);
+    final o = overview.value;
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/nghi-su-duong'), title: const Text('Tài chính cá nhân')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: RefreshIndicator(
-            onRefresh: () => ref.refresh(financeProjectsProvider.future),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (showStart) ...[
-                  // Có thể mất vài giây (lần đầu backend tạo danh mục mặc định,
-                  // chụp số dư mọi ví, lưu trữ tháng cũ) — khoá nút + spinner
-                  // để không bấm 2 lần.
-                  FilledButton.icon(
-                    onPressed: _starting ? null : _startMonth,
-                    icon: _starting
-                        ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.add),
-                    label: Text(_starting ? 'Đang tạo tháng mới...' : 'Bắt đầu tháng mới'),
+    return DesignPage(
+      title: 'Tài chính cá nhân',
+      backFallback: '/nghi-su-duong',
+      onRefresh: () => Future.wait([
+        ref.refresh(financeProjectsProvider.future),
+        ref.refresh(financeOverviewProvider.future).then<void>((_) {}, onError: (_) {}),
+      ]),
+      overview: OverviewBlock(
+        title: 'Tổng quan',
+        labelWidth: 90,
+        rows: [
+          OverviewRow(
+            label: 'Số dư ví',
+            child: o == null
+                ? Text(overview.hasError ? 'Không tải được.' : 'Đang tải…', style: DesignText.muted)
+                : Text(
+                    formatVnd(o.currentBalance),
+                    style: TextStyle(color: o.currentBalance < 0 ? DesignColors.danger : DesignColors.text),
                   ),
-                  const SizedBox(height: 16),
-                ],
-                ...months.when(
-                  loading: () => [Text('Đang tải...', style: _muted(12))],
-                  error: (_, _) => [Text('Không tải được danh sách tháng.', style: _muted(12))],
-                  data: (items) => items.isEmpty
-                      ? [
-                          Text(
-                            'Chưa có dự án tài chính nào — bấm "Bắt đầu tháng mới" để tạo dự án cho tháng hiện tại.',
-                            style: _muted(12),
-                          ),
-                        ]
-                      : [
-                          for (final m in items) ...[
-                            _MonthCard(month: m, onTap: () => _openMonth(m)),
-                            const SizedBox(height: 12),
-                          ],
-                        ],
-                ),
-              ],
-            ),
           ),
+          OverviewRow(
+            label: 'Năm nay',
+            child: o == null
+                ? Text(overview.hasError ? 'Không tải được.' : 'Đang tải…', style: DesignText.muted)
+                : Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: 'Thu ${formatVnd(o.totalIncome)}', style: const TextStyle(color: DesignColors.success)),
+                        const TextSpan(text: ' · ', style: DesignText.muted),
+                        TextSpan(text: 'Chi ${formatVnd(o.totalExpense)}', style: const TextStyle(color: DesignColors.danger)),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+      content: (context, _) => ListFrame(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 8,
+          children: [
+            if (showStart)
+              // Có thể mất vài giây (lần đầu backend tạo danh mục mặc định, chụp số dư mọi ví, lưu trữ tháng cũ) —
+              // khoá nút + spinner để không bấm 2 lần.
+              FilledButton.icon(
+                onPressed: _starting ? null : _startMonth,
+                style: FilledButton.styleFrom(
+                  backgroundColor: DesignColors.gold,
+                  foregroundColor: const Color(0xFF1A1A1A),
+                  minimumSize: const Size(0, 44),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  textStyle: DesignText.serif(fontSize: 14),
+                ),
+                icon: _starting
+                    ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.add),
+                label: Text(_starting ? 'Đang tạo tháng mới...' : 'Bắt đầu tháng mới'),
+              ),
+            ...months.when(
+              loading: () => [const Text('Đang tải...', style: DesignText.muted)],
+              error: (_, _) => [const Text('Không tải được danh sách tháng.', style: DesignText.muted)],
+              data: (items) => items.isEmpty
+                  ? [
+                      const Text(
+                        'Chưa có dự án tài chính nào — bấm "Bắt đầu tháng mới" để tạo dự án cho tháng hiện tại.',
+                        style: DesignText.muted,
+                      ),
+                    ]
+                  : [for (final m in items) _MonthRow(month: m, onTap: () => _openMonth(m))],
+            ),
+          ],
         ),
       ),
+      hint: 'Chạm vào một tháng để xem thu chi',
     );
   }
 }
 
-class _MonthCard extends ConsumerWidget {
-  const _MonthCard({required this.month, required this.onTap});
+/// Một tháng tài chính: chữ 月 · tên + khoảng ngày · Thu / Chi / Chênh lệch · nhãn "Đang mở".
+class _MonthRow extends ConsumerWidget {
+  const _MonthRow({required this.month, required this.onTap});
 
   final Project month;
   final VoidCallback onTap;
@@ -118,55 +146,37 @@ class _MonthCard extends ConsumerWidget {
     final isOpen = month.archivedAt == null;
     final summary = ref.watch(financeSummaryProvider(month.id)).value;
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: ScrollCard(
-        glow: isOpen ? ScrollCardGlow.kincha : ScrollCardGlow.yugen,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 4,
-          children: [
-            Row(
+    return FrameRow(
+      key: ValueKey('month-${month.id}'),
+      glyph: '月',
+      title: month.name,
+      borderColor: isOpen ? DesignColors.gold.withValues(alpha: 0.5) : null,
+      trailing: isOpen ? const DesignPill('Đang mở', color: DesignColors.info) : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (month.startDate != null && month.endDate != null)
+            Text('${_viDate(month.startDate!)} → ${_viDate(month.endDate!)}', style: DesignText.muted),
+          // Không hiện "Tổng số dư": summary.totalBalance là số dư HIỆN TẠI, sai với tháng cũ (lỗi backend đã biết).
+          if (summary != null)
+            Wrap(
+              spacing: 10,
+              runSpacing: 2,
               children: [
-                Expanded(
-                  child: Text(month.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                Text('+${formatVnd(summary.totalIncome)}', style: const TextStyle(fontSize: 13, color: DesignColors.success)),
+                Text('−${formatVnd(summary.totalExpense)}', style: const TextStyle(fontSize: 13, color: DesignColors.danger)),
+                Text(
+                  'Chênh lệch ${formatVnd(summary.netThisMonth)}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: summary.netThisMonth >= 0 ? DesignColors.success : DesignColors.danger,
+                  ),
                 ),
-                if (isOpen)
-                  Tag(label: 'Đang mở', color: AppColors.yugen500, foregroundColor: AppColors.yugen300, fontSize: 10),
               ],
             ),
-            if (month.startDate != null && month.endDate != null)
-              Text('${_viDate(month.startDate!)} → ${_viDate(month.endDate!)}', style: _muted(11)),
-            // Không hiện "Tổng số dư": summary.totalBalance là số dư HIỆN TẠI,
-            // sai với tháng cũ (lỗi backend đã biết).
-            if (summary != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                spacing: 12,
-                children: [
-                  Text(
-                    '+${formatVnd(summary.totalIncome)}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.emerald300),
-                  ),
-                  Text(
-                    '−${formatVnd(summary.totalExpense)}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.shuiro500),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Chênh lệch ${formatVnd(summary.netThisMonth)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: summary.netThisMonth >= 0 ? AppColors.emerald300 : AppColors.shuiro500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
+        ],
       ),
+      onTap: onTap,
     );
   }
 }

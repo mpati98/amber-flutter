@@ -26,18 +26,20 @@ class DesignPage extends StatelessWidget {
   const DesignPage({
     super.key,
     required this.title,
-    required this.overview,
+    this.overview,
     required this.content,
     this.backFallback = '/',
     this.hint,
     this.footer,
     this.onRefresh,
     this.bottomBar,
+    this.stacked = false,
   });
 
   final String title;
   final String? backFallback;
-  final Widget overview;
+  /// null = màn không có khối tổng quan (vd màn chỉ gồm các lối vào).
+  final Widget? overview;
   final Widget Function(BuildContext context, DesignSize size) content;
 
   /// Dòng chữ phụ căn giữa dưới khung (vd "Chạm vào một mục để vào").
@@ -52,6 +54,9 @@ class DesignPage extends StatelessWidget {
   /// Thanh cố định dưới đáy (vd trình phát nhạc mini của Kiều Lâu).
   final Widget? bottomBar;
 
+  /// true = luôn xếp dọc, kể cả web rộng (nội dung cần cả bề ngang: bảng việc nhiều cột, bảng tài chính…).
+  final bool stacked;
+
   @override
   Widget build(BuildContext context) {
     final body = LayoutBuilder(
@@ -64,18 +69,18 @@ class DesignPage extends StatelessWidget {
             : Text(hint!, key: const ValueKey('design-page-hint'), textAlign: TextAlign.center, style: DesignText.muted);
         final main = [content(context, size), ?hintText, ?footer];
 
-        final Widget column = size == DesignSize.wide
+        final Widget column = size == DesignSize.wide && !stacked
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: 20,
                 children: [
-                  SizedBox(width: 380, child: overview),
+                  if (overview != null) SizedBox(width: 380, child: overview),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: main),
                   ),
                 ],
               )
-            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [overview, ...main]);
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 14, children: [?overview, ...main]);
 
         Widget list = ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -106,6 +111,25 @@ class DesignPage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Chỉ phần khung chung của bộ thiết kế mới (thanh trên ← + tên + menu tài khoản, nền, chat nổi) quanh [body] có sẵn —
+/// cho màn mà thân tự cuộn / tự bố cục (vd ScheduleTab, StatsTab nhúng lại), không đặt được vào danh sách của [DesignPage].
+class DesignScaffold extends StatelessWidget {
+  const DesignScaffold({super.key, required this.title, required this.body, this.backFallback = '/'});
+
+  final String title;
+  final String? backFallback;
+  final Widget body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: DesignColors.bgTop,
+      appBar: DesignTopBar(title: title, backFallback: backFallback, trailing: const AccountMenu()),
+      body: DesignBackground(child: AmberChatDock(child: body)),
     );
   }
 }

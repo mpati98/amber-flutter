@@ -23,6 +23,9 @@ enum ProjectBadgeTone { warning, neutral, ok }
 
 /// Bề rộng tối đa của một thẻ trong lưới.
 const projectCardMaxWidth = 420.0;
+
+/// Thẻ hẹp nhất trước khi giảm số cột: khung nội dung của DesignPage (650–700 px) vẫn chia được 2 cột.
+const projectCardMinWidth = 300.0;
 const _gap = 12.0;
 
 /// Lưới thẻ dự án: 1 cột ở bề ngang điện thoại, nhiều cột khi rộng (mỗi thẻ ≤ [projectCardMaxWidth]).
@@ -35,7 +38,7 @@ class ProjectGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = ((constraints.maxWidth + _gap) / (projectCardMaxWidth + _gap)).floor().clamp(1, 12);
+        final columns = ((constraints.maxWidth + _gap) / (projectCardMinWidth + _gap)).floor().clamp(1, 12);
         final width = ((constraints.maxWidth - _gap * (columns - 1)) / columns).clamp(0.0, projectCardMaxWidth);
         return Wrap(
           spacing: _gap,

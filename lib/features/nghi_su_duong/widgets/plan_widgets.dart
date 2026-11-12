@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/design_tokens.dart';
+import '../../../shared/widgets/list_frame.dart';
 
 /// Hàng điều hướng viền, bo góc, cao tối thiểu 52: chữ chính, [trailing] (chữ phụ) và mũi tên ›. [subtitle] là dòng phụ dưới chữ chính.
 class PlanNavRow extends StatelessWidget {
@@ -19,47 +20,28 @@ class PlanNavRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
+    // Ô bấm theo bộ thiết kế mới (FrameTile): nền panel, viền, hover vàng; cao tối thiểu 52.
+    return FrameTile(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 52),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
+      semanticLabel: label,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 30),
         child: Row(
           spacing: 8,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: TextStyle(fontSize: 12, color: theme.textMuted),
-                    ),
+                  Text(label, style: DesignText.bold),
+                  if (subtitle != null) Text(subtitle!, style: DesignText.muted),
                 ],
               ),
             ),
-            if (trailing != null)
-              Text(
-                trailing!,
-                style: TextStyle(fontSize: 13, color: theme.textMuted),
-              ),
-            Text('›', style: TextStyle(fontSize: 20, color: theme.textMuted)),
+            if (trailing != null) Text(trailing!, style: DesignText.muted),
+            const Text('›', style: TextStyle(fontSize: 20, color: DesignColors.gold)),
           ],
         ),
       ),

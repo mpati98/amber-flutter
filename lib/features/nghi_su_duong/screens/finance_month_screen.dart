@@ -2,12 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/utils/currency.dart';
 import '../../../shared/utils/vn_time.dart';
-import '../../../shared/widgets/progress_bar.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/design_page.dart';
+import '../../../shared/widgets/list_frame.dart';
+import '../../../shared/widgets/overview_block.dart';
 import '../../../shared/widgets/scroll_card.dart';
-import '../../../shared/widgets/tag.dart';
 import '../models/finance_account.dart';
 import '../models/finance_category.dart';
 import '../models/finance_summary.dart';
@@ -19,9 +21,6 @@ import '../widgets/add_account_modal.dart';
 import '../widgets/add_category_modal.dart';
 import '../widgets/add_transaction_modal.dart';
 import '../widgets/set_budget_modal.dart';
-import '../../../shared/widgets/app_bar_back.dart';
-
-TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
 /// Giờ VN: "12/9 09:29".
 String _viDateTime(DateTime at) {
@@ -67,7 +66,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
           TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Huỷ')),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.shuiro500),
+            style: TextButton.styleFrom(foregroundColor: DesignColors.danger),
             child: const Text('Xoá'),
           ),
         ],
@@ -78,10 +77,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
       await ref.read(financeApiProvider).deleteTransaction(t.id);
       return true;
     } on DioException {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Không xoá được giao dịch, thử lại nhé.')));
-      }
+      if (mounted) showToast(context, 'Không xoá được giao dịch, thử lại nhé.', type: ToastType.error);
       return false; // dòng trượt về chỗ cũ
     }
   }
@@ -99,95 +95,87 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
     final ended = summary != null && (summary.archivedAt != null || summary.endDate.compareTo(vnToday()) < 0);
     final hasAccounts = accounts.value?.isNotEmpty ?? false;
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/finance'), title: Text(summary?.projectName ?? 'Tháng tài chính')),
-      floatingActionButton: summary == null || ended || !accounts.hasValue
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () =>
-                  hasAccounts ? showAddTransactionModal(context, projectId: widget.projectId) : _addAccount(),
-              icon: const Icon(Icons.add),
-              label: Text(hasAccounts ? 'Thêm giao dịch' : 'Thêm ví trước'),
+    final canAdd = summary != null && !ended && accounts.hasValue;
+
+    return DesignPage(
+      title: summary?.projectName ?? 'Tháng tài chính',
+      backFallback: '/finance',
+      onRefresh: () async => _refreshAfterWrite(),
+      overview: switch (summaryAsync) {
+        AsyncData(:final value) => _overview(value, ended),
+        AsyncError(:final error) => OverviewBlock(
+          title: 'Tháng này',
+          labelWidth: 90,
+          rows: [
+            OverviewRow.muted(
+              label: 'Số liệu',
+              text: error is DioException && error.response?.statusCode == 404
+                  ? 'Không tìm thấy tháng tài chính này.'
+                  : 'Không tải được số liệu tháng.',
             ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: summaryAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(
-              child: Text(
-                e is DioException && e.response?.statusCode == 404
-                    ? 'Không tìm thấy tháng tài chính này.'
-                    : 'Không tải được số liệu tháng.',
-                style: _muted(12),
-              ),
-            ),
-            data: (s) => RefreshIndicator(
-              onRefresh: () async => _refreshAfterWrite(),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96), // chừa chỗ cho FAB
+          ],
+        ),
+        _ => OverviewBlock(title: 'Tháng này', labelWidth: 90, rows: [OverviewRow.muted(label: 'Số liệu', text: 'Đang tải…')]),
+      },
+      content: (context, _) => summary == null
+          ? const SizedBox.shrink()
+          : ListFrame(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 12,
                 children: [
-                  if (ended) ...[
+                  if (canAdd)
                     Align(
-                      alignment: Alignment.centerLeft,
-                      child: Tag(
-                        label: 'Đã kết thúc',
-                        color: Colors.white,
-                        foregroundColor: Colors.white.withValues(alpha: 0.5),
-                        borderAlpha: 0.15,
-                        fontSize: 10,
+                      alignment: Alignment.centerRight,
+                      child: DesignButton.primary(
+                        key: const ValueKey('month-add'),
+                        label: hasAccounts ? '+ Thêm giao dịch' : '+ Thêm ví trước',
+                        minHeight: 40,
+                        onPressed: () =>
+                            hasAccounts ? showAddTransactionModal(context, projectId: widget.projectId) : _addAccount(),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                  ],
-                  _StatsGrid(summary: s, ended: ended),
-                  const SizedBox(height: 24),
                   _Section(
                     title: 'Ví & tài khoản',
-                    glow: ScrollCardGlow.yugen,
-                    action: TextButton(onPressed: _addAccount, child: const Text('+ Thêm ví')),
+                    action: DesignButton.outline(label: '+ Thêm ví', onPressed: _addAccount),
                     child: accounts.when(
-                      loading: () => Text('Đang tải...', style: _muted(12)),
-                      error: (_, _) => Text('Không tải được ví.', style: _muted(12)),
+                      loading: () => const Text('Đang tải...', style: DesignText.muted),
+                      error: (_, _) => const Text('Không tải được ví.', style: DesignText.muted),
                       data: (items) => items.isEmpty
-                          ? Text('Chưa có ví nào.', style: _muted(12))
+                          ? const Text('Chưa có ví nào.', style: DesignText.muted)
                           : Wrap(spacing: 8, runSpacing: 8, children: [for (final a in items) _AccountChip(a)]),
                     ),
                   ),
-                  const SizedBox(height: 24),
                   _Section(
                     title: 'Ngân sách',
-                    glow: ScrollCardGlow.kincha,
                     action: ended
                         ? null
-                        : TextButton(
+                        : DesignButton.outline(
+                            label: '+ Đặt ngân sách',
                             onPressed: () => showSetBudgetModal(
                               context,
                               projectId: widget.projectId,
-                              projectName: s.projectName,
-                              currentLimits: {for (final b in s.budgetProgress) b.categoryId: b.limitAmount},
+                              projectName: summary.projectName,
+                              currentLimits: {for (final b in summary.budgetProgress) b.categoryId: b.limitAmount},
                             ),
-                            child: const Text('+ Đặt ngân sách'),
                           ),
-                    child: s.budgetProgress.isEmpty
-                        ? Text('Chưa đặt ngân sách cho danh mục nào.', style: _muted(12))
-                        : Column(spacing: 12, children: [for (final b in s.budgetProgress) _BudgetRow(b)]),
+                    child: summary.budgetProgress.isEmpty
+                        ? const Text('Chưa đặt ngân sách cho danh mục nào.', style: DesignText.muted)
+                        : Column(spacing: 12, children: [for (final b in summary.budgetProgress) _BudgetRow(b)]),
                   ),
-                  const SizedBox(height: 24),
                   _Section(
                     title: 'Giao dịch',
-                    glow: ScrollCardGlow.shuiro,
-                    action: TextButton(onPressed: () => showAddCategoryModal(context), child: const Text('+ Danh mục')),
+                    action: DesignButton.outline(label: '+ Danh mục', onPressed: () => showAddCategoryModal(context)),
                     child: transactions.when(
-                      loading: () => Text('Đang tải...', style: _muted(12)),
-                      error: (_, _) => Text('Không tải được giao dịch.', style: _muted(12)),
+                      loading: () => const Text('Đang tải...', style: DesignText.muted),
+                      error: (_, _) => const Text('Không tải được giao dịch.', style: DesignText.muted),
                       data: (items) {
                         final visible = items.where((t) => !_deletedIds.contains(t.id)).toList();
-                        if (visible.isEmpty) return Text('Chưa có giao dịch nào.', style: _muted(12));
+                        if (visible.isEmpty) return const Text('Chưa có giao dịch nào.', style: DesignText.muted);
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text('Vuốt sang trái để xoá', style: _muted(10)),
+                            const Text('Vuốt sang trái để xoá', style: TextStyle(fontSize: 11, color: DesignColors.muted)),
                             const SizedBox(height: 4),
                             for (final t in visible)
                               Dismissible(
@@ -201,8 +189,8 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
                                 background: Container(
                                   alignment: Alignment.centerRight,
                                   padding: const EdgeInsets.only(right: 16),
-                                  color: AppColors.shuiro500.withValues(alpha: 0.25),
-                                  child: const Icon(Icons.delete_outline, color: AppColors.shuiro500),
+                                  color: DesignColors.danger.withValues(alpha: 0.2),
+                                  child: const Icon(Icons.delete_outline, color: DesignColors.danger),
                                 ),
                                 child: _TransactionRow(t),
                               ),
@@ -214,129 +202,70 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
                 ],
               ),
             ),
-          ),
-        ),
-      ),
     );
   }
-}
 
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.summary, required this.ended});
-
-  final FinanceSummary summary;
-  final bool ended;
-
-  @override
-  Widget build(BuildContext context) {
-    final net = summary.netThisMonth;
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 2,
-      children: [
-        _Stat(
-          label: 'Tổng số dư (mọi ví)',
-          value: formatVnd(summary.totalBalance),
-          color: Colors.white,
-          glow: ScrollCardGlow.kincha,
-          // totalBalance là số dư HIỆN TẠI của mọi ví — đúng nghĩa với tháng
-          // đang mở, nhưng với tháng đã qua thì không phải số dư cuối tháng đó.
-          note: ended ? 'số dư hiện tại, không phải cuối tháng' : null,
+  /// Tổng quan tháng: số dư mọi ví (kèm lưu ý khi tháng đã qua), chênh lệch, thu, chi, nhãn "Đã kết thúc".
+  Widget _overview(FinanceSummary s, bool ended) {
+    final net = s.netThisMonth;
+    TextStyle color(Color c) => TextStyle(color: c);
+    return OverviewBlock(
+      title: 'Tháng này',
+      labelWidth: 90,
+      rows: [
+        OverviewRow(
+          label: 'Số dư ví',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(formatVnd(s.totalBalance), style: color(s.totalBalance < 0 ? DesignColors.danger : DesignColors.text)),
+              // totalBalance là số dư HIỆN TẠI của mọi ví — đúng với tháng đang mở, tháng đã qua thì không phải số dư cuối tháng.
+              if (ended) const Text('số dư hiện tại, không phải cuối tháng', style: DesignText.muted),
+            ],
+          ),
         ),
-        _Stat(
-          label: 'Chênh lệch tháng',
-          value: formatVnd(net),
-          color: net >= 0 ? AppColors.emerald300 : AppColors.shuiro500,
-          glow: ScrollCardGlow.kincha,
+        OverviewRow(
+          label: 'Chênh lệch',
+          child: Text(formatVnd(net), style: color(net >= 0 ? DesignColors.success : DesignColors.danger)),
         ),
-        _Stat(
-          label: 'Thu tháng này',
-          value: formatVnd(summary.totalIncome),
-          color: AppColors.emerald300,
-          glow: ScrollCardGlow.yugen,
-        ),
-        _Stat(
-          label: 'Chi tháng này',
-          value: formatVnd(summary.totalExpense),
-          color: AppColors.shuiro500,
-          glow: ScrollCardGlow.shuiro,
-        ),
+        OverviewRow(label: 'Thu', child: Text(formatVnd(s.totalIncome), style: color(DesignColors.success))),
+        OverviewRow(label: 'Chi', child: Text(formatVnd(s.totalExpense), style: color(DesignColors.danger))),
+        if (ended)
+          const OverviewRow(
+            label: 'Trạng thái',
+            child: Align(alignment: Alignment.centerLeft, child: DesignPill('Đã kết thúc', color: DesignColors.muted)),
+          ),
       ],
     );
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value, required this.color, required this.glow, this.note});
-
-  final String label;
-  final String value;
-  final Color color;
-  final ScrollCardGlow glow;
-  final String? note;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12), // p-3
-      decoration: BoxDecoration(
-        color: AppColors.ink900.withValues(alpha: 0.6),
-        border: Border.all(color: glow.color),
-        borderRadius: BorderRadius.circular(AppTheme.darkRadius),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(label, style: _muted(11), maxLines: 1, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall
-                  ?.copyWith(fontSize: 16, fontWeight: FontWeight.w600, color: color),
-            ),
-          ),
-          if (note != null) Text(note!, style: _muted(9), maxLines: 1, overflow: TextOverflow.ellipsis),
-        ],
-      ),
-    );
-  }
-}
-
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.glow, this.action, required this.child});
+  const _Section({required this.title, this.action, required this.child});
 
   final String title;
-  final ScrollCardGlow glow;
   final Widget? action;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return ScrollCard(
-      glow: glow,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            spacing: 8,
             children: [
               Expanded(
                 child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.kincha400),
+                  title.toUpperCase(),
+                  style: const TextStyle(fontSize: 13, letterSpacing: 1, color: DesignColors.gold),
                 ),
               ),
               ?action,
             ],
           ),
-          const SizedBox(height: 8), // mb-2
+          const SizedBox(height: 10),
           child,
         ],
       ),
@@ -355,20 +284,20 @@ class _AccountChip extends StatelessWidget {
       constraints: const BoxConstraints(minWidth: 120), // min-w-30
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        borderRadius: BorderRadius.circular(2),
+        color: DesignColors.frame,
+        border: Border.all(color: DesignColors.panelBorder),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(account.name, style: const TextStyle(fontSize: 12)),
-          Text(account.type.label, style: _muted(10)),
+          Text(account.type.label, style: const TextStyle(fontSize: 11, color: DesignColors.muted)),
           const SizedBox(height: 2),
           Text(
             formatVnd(account.currentBalance),
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.kincha400),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: DesignColors.gold),
           ),
         ],
       ),
@@ -400,16 +329,12 @@ class _BudgetRow extends StatelessWidget {
             Text(
               '${formatVnd(budget.spent)} / ${formatVnd(budget.limitAmount)}',
               style: over
-                  ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.shuiro500)
-                  : _muted(12),
+                  ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: DesignColors.danger)
+                  : DesignText.muted,
             ),
           ],
         ),
-        ProgressBar(
-          value: budget.percent.toDouble(),
-          max: 100,
-          fillColor: over ? AppColors.shuiro500 : AppColors.kincha400,
-        ),
+        DesignProgressBar(budget.percent, color: over ? DesignColors.danger : DesignColors.gold),
       ],
     );
   }
@@ -433,7 +358,7 @@ class _TransactionRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8), // py-2
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+        border: Border(bottom: BorderSide(color: DesignColors.rowDivider)),
       ),
       child: Row(
         spacing: 8,
@@ -449,7 +374,7 @@ class _TransactionRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 13),
                 ),
-                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: _muted(11)),
+                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: DesignColors.muted)),
               ],
             ),
           ),
@@ -458,7 +383,7 @@ class _TransactionRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: isIncome ? AppColors.emerald300 : AppColors.shuiro500,
+              color: isIncome ? DesignColors.success : DesignColors.danger,
             ),
           ),
         ],

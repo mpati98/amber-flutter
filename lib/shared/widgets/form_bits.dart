@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
-import '../theme/app_theme.dart';
+import '../theme/design_tokens.dart';
 import '../utils/currency.dart';
 
 /// Hàng nút chọn 1 trong nhiều (kiểu nút kincha khi chọn như các modal web).
@@ -21,12 +21,20 @@ class ChoiceRow<T> extends StatelessWidget {
       runSpacing: 6,
       children: [
         for (final e in options.entries)
+          // Chip theo bộ thiết kế mới (như DesignChipRow): nền panel viền mảnh, chip chọn nền vàng chữ tối.
           ChoiceChip(
             label: Text(e.value),
             selected: selected == e.key,
             showCheckmark: false,
-            selectedColor: AppColors.kincha400,
-            labelStyle: TextStyle(fontSize: 13, color: selected == e.key ? AppColors.ink950 : null),
+            backgroundColor: DesignColors.panel,
+            selectedColor: DesignColors.gold,
+            side: BorderSide(color: selected == e.key ? DesignColors.gold : DesignColors.panelBorder),
+            shape: const StadiumBorder(),
+            visualDensity: VisualDensity.compact,
+            labelStyle: DesignText.serif(
+              fontSize: 13,
+              color: selected == e.key ? const Color(0xFF1A1A1A) : const Color(0xFFCFD3EA),
+            ),
             onSelected: (_) => onSelected(e.key),
           ),
       ],

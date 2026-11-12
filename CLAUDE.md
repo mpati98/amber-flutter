@@ -143,7 +143,9 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
 ## Quy ước
 
 - **Bộ thiết kế mới (12/11/2026, `design/DESIGN.md` + bản mẫu `design/ref/*.html` ở thư mục workspace)** — đã áp cho Home, Đăng nhập, Nghị Sự Đường,
-  Tàng Kinh Các (+ Sách, Tài liệu, Kế hoạch đọc, Dữ liệu huấn luyện và chi tiết), Kiều Lâu, Trà Đình (Hôm nay); các màn con khác còn giao diện cũ.
+  Tàng Kinh Các (+ Sách, Tài liệu, Kế hoạch đọc, Dữ liệu huấn luyện và chi tiết), Nghị Sự Đường (+ Dự án, chi tiết dự án, Tài chính, tháng tài chính,
+  kế hoạch học tập, chi tiết kế hoạch; Lịch dự kiến / Thống kê chỉ khung chung), Kiều Lâu, Trà Đình (Hôm nay); các màn con khác còn giao diện cũ.
+  `ScrollCard` và `ChoiceRow` (form_bits) đã vẽ lại theo bộ thiết kế nên màn cũ dùng chúng cũng gần giống. Màn có nội dung rộng (bảng việc): `DesignPage(stacked: true)`.
   Thêm cho màn con: `DesignButton.primary/outline`, `FrameToolbar` (chip + nút "+ Thêm", xuống dòng khi khung < 420), `designInput(hint)`. Màn mới / màn làm lại dùng:
   - `DesignPage` (`shared/widgets/design_page.dart`): thanh trên (← vàng + tên + logo Amber mở `AccountMenu`) → `overview` → `content(context, DesignSize)` → `hint` / `footer`;
     tự gắn nền, chat nổi `AmberChatDock`, responsive (`DesignLayout` trong `design_tokens.dart`: < 600 dọc lề 14, 600–1024 cột 760, ≥ 1024 cột 1120 với tổng quan rộng 380 bên trái).
@@ -156,7 +158,8 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
 
 - **Mọi `Scaffold` có AppBar phải đặt `leading: const AppBarBack(...)`** (`shared/widgets/app_bar_back.dart`; `fallback` = trang cha, mặc định `/`). Flutter chỉ tự thêm mũi tên
   khi Navigator còn trang để pop, mà `context.go` (đổi tab của Trà Đình, xoá query) thay cả stack → màn mất đường về Âm Dương Giới (lỗi trên iPhone 22/10/2026).
-  `test/shared/widgets/app_bar_back_test.dart` quét `lib/features` và fail nếu có `appBar: AppBar(` không dùng nó. URL của app là dạng hash (`/#/tra-dinh`), đường dẫn
+  `test/shared/widgets/app_bar_back_test.dart` quét `lib/features` và fail nếu có `appBar: AppBar(` không dùng nó. Màn theo bộ thiết kế mới dùng
+  `DesignPage` / `DesignScaffold` (nút ← mặc định về `backFallback`, `goBackOr` như AppBarBack); chỉ Home được `backFallback: null` — test cũng kiểm điều này. URL của app là dạng hash (`/#/tra-dinh`), đường dẫn
   thường như `/tra-dinh` luôn 404 trên Vercel — không phải lỗi.
 
 - **Form nhập liệu mở bằng `showFinanceSheet` + `FinanceSheetBody`**

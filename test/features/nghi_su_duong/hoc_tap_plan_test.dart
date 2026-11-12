@@ -156,10 +156,10 @@ void main() {
         await _pump(tester, '/nghi-su-duong');
         await tester.tap(find.byKey(const ValueKey('nsd-hoc-tap')));
         await tester.pumpAndSettle();
-        expect(find.text('‹ Nghị Sự Đường'), findsOneWidget);
+        expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
         expect(find.text('Học tập'), findsOneWidget);
         expect(find.text('Học gì, bao nhiêu phút mỗi ngày'), findsOneWidget);
-        await tester.tap(find.text('‹ Nghị Sự Đường'));
+        await tester.tap(find.byKey(const ValueKey('design-top-bar-back')));
         await tester.pumpAndSettle();
         expect(find.byType(NghiSuDuongScreen), findsOneWidget);
       },
@@ -374,7 +374,7 @@ void main() {
           ('plan-trash', 'Thùng rác', '/tra-dinh/hoc-tap/thung-rac'),
         ];
         await _pump(tester, '/hoc-tap/chi-tiet');
-        expect(find.text('‹ Học tập'), findsOneWidget);
+        expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
         expect(find.text('Chi tiết kế hoạch'), findsOneWidget);
         expect(find.byType(FilledButton), findsNothing);
         expect(find.text('Lý do thiếu'), findsNothing);

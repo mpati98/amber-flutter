@@ -197,11 +197,14 @@ class DesignPill extends StatelessWidget {
 
 /// Thanh tiến độ mảnh (cao 6, nền tối, phần đã xong xanh lam). [value] 0–100.
 class DesignProgressBar extends StatelessWidget {
-  const DesignProgressBar(this.value, {super.key});
+  const DesignProgressBar(this.value, {super.key, this.color = fill});
 
   static const fill = Color(0xFF7AA2FF);
 
   final num value;
+
+  /// Màu phần đã xong (mặc định xanh lam; ngân sách dùng vàng / đỏ khi vượt).
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +216,7 @@ class DesignProgressBar extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: FractionallySizedBox(
         widthFactor: f,
-        child: Container(decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(3))),
+        child: Container(decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
       ),
     );
   }

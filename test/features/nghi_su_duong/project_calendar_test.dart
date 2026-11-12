@@ -34,7 +34,7 @@ void main() {
       expect(tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'Lịch')).selected, isTrue);
       expect(find.byKey(const ValueKey('bar-a')), findsOneWidget);
       expect(find.text('Kết quả then chốt'), findsOneWidget);
-      expect(find.text('Thêm việc'), findsOneWidget);
+      expect(find.text('+ Thêm việc'), findsOneWidget);
       expect(find.text('Sửa dự án'), findsOneWidget);
       expect(find.text('Trống'), findsNothing, reason: 'không còn bảng');
 

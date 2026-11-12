@@ -401,7 +401,7 @@ void main() {
 
     testWidgets('khu "Dự án" vẫn nằm bên dưới', (tester) async {
       await _pump(tester, routines: routines, attention: attention);
-      expect(tester.getTopLeft(find.text('Thêm dự án')).dy, greaterThan(tester.getTopLeft(find.text('Cần chú ý')).dy));
+      expect(tester.getTopLeft(find.text('+ Thêm dự án')).dy, greaterThan(tester.getTopLeft(find.text('Cần chú ý')).dy));
     });
   });
 }

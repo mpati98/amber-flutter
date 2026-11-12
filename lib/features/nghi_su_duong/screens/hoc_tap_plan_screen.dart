@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/app_bar_back.dart';
+import '../../../shared/theme/design_tokens.dart';
+import '../../../shared/widgets/design_page.dart';
+import '../../../shared/widgets/list_frame.dart';
+import '../../../shared/widgets/overview_block.dart';
 import '../../tra_dinh/hoc_tap/models/study_overview.dart';
 import '../../tra_dinh/hoc_tap/providers/hoc_tap_provider.dart';
 import '../../tra_dinh/hoc_tap/utils/async_view.dart';
@@ -33,38 +36,56 @@ class HocTapPlanScreen extends ConsumerWidget {
     final async = ref.watch(studyOverviewProvider);
     final subjects = async.value?.subjects ?? const <SubjectOverview>[];
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(fallback: '/nghi-su-duong', label: 'Nghị Sự Đường'),
-        leadingWidth: 160,
-        title: const Text('Học tập'),
-        // Quản lý môn học (trước đây ở menu ⋯ của Trà Đình): thêm môn; sửa tên, mục tiêu phút/ngày, ngày ôn, xoá môn.
-        actions: [
-          PopupMenuButton<String>(
-            key: const ValueKey('plan-menu'),
-            tooltip: 'Môn học',
-            icon: const Icon(Icons.more_horiz),
-            onSelected: (v) => showSubjectSheet(context, subjectId: v == 'add' ? null : v),
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'add', key: ValueKey('menu-add-subject'), child: Text('+ Môn')),
-              for (final s in subjects) PopupMenuItem(value: s.subjectId, key: ValueKey('menu-edit-${s.subjectId}'), child: Text('Cài đặt môn: ${s.name}')),
-            ],
-          ),
+    final goal = subjects.fold<int>(0, (n, s) => n + (s.goalMinutes ?? 0));
+    final active = subjects.where((s) => s.activeCourse != null).length;
+    final queued = subjects.fold<int>(0, (n, s) => n + s.counts.queued);
+
+    return DesignPage(
+      title: 'Học tập',
+      backFallback: '/nghi-su-duong',
+      onRefresh: () => ref.refresh(studyOverviewProvider.future),
+      overview: OverviewBlock(
+        title: 'Tổng quan',
+        labelWidth: 90,
+        rows: [
+          OverviewRow.muted(label: 'Kế hoạch', text: 'Học gì, bao nhiêu phút mỗi ngày'),
+          if (async.hasValue) ...[
+            OverviewRow.muted(
+              label: 'Môn',
+              text: subjects.isEmpty ? 'Chưa có môn nào' : '${subjects.length} môn · mục tiêu $goal phút/ngày',
+            ),
+            OverviewRow.muted(label: 'Khóa', text: '$active đang học · $queued chờ'),
+          ],
         ],
       ),
-      body: HocTapBody(
-        onRefresh: () => ref.refresh(studyOverviewProvider.future),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      content: (context, _) => ListFrame(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Học gì, bao nhiêu phút mỗi ngày',
-              style: TextStyle(
-                fontSize: 13,
-                color: Theme.of(context).textMuted,
+            // Quản lý môn học (trước ở AppBar): thêm môn; sửa tên, mục tiêu phút/ngày, ngày ôn, xoá môn.
+            Align(
+              alignment: Alignment.centerRight,
+              child: PopupMenuButton<String>(
+                key: const ValueKey('plan-menu'),
+                tooltip: 'Môn học',
+                color: DesignColors.panel,
+                onSelected: (v) => showSubjectSheet(context, subjectId: v == 'add' ? null : v),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(value: 'add', key: ValueKey('menu-add-subject'), child: Text('+ Môn')),
+                  for (final s in subjects)
+                    PopupMenuItem(value: s.subjectId, key: ValueKey('menu-edit-${s.subjectId}'), child: Text('Cài đặt môn: ${s.name}')),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: DesignColors.gold),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('Môn học ⋯', style: TextStyle(fontSize: 13, color: DesignColors.gold)),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             switch (async.settled) {
               AsyncData(:final value) when value.subjects.isEmpty => _Empty(
                 onAddCourse: () => showCourseFormSheet(context),
@@ -72,28 +93,21 @@ class HocTapPlanScreen extends ConsumerWidget {
               ),
               AsyncData(:final value) => _Body(
                 subjects: value.subjects,
-                onAddCourse: () => showCourseFormSheet(
-                  context,
-                  subjectId: _targetSubject(ref, value.subjects),
-                ),
+                onAddCourse: () => showCourseFormSheet(context, subjectId: _targetSubject(ref, value.subjects)),
               ),
               AsyncError() => HocTapLoadError(
                 what: 'kế hoạch học tập',
                 onRetry: () => ref.invalidate(studyOverviewProvider),
               ),
               _ => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 48),
-                child: Center(child: CircularProgressIndicator()),
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator(color: DesignColors.gold)),
               ),
             },
             if (subjects.isNotEmpty || async.hasValue) ...[
-              const SizedBox(height: 24),
-              Divider(
-                color: Theme.of(context).colorScheme.onSurface
-                    .withValues(alpha: 0.12),
-                height: 1,
-              ),
               const SizedBox(height: 16),
+              const Divider(color: DesignColors.rowDivider, height: 1),
+              const SizedBox(height: 12),
               PlanNavRow(
                 key: const ValueKey('plan-details'),
                 label: 'Chi tiết kế hoạch',

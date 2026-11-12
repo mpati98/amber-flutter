@@ -1,25 +1,27 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../theme/app_theme.dart';
+import '../theme/design_tokens.dart';
 
-/// Màu viền của [ScrollCard] — tương ứng prop `glow` bên web.
+/// Màu viền của [ScrollCard] — tương ứng prop `glow` bên web cũ, quy về bảng màu của bộ thiết kế mới.
 enum ScrollCardGlow {
-  yugen(AppColors.yugen500),
-  shuiro(AppColors.shuiro500),
-  kincha(AppColors.kincha400);
+  /// Viền panel thường.
+  yugen(DesignColors.panelBorder),
+
+  /// Viền đỏ mờ (cảnh báo / âm).
+  shuiro(Color(0x73FF7B7B)),
+
+  /// Viền vàng mờ (mục nổi bật).
+  kincha(Color(0x73F0D68A));
 
   const ScrollCardGlow(this.color);
 
   final Color color;
 }
 
-/// Port từ ScrollCard trong amber-v3/src/components/tang-kinh-cac/ui.tsx:
-/// `rounded-sm border bg-ink-900/60 p-5`, một khối duy nhất bọc [child].
+/// Thẻ của các màn con cũ, vẽ theo bộ thiết kế mới (design/DESIGN.md) để nằm hài hoà trong `ListFrame` / `DesignPage`:
+/// nền panel `#0e1430`, viền theo [glow], bo 10, lề trong 14. Chữ mặc định Gelasio màu chữ chính.
 ///
-/// Bên web viền là white/10 và chỉ đổi sang màu glow khi hover
-/// (`hover:border-[var(--glow)]`). Trên thiết bị cảm ứng không có hover, nên
-/// ở đây glow được dùng làm màu viền tĩnh, luôn hiển thị. Đây là điều chỉnh
-/// có chủ đích khi chuyển nền tảng, không phải port sót.
+/// Material (không phải Container tô nền) để ListTile / InkWell bên trong vẽ được hiệu ứng bấm.
 class ScrollCard extends StatelessWidget {
   const ScrollCard({
     super.key,
@@ -32,14 +34,16 @@ class ScrollCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20), // p-5 = 1.25rem
-      decoration: BoxDecoration(
-        color: AppColors.ink900.withValues(alpha: 0.6),
-        border: Border.all(color: glow.color),
-        borderRadius: BorderRadius.circular(AppTheme.darkRadius),
+    return Material(
+      color: DesignColors.panel,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: glow.color),
       ),
-      child: child,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: DefaultTextStyle.merge(style: DesignText.body, child: child),
+      ),
     );
   }
 }

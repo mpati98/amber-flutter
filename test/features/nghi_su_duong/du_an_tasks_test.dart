@@ -204,7 +204,7 @@ void main() {
     testWidgets('Thêm dự án: Dialog toàn màn hình; X đóng không tạo; Tạo thì tạo và tải lại summary', (tester) async {
       final h = _Harness();
       await h.pump(tester);
-      await tester.tap(find.text('Thêm dự án'));
+      await tester.tap(find.text('+ Thêm dự án'));
       await tester.pumpAndSettle();
       expect(find.byType(Dialog), findsOneWidget);
       expect(find.widgetWithText(AppBar, 'Thêm dự án'), findsOneWidget);
@@ -213,7 +213,7 @@ void main() {
       expect(h.api.projectCreates, 0);
 
       final summary = h.api.summaryFetches;
-      await tester.tap(find.text('Thêm dự án'));
+      await tester.tap(find.text('+ Thêm dự án'));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextField, 'Tên dự án'), '  Dự án mới ');
       await tester.enterText(find.widgetWithText(TextField, 'Mục tiêu'), 'Ra mắt sản phẩm');

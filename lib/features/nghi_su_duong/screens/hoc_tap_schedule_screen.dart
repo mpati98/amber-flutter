@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../shared/widgets/app_bar_back.dart';
+import '../../../shared/widgets/design_page.dart';
 import '../../tra_dinh/hoc_tap/screens/schedule_tab.dart';
 
 /// /hoc-tap/lich: Lịch dự kiến ở Nghị Sự Đường. Thân màn là đúng [ScheduleTab] của Trà Đình (cùng provider, cùng chọn môn,
@@ -11,16 +11,11 @@ class HocTapScheduleScreen extends StatelessWidget {
   final String? view;
   final String? date;
 
+  // Thân màn tự cuộn nên chỉ bọc khung chung (DesignScaffold), không đặt vào DesignPage.
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      leading: const AppBarBack(
-        fallback: '/hoc-tap/chi-tiet',
-        label: 'Chi tiết kế hoạch',
-      ),
-      leadingWidth: 190,
-      title: const Text('Lịch dự kiến'),
-    ),
+  Widget build(BuildContext context) => DesignScaffold(
+    title: 'Lịch dự kiến',
+    backFallback: '/hoc-tap/chi-tiet',
     body: ScheduleTab(
       view: view,
       date: date,

@@ -117,8 +117,11 @@ void main() {
     expect(find.text('pushed'), findsNothing);
   });
 
-  test('mọi màn trong lib/features có AppBar đều dùng AppBarBack làm leading (chặn tái phát)', () {
+  test('mọi màn trong lib/features đều có đường quay về (chặn tái phát)', () {
+    // Màn cũ: AppBar phải dùng AppBarBack làm leading. Màn theo bộ thiết kế mới: DesignPage / DesignScaffold có nút ← mặc định
+    // (backFallback '/'); chỉ Home (du_do) được tắt bằng `backFallback: null`.
     final missing = <String>[];
+    final noBack = <String>[];
     var screens = 0;
     for (final f in Directory('lib/features').listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart'))) {
       final src = f.readAsStringSync();
@@ -126,8 +129,11 @@ void main() {
         screens++;
         if (!src.substring(m.end).trimLeft().startsWith('leading: const AppBarBack(')) missing.add(f.path);
       }
+      screens += RegExp(r'return DesignPage\(|=> DesignPage\(|DesignScaffold\(').allMatches(src).length;
+      if (src.contains('backFallback: null') && !f.path.contains('du_do')) noBack.add(f.path);
     }
     expect(missing, isEmpty, reason: 'AppBar không có nút quay lại dự phòng: $missing');
-    expect(screens, greaterThanOrEqualTo(22));
+    expect(noBack, isEmpty, reason: 'chỉ Home được bỏ nút quay lại: $noBack');
+    expect(screens, greaterThanOrEqualTo(22), reason: 'phép quét phải thấy đủ màn (AppBar cũ + DesignPage/DesignScaffold)');
   });
 }

@@ -140,6 +140,13 @@ final _mixed = [
   _p('c2', 'Dự án đã xong 2', status: ProjectStatus.done),
 ];
 
+/// Chip trạng thái nằm trong hàng cuộn ngang: font test rộng nên chip sau có thể khuất → cuộn tới trước khi bấm.
+Future<void> _tapChip(WidgetTester tester, String label) async {
+  await tester.ensureVisible(find.text(label));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label));
+}
+
 void main() {
   group('projectBadge: 5 trường hợp nhãn trạng thái', () {
     test('PAUSED → "Tạm dừng" (kể cả khi có việc cần xử lý)', () {
@@ -190,13 +197,13 @@ void main() {
 
     testWidgets('đổi bộ lọc đổi danh sách', (tester) async {
       await _pump(tester, _mixed);
-      await tester.tap(find.text('Tạm dừng · 1'));
+      await _tapChip(tester, 'Tạm dừng · 1');
       await tester.pumpAndSettle();
       expect(find.byType(ProjectCard), findsOneWidget);
       expect(find.text('Dự án tạm dừng'), findsOneWidget);
       expect(find.text('Dự án đúng nhịp'), findsNothing);
 
-      await tester.tap(find.text('Đã xong · 2'));
+      await _tapChip(tester, 'Đã xong · 2');
       await tester.pumpAndSettle();
       expect(find.byType(ProjectCard), findsNWidgets(2));
       expect(find.text('Dự án đã xong 1'), findsOneWidget);
@@ -207,17 +214,17 @@ void main() {
       expect(find.text('Đúng nhịp'), findsOneWidget);
       expect(find.text('2 việc cần xử lý'), findsOneWidget);
       expect(find.text('Mới tạo'), findsOneWidget);
-      await tester.tap(find.text('Tạm dừng · 1'));
+      await _tapChip(tester, 'Tạm dừng · 1');
       await tester.pumpAndSettle();
       expect(find.text('Tạm dừng'), findsOneWidget);
-      await tester.tap(find.text('Đã xong · 2'));
+      await _tapChip(tester, 'Đã xong · 2');
       await tester.pumpAndSettle();
       expect(find.text('Đã xong'), findsNWidgets(2));
     });
 
     testWidgets('không có dự án ở bộ lọc đang chọn → dòng trống', (tester) async {
       await _pump(tester, [_p('a1', 'Chỉ một dự án')]);
-      await tester.tap(find.text('Tạm dừng · 0'));
+      await _tapChip(tester, 'Tạm dừng · 0');
       await tester.pumpAndSettle();
       expect(find.text('Không có dự án nào ở trạng thái này.'), findsOneWidget);
       expect(find.byType(ProjectCard), findsNothing);
@@ -287,14 +294,14 @@ void main() {
 
   group('form Thêm dự án', () {
     Future<void> openForm(WidgetTester tester) async {
-      await tester.tap(find.text('Thêm dự án'));
+      await tester.tap(find.text('+ Thêm dự án'));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, 'Thêm dự án'), findsOneWidget);
     }
 
     testWidgets('Tạo khoá khi tên rỗng; gửi tên, mục tiêu, ngày bắt đầu mặc định; về bộ lọc Đang triển khai', (tester) async {
       final api = await _pump(tester, _mixed);
-      await tester.tap(find.text('Đã xong · 2'));
+      await _tapChip(tester, 'Đã xong · 2');
       await tester.pumpAndSettle();
       expect(find.text('Dự án đúng nhịp'), findsNothing);
 

@@ -222,7 +222,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Việc B'), findsNothing);
       expect(find.text('1 / 2 việc xong'), findsOneWidget);
-      expect(find.text('Thêm việc'), findsOneWidget);
+      expect(find.text('+ Thêm việc'), findsOneWidget);
     });
 
     testWidgets('"Đang làm" có 2 việc: "2 / 2"; 3 việc: "Vượt WIP 3 / 2"', (tester) async {
@@ -354,7 +354,7 @@ void main() {
     testWidgets('dùng được khi dự án PAUSED: không có ô chọn dự án, tạo đúng projectId, không cần overview', (tester) async {
       final api = await pumpDetail(tester, project: mkProject(status: ProjectStatus.paused));
       final overview = api.overviewFetches;
-      await tester.tap(find.text('Thêm việc'));
+      await tester.tap(find.text('+ Thêm việc'));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, 'Thêm việc'), findsOneWidget);
       expect(find.text('Dự án'), findsNothing, reason: 'không có ô chọn dự án');

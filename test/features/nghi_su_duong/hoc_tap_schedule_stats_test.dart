@@ -82,7 +82,7 @@ void main() {
       'AppBar "‹ Chi tiết kế hoạch" + tiêu đề; thân là tab Lịch với dữ liệu giả',
       (tester) async {
         await _pump(tester, '/hoc-tap/lich?view=week&date=2026-10-15');
-        expect(find.text('‹ Chi tiết kế hoạch'), findsOneWidget);
+        expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
         expect(find.text('Lịch dự kiến'), findsOneWidget);
         expect(_k('view-toggle'), findsOneWidget);
         expect(find.text('12/10 – 18/10'), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
         expect(_loc(tester), startsWith('/hoc-tap/lich?view=month&date='));
         expect(_loc(tester), isNot(contains('/tra-dinh')));
 
-        await tester.tap(find.text('‹ Chi tiết kế hoạch'));
+        await tester.tap(find.byKey(const ValueKey('design-top-bar-back')));
         await tester.pumpAndSettle();
         expect(find.byType(HocTapPlanDetailScreen), findsOneWidget);
       },
@@ -138,7 +138,7 @@ void main() {
       'AppBar "‹ Chi tiết kế hoạch" + tiêu đề; thân là tab Thống kê',
       (tester) async {
         await _pump(tester, '/hoc-tap/thong-ke?range=30&subject=all');
-        expect(find.text('‹ Chi tiết kế hoạch'), findsOneWidget);
+        expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
         expect(find.text('Thống kê'), findsOneWidget);
         expect(_k('range-7'), findsOneWidget);
         expect(_k('stats-subject-all'), findsOneWidget);
@@ -161,7 +161,7 @@ void main() {
         expect(_loc(tester), '/hoc-tap/thong-ke?range=7&subject=all');
         expect(api.statsCalls.last, (subjectId: null, range: '7'));
 
-        await tester.tap(find.text('‹ Chi tiết kế hoạch'));
+        await tester.tap(find.byKey(const ValueKey('design-top-bar-back')));
         await tester.pumpAndSettle();
         expect(find.byType(HocTapPlanDetailScreen), findsOneWidget);
       },
