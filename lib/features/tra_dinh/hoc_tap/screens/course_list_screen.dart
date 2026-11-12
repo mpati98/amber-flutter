@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../shared/widgets/design_page.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/date_format.dart';
 import '../../../../shared/widgets/scroll_card.dart';
@@ -12,7 +13,6 @@ import '../utils/async_view.dart';
 import '../utils/hoc_tap_errors.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/overview_cards.dart';
-import '../../../../shared/widgets/app_bar_back.dart';
 
 /// Danh sách khóa theo trạng thái (Chờ học / Đã xong...) của một môn. Chờ học có số thứ tự + nút lên/xuống.
 class CourseListScreen extends ConsumerWidget {
@@ -32,8 +32,9 @@ class CourseListScreen extends ConsumerWidget {
     final async = ref.watch(studyCoursesProvider(query));
     final queued = statuses.length == 1 && statuses.single == CourseStatus.queued;
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: Text(_title)),
+    return DesignScaffold(
+      title: _title,
+      backFallback: '/tra-dinh',
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyCoursesProvider(query).future),
         child: switch (async.settled) {

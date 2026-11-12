@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import '../../../../shared/widgets/design_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,7 +14,6 @@ import '../utils/open_course_link.dart';
 import '../widgets/course_form_sheet.dart';
 import '../widgets/hoc_tap_common.dart';
 import '../widgets/overview_cards.dart';
-import '../../../../shared/widgets/app_bar_back.dart';
 
 /// Muốn mua: các khóa chưa mua, kèm giá định mua, ghi chú; "Đã mua" chuyển vào hàng chờ.
 class WishlistScreen extends ConsumerWidget {
@@ -26,8 +26,11 @@ class WishlistScreen extends ConsumerWidget {
     final query = CourseQuery(subjectId: subjectId, statuses: const [CourseStatus.wishlist]);
     final async = ref.watch(studyCoursesProvider(query));
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: const Text('Muốn mua')),
+    return DesignScaffold(
+      title: 'Muốn mua',
+      backFallback: '/tra-dinh',
+      // Có nút nổi "Khóa muốn mua" ở góc phải dưới → không gắn nút chat nổi.
+      chat: false,
       floatingActionButton: FloatingActionButton.extended(
         key: const ValueKey('add-wishlist'),
         onPressed: () => showCourseFormSheet(context, subjectId: subjectId, initialStatus: CourseStatus.wishlist),

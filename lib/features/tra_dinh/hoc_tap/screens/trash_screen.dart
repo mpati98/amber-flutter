@@ -1,9 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/widgets/design_page.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/api_error.dart';
-import '../../../../shared/widgets/app_bar_back.dart';
 import '../models/course.dart';
 import '../providers/hoc_tap_provider.dart';
 import '../utils/async_view.dart';
@@ -69,11 +69,9 @@ class TrashScreen extends ConsumerWidget {
         s.id: s.name,
     };
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(fallback: '/tra-dinh'),
-        title: const Text('Thùng rác'),
-      ),
+    return DesignScaffold(
+      title: 'Thùng rác',
+      backFallback: '/tra-dinh',
       body: HocTapBody(
         onRefresh: () => ref.refresh(studyTrashProvider.future),
         child: switch (async.settled) {
