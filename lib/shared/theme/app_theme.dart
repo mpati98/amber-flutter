@@ -3,27 +3,23 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'design_tokens.dart';
 
-/// Toàn bộ hex lấy nguyên văn từ amber-v3/src/app/globals.css (không làm tròn).
+/// Bảng màu của các màn cũ. Từ 12/11/2026 các token tối được ánh xạ sang bộ thiết kế mới ([DesignColors], design/DESIGN.md)
+/// để mọi màn chưa làm lại cũng cùng tông; tên giữ nguyên (gốc từ amber-v3 globals.css) để không phải sửa từng chỗ dùng.
+/// Màn mới dùng thẳng [DesignColors].
 abstract final class AppColors {
-  // Theme tối "Âm Dương Giới"
-  static const ink950 = Color(0xFF05070F);
-  static const ink900 = Color(0xFF0C1128);
-  static const ink800 = Color(0xFF18204A);
-  static const yugen500 = Color(0xFF8B7FF0);
-  static const yugen300 = Color(0xFFC9C3F5);
-  static const shuiro500 = Color(0xFFE0616F);
-  static const kincha400 = Color(0xFFECCB8A);
-  static const kincha200 = Color(0xFFF3E2C0);
+  // Theme tối "Âm Dương Giới" → bộ thiết kế mới.
+  static const ink950 = DesignColors.bgTop; // nền sâu nhất; chữ tối trên nền vàng
+  static const ink900 = DesignColors.panel; // nền thẻ / panel
+  static const ink800 = DesignColors.frame; // ô chưa có dữ liệu, nền lõm
+  static const yugen500 = DesignColors.info; // nhấn phụ (xanh lam)
+  static const yugen300 = DesignColors.muted; // chữ phụ có màu
+  static const shuiro500 = DesignColors.danger; // âm, cảnh báo
+  static const kincha400 = DesignColors.gold; // vàng: tiêu đề, nút chính, điểm nhấn
+  static const kincha200 = Color(0xFFF7E7B0); // vàng nhạt (đỉnh gradient logo trong bản mẫu)
 
-  // Không phải token của globals.css: màu mặc định Tailwind, amber-v3 dùng
-  // nhất quán cho trạng thái "xong" (StatusBadge READ, TaskStatusBadge DONE,
-  // hoc-tap "Đã xong").
-  // Giá trị đo pixel thật, không tra bảng màu: Tailwind v4.3.3 (bản amber-v3
-  // cài), vẽ giá trị lab() của CSS đã build lên canvas sRGB trong Chromium.
-  static const emerald300 = Color(0xFF5EE9B5);
-  // Không dùng 0xFF00D294: đó là hex dự phòng cho trình duyệt không hỗ trợ
-  // lab(), lệch màu thật 2 đơn vị ở kênh G và B.
-  static const emerald400 = Color(0xFF00D492);
+  // Trạng thái "xong" / thu nhập.
+  static const emerald300 = DesignColors.success;
+  static const emerald400 = DesignColors.success;
 
   // Theme sáng "đất nung"
   static const bgLight = Color(0xFFFAF3E7);
