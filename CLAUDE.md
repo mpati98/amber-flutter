@@ -143,7 +143,8 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
 ## Quy ước
 
 - **Bộ thiết kế mới (12/11/2026, `design/DESIGN.md` + bản mẫu `design/ref/*.html` ở thư mục workspace)** — đã áp cho Home, Đăng nhập, Nghị Sự Đường,
-  Tàng Kinh Các, Kiều Lâu, Trà Đình (Hôm nay); các màn con còn giao diện cũ. Màn mới / màn làm lại dùng:
+  Tàng Kinh Các (+ Sách, Tài liệu, Kế hoạch đọc, Dữ liệu huấn luyện và chi tiết), Kiều Lâu, Trà Đình (Hôm nay); các màn con khác còn giao diện cũ.
+  Thêm cho màn con: `DesignButton.primary/outline`, `FrameToolbar` (chip + nút "+ Thêm", xuống dòng khi khung < 420), `designInput(hint)`. Màn mới / màn làm lại dùng:
   - `DesignPage` (`shared/widgets/design_page.dart`): thanh trên (← vàng + tên + logo Amber mở `AccountMenu`) → `overview` → `content(context, DesignSize)` → `hint` / `footer`;
     tự gắn nền, chat nổi `AmberChatDock`, responsive (`DesignLayout` trong `design_tokens.dart`: < 600 dọc lề 14, 600–1024 cột 760, ≥ 1024 cột 1120 với tổng quan rộng 380 bên trái).
   - `OverviewBlock` + `OverviewRow` (nhãn rộng 70 ở Home, 90 ở các tòa; `footer` cho hộp cảnh báo), `ListFrame` + `FrameRows` + `FrameRow` (chữ Hán trong `GlyphCircle`),

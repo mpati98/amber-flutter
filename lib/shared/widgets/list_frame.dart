@@ -10,15 +10,14 @@ class ListFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: DesignColors.frame,
-        border: Border.all(color: DesignColors.frameBorder),
+    // Material (không phải Container tô nền): ListTile / InkWell bên trong vẽ hiệu ứng bấm lên Material gần nhất.
+    return Material(
+      color: DesignColors.frame,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: DesignColors.frameBorder),
       ),
-      child: child,
+      child: Padding(padding: const EdgeInsets.all(12), child: SizedBox(width: double.infinity, child: child)),
     );
   }
 }
@@ -283,4 +282,95 @@ class _Chip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Nút theo bản mẫu: [DesignButton.primary] = `.btn` (vàng, chữ tối), [DesignButton.outline] = `.btn.o` (viền vàng).
+/// Cao tối thiểu 32 (đặt [minHeight] 44 cho nút đứng riêng cần vùng chạm lớn).
+class DesignButton extends StatelessWidget {
+  const DesignButton.primary({super.key, required this.label, required this.onPressed, this.minHeight = 32}) : primary = true;
+  const DesignButton.outline({super.key, required this.label, required this.onPressed, this.minHeight = 32}) : primary = false;
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool primary;
+  final double minHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(6));
+    const pad = EdgeInsets.symmetric(horizontal: 12, vertical: 6);
+    final text = DesignText.serif(fontSize: 13);
+    final child = Text(label, textAlign: TextAlign.center);
+    if (primary) {
+      return FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: DesignColors.gold,
+          foregroundColor: const Color(0xFF1A1A1A),
+          disabledBackgroundColor: DesignColors.gold.withValues(alpha: 0.4),
+          padding: pad,
+          minimumSize: Size(0, minHeight),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: shape,
+          textStyle: text,
+        ),
+        child: child,
+      );
+    }
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: DesignColors.gold,
+        disabledForegroundColor: DesignColors.muted,
+        side: BorderSide(color: onPressed == null ? DesignColors.panelBorder : DesignColors.gold),
+        padding: pad,
+        minimumSize: Size(0, minHeight),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: shape,
+        textStyle: text,
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Đầu khung: hàng chip lọc (co giãn, cuộn ngang) + nút hành động bên phải (vd "+ Thêm sách").
+class FrameToolbar extends StatelessWidget {
+  const FrameToolbar({super.key, required this.chips, this.action});
+
+  final Widget chips;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = action;
+    if (a == null) return chips;
+    // Khung hẹp (điện thoại nhỏ, chữ phóng to): nút xuống dòng dưới chip, căn phải — không chèn ép hàng chip.
+    return LayoutBuilder(
+      builder: (context, c) => c.maxWidth < 420
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 8,
+              children: [chips, Align(alignment: Alignment.centerRight, child: a)],
+            )
+          : Row(spacing: 8, children: [Expanded(child: chips), a]),
+    );
+  }
+}
+
+/// Ô nhập trong khung theo bộ thiết kế mới: nền tối, viền panel, viền vàng khi đang gõ, chữ gợi ý màu phụ.
+InputDecoration designInput(String hint) {
+  OutlineInputBorder border(Color c) =>
+      OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: c));
+  return InputDecoration(
+    hintText: hint,
+    hintStyle: DesignText.serif(fontSize: 14, color: DesignColors.muted),
+    isDense: true,
+    filled: true,
+    fillColor: DesignColors.panel,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    border: border(DesignColors.panelBorder),
+    enabledBorder: border(DesignColors.panelBorder),
+    focusedBorder: border(DesignColors.gold),
+  );
 }

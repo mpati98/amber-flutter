@@ -3,18 +3,19 @@ import 'dart:convert';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/utils/api_error.dart';
+import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/design_page.dart';
 import '../../../shared/widgets/form_bits.dart';
-import '../../../shared/widgets/scroll_card.dart';
-import '../../../shared/widgets/tag.dart';
+import '../../../shared/widgets/list_frame.dart';
+import '../../../shared/widgets/overview_block.dart';
 import '../models/training_log.dart';
 import '../providers/training_log_provider.dart';
 import '../services/training_log_api.dart';
 import '../widgets/training_log_correction_sheet.dart';
 import '../widgets/outcome_tag.dart';
 import 'training_logs_screen.dart' show formatLogTime;
-import '../../../shared/widgets/app_bar_back.dart';
 
 const _pretty = JsonEncoder.withIndent('  ');
 
@@ -42,7 +43,6 @@ class _TrainingLogDetailScreenState
     String failure,
   ) async {
     setState(() => _busy = true);
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await call(ref.read(trainingLogApiProvider));
       ref.invalidate(trainingLogDetailProvider(widget.logId));
@@ -51,9 +51,7 @@ class _TrainingLogDetailScreenState
       ); // đổi đánh giá/cờ loại làm đổi số mẫu đủ điều kiện
       ref.invalidate(logListProvider);
     } catch (e) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(apiErrorMessage(e, failure))),
-      );
+      if (mounted) showToast(context, apiErrorMessage(e, failure), type: ToastType.error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -77,163 +75,137 @@ class _TrainingLogDetailScreenState
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(trainingLogDetailProvider(widget.logId));
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(
-          fallback: '/tang-kinh-cac/du-lieu-huan-luyen',
-        ),
-        title: const Text('Chi tiết nhật ký'),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: detail.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, _) => Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Không tải được dòng nhật ký.'),
-                  TextButton(
-                    onPressed: () =>
-                        ref.invalidate(trainingLogDetailProvider(widget.logId)),
-                    child: const Text('Thử lại'),
-                  ),
-                ],
-              ),
-            ),
-            data: _body,
+    final d = detail.value;
+    return DesignPage(
+      title: 'Chi tiết nhật ký',
+      backFallback: '/tang-kinh-cac/du-lieu-huan-luyen',
+      overview: d == null
+          ? OverviewBlock(
+              title: 'Nhật ký',
+              labelWidth: 90,
+              rows: [OverviewRow.muted(label: 'Trạng thái', text: detail.hasError ? 'Không tải được.' : 'Đang tải…')],
+            )
+          : _overview(d),
+      content: (context, _) => ListFrame(
+        child: detail.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator(color: DesignColors.gold)),
           ),
+          error: (_, _) => Column(
+            spacing: 8,
+            children: [
+              const Text('Không tải được dòng nhật ký.', style: DesignText.muted),
+              DesignButton.outline(
+                label: 'Thử lại',
+                onPressed: () => ref.invalidate(trainingLogDetailProvider(widget.logId)),
+              ),
+            ],
+          ),
+          data: _body,
         ),
       ),
     );
   }
 
-  Widget _body(TrainingLogDetail d) {
+  /// Tổng quan: thời điểm, agent + kết quả + công cụ, tuyến, thông số.
+  Widget _overview(TrainingLogDetail d) {
     final s = d.summary;
-    final muted = TextStyle(
-      fontSize: 12,
-      color: Colors.white.withValues(alpha: 0.5),
-    );
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(formatLogTime(s.createdAt), style: muted),
-            Tag(
-              label: agentLabel(s.agent),
-              color: AppColors.shuiro500,
-              foregroundColor: Colors.white.withValues(alpha: 0.8),
-            ),
-            OutcomeTag(s.outcome),
-            ToolStatus(toolName: s.toolName, toolOk: s.toolOk),
-            if (s.route case final route?)
-              Tag(
-                label: route == TrainingRoute.cloud && s.cloudModel != null
-                    ? 'CLOUD · ${s.cloudModel}'
-                    : route.apiValue,
-                color: route == TrainingRoute.cloud
-                    ? Theme.of(context).colorScheme.secondary
-                    : Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onSurface,
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _Section(
-          'Câu gốc',
-          child: SelectableText(
-            s.userInput.isEmpty ? '(không có)' : s.userInput,
+    return OverviewBlock(
+      title: 'Nhật ký',
+      labelWidth: 90,
+      rows: [
+        OverviewRow.muted(label: 'Thời điểm', text: formatLogTime(s.createdAt)),
+        OverviewRow(
+          label: 'Kết quả',
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              DesignPill(agentLabel(s.agent), color: DesignColors.muted),
+              OutcomeTag(s.outcome),
+              ToolStatus(toolName: s.toolName, toolOk: s.toolOk),
+            ],
           ),
         ),
+        if (s.route case final route?)
+          OverviewRow(
+            label: 'Tuyến',
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: DesignPill(
+                route == TrainingRoute.cloud && s.cloudModel != null ? 'CLOUD · ${s.cloudModel}' : route.apiValue,
+                color: route == TrainingRoute.cloud ? DesignColors.info : DesignColors.gold,
+              ),
+            ),
+          ),
+        OverviewRow(
+          label: 'Thông số',
+          child: Text(_metrics(d), style: DesignText.muted.copyWith(height: 1.6)),
+        ),
+      ],
+    );
+  }
+
+  Widget _body(TrainingLogDetail d) {
+    final s = d.summary;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 10,
+      children: [
+        _Section('Câu gốc', child: SelectableText(s.userInput.isEmpty ? '(không có)' : s.userInput, style: DesignText.body)),
         _Section('Đề xuất của model', child: _Code(showJson(d.parsedOutput))),
         if (d.correctedOutput != null)
           _Section(
             'Bản đã sửa',
-            note: d.correctedAt == null
-                ? null
-                : 'Sửa lúc ${formatLogTime(d.correctedAt!)}',
+            note: d.correctedAt == null ? null : 'Sửa lúc ${formatLogTime(d.correctedAt!)}',
             child: _Code(showJson(d.correctedOutput)),
           ),
-        FilledButton.tonalIcon(
-          onPressed: _busy ? null : () => _editCorrection(d),
-          icon: const Icon(Icons.edit_outlined),
-          label: const Text('Sửa đáp án'),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: DesignButton.outline(label: 'Sửa đáp án', onPressed: _busy ? null : () => _editCorrection(d)),
         ),
         if (d.error != null && d.error!.isNotEmpty)
-          _Section(
-            'Lỗi',
-            child: SelectableText(
-              d.error!,
-              style: const TextStyle(color: AppColors.shuiro500),
-            ),
-          ),
-        _Section(
-          'Thông số',
-          child: Text(
-            _metrics(d),
-            style: muted.copyWith(fontSize: 13, height: 1.6),
-          ),
-        ),
+          _Section('Lỗi', child: SelectableText(d.error!, style: const TextStyle(color: DesignColors.danger))),
         _Collapsible('messages (gửi vào model)', showJson(d.messages)),
         _Collapsible('tools (gửi kèm)', showJson(d.tools)),
         _Collapsible('raw_output (output thô)', d.rawOutput ?? '—'),
         _Collapsible('Kết quả tool', showJson(d.json['toolResult'])),
-        const SizedBox(height: 16),
-        Text('Đánh giá', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.only(top: 6),
+          child: Text('ĐÁNH GIÁ', style: TextStyle(fontSize: 13, letterSpacing: 1, color: DesignColors.gold)),
+        ),
         Row(
+          spacing: 10,
           children: [
             Expanded(
-              child: FilledButton.tonalIcon(
-                onPressed: _busy
-                    ? null
-                    : () => _act(
-                        (api) => api.feedback(s.id, correct: true),
-                        'Không gửi được đánh giá.',
-                      ),
-                icon: Icon(
-                  s.outcome == LogOutcome.accepted
-                      ? Icons.thumb_up
-                      : Icons.thumb_up_outlined,
-                ),
-                label: const Text('Đúng'),
+              child: _VoteButton(
+                label: 'Đúng',
+                icon: s.outcome == LogOutcome.accepted ? Icons.thumb_up : Icons.thumb_up_outlined,
+                on: s.outcome == LogOutcome.accepted,
+                onPressed: _busy ? null : () => _act((api) => api.feedback(s.id, correct: true), 'Không gửi được đánh giá.'),
               ),
             ),
-            const SizedBox(width: 12),
             Expanded(
-              child: FilledButton.tonalIcon(
-                onPressed: _busy
-                    ? null
-                    : () => _act(
-                        (api) => api.feedback(s.id, correct: false),
-                        'Không gửi được đánh giá.',
-                      ),
-                icon: Icon(
-                  s.outcome == LogOutcome.rejected
-                      ? Icons.thumb_down
-                      : Icons.thumb_down_outlined,
-                ),
-                label: const Text('Sai'),
+              child: _VoteButton(
+                label: 'Sai',
+                icon: s.outcome == LogOutcome.rejected ? Icons.thumb_down : Icons.thumb_down_outlined,
+                on: s.outcome == LogOutcome.rejected,
+                onPressed: _busy ? null : () => _act((api) => api.feedback(s.id, correct: false), 'Không gửi được đánh giá.'),
               ),
             ),
           ],
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Loại khỏi dataset'),
-          subtitle: const Text('Mẫu này sẽ không được xuất để huấn luyện.'),
+          activeThumbColor: DesignColors.gold,
+          title: Text('Loại khỏi dataset', style: DesignText.bold),
+          subtitle: const Text('Mẫu này sẽ không được xuất để huấn luyện.', style: DesignText.muted),
           value: s.excludeFromTraining,
           onChanged: _busy
               ? null
-              : (v) => _act(
-                  (api) => api.setExcluded(s.id, v),
-                  'Không đổi được cờ loại khỏi dataset.',
-                ),
+              : (v) => _act((api) => api.setExcluded(s.id, v), 'Không đổi được cờ loại khỏi dataset.'),
         ),
       ],
     );
@@ -257,33 +229,21 @@ class _Section extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: ScrollCard(
-      glow: ScrollCardGlow.yugen,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              letterSpacing: 0.6,
-              color: AppColors.kincha400.withValues(alpha: 0.8),
-            ),
-          ),
-          if (note != null)
-            Text(
-              note!,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.white.withValues(alpha: 0.4),
-              ),
-            ),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+    decoration: BoxDecoration(
+      color: DesignColors.panel,
+      border: Border.all(color: DesignColors.panelBorder),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title.toUpperCase(), style: const TextStyle(fontSize: 12, letterSpacing: 1, color: DesignColors.gold)),
+        if (note != null) Text(note!, style: DesignText.muted),
+        const SizedBox(height: 8),
+        child,
+      ],
     ),
   );
 }
@@ -296,7 +256,7 @@ class _Code extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SelectableText(
     text,
-    style: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5),
+    style: const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.5, color: DesignColors.text),
   );
 }
 
@@ -308,12 +268,48 @@ class _Collapsible extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => ExpansionTile(
-    tilePadding: EdgeInsets.zero,
-    title: Text(title, style: const TextStyle(fontSize: 14)),
-    expandedAlignment: Alignment.centerLeft,
-    children: [
-      Padding(padding: const EdgeInsets.only(bottom: 12), child: _Code(text)),
-    ],
+  Widget build(BuildContext context) => Material(
+    color: DesignColors.panel,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+      side: const BorderSide(color: DesignColors.panelBorder),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      shape: const Border(),
+      collapsedShape: const Border(),
+      iconColor: DesignColors.gold,
+      collapsedIconColor: DesignColors.muted,
+      title: Text(title, style: DesignText.body),
+      expandedAlignment: Alignment.centerLeft,
+      children: [_Code(text)],
+    ),
+  );
+}
+
+/// Nút Đúng / Sai: viền vàng; nền vàng nhạt khi đây là đánh giá hiện tại.
+class _VoteButton extends StatelessWidget {
+  const _VoteButton({required this.label, required this.icon, required this.on, required this.onPressed});
+
+  final String label;
+  final IconData icon;
+  final bool on;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+    onPressed: onPressed,
+    icon: Icon(icon, size: 18),
+    label: Text(label),
+    style: OutlinedButton.styleFrom(
+      foregroundColor: DesignColors.gold,
+      backgroundColor: on ? DesignColors.gold.withValues(alpha: 0.12) : null,
+      side: const BorderSide(color: DesignColors.gold),
+      minimumSize: const Size(0, 40),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      textStyle: DesignText.serif(fontSize: 14),
+    ),
   );
 }

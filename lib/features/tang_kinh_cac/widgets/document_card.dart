@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/widgets/scroll_card.dart';
+import '../../../shared/theme/design_tokens.dart';
+import '../../../shared/widgets/list_frame.dart';
 import '../models/document.dart';
 import 'type_tag.dart';
 
@@ -25,8 +25,18 @@ String documentPreview(String content) => content
     .join(' ')
     .replaceAll(_spaces, ' ');
 
-/// Port DocumentCard (amber-v3/src/components/tang-kinh-cac/DocumentCard.tsx).
-/// Không hiện ngày (updatedAt chỉ để sắp xếp), IMAGE cũng chỉ hiện icon.
+/// Chữ Hán cho từng loại tài liệu (vòng tròn vàng bên trái dòng, như các mục của bộ thiết kế mới).
+String documentGlyph(DocumentType t) => switch (t) {
+  DocumentType.text => '文',
+  DocumentType.checklist => '單',
+  DocumentType.mindmap => '圖',
+  DocumentType.image => '像',
+  DocumentType.file => '檔',
+  DocumentType.unknown => '書',
+};
+
+/// Một tài liệu trong khung của màn Tài liệu (bộ thiết kế mới): chữ Hán theo loại · tên · xem trước 2 dòng ·
+/// nhãn loại + chủ đề + "ghim". Không hiện ngày (updatedAt chỉ để sắp xếp), IMAGE / FILE không có xem trước.
 class DocumentCard extends StatelessWidget {
   const DocumentCard({super.key, required this.doc, this.onTap});
 
@@ -39,61 +49,31 @@ class DocumentCard extends StatelessWidget {
     final preview = doc.type.hasTextContent && content != null ? documentPreview(content) : '';
     final topic = doc.topic;
 
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: ScrollCard(
-        glow: doc.pinned ? ScrollCardGlow.kincha : ScrollCardGlow.yugen,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return FrameRow(
+      key: ValueKey('doc-${doc.id}'),
+      glyph: documentGlyph(doc.type),
+      title: doc.title,
+      borderColor: doc.pinned ? DesignColors.gold.withValues(alpha: 0.5) : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (preview.isNotEmpty) Text(preview, maxLines: 2, overflow: TextOverflow.ellipsis, style: DesignText.muted),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text(doc.type.icon, style: const TextStyle(fontSize: 18)), // text-lg
-                const Spacer(),
-                TypeTag(doc.type),
+                DesignPill(doc.type.label, color: DesignColors.info),
+                if (topic != null) Text(topic.name, style: DesignText.muted),
+                if (doc.pinned) const Text('📌 ghim', style: TextStyle(fontSize: 12, color: DesignColors.gold)),
               ],
             ),
-            const SizedBox(height: 8), // mb-2
-            Text(
-              doc.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 16, color: Colors.white),
-            ),
-            if (preview.isNotEmpty) ...[
-              const SizedBox(height: 4), // mt-1
-              Text(
-                preview,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.5)),
-              ),
-            ],
-            if (topic != null || doc.pinned) ...[
-              const SizedBox(height: 12), // mt-3
-              Row(
-                children: [
-                  // Có hay không có topic, "ghim" vẫn ở bên phải (web: justify-between
-                  // với 1 phần tử thì nó dạt sang trái).
-                  if (topic != null)
-                    Expanded(
-                      child: Text(
-                        topic.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, color: AppColors.yugen300),
-                      ),
-                    )
-                  else
-                    const Spacer(),
-                  if (doc.pinned) const Text('📌 ghim', style: TextStyle(fontSize: 12, color: AppColors.kincha400)),
-                ],
-              ),
-            ],
-          ],
-        ),
+          ),
+        ],
       ),
+      onTap: onTap,
     );
   }
 }

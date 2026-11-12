@@ -289,7 +289,8 @@ void main() {
         route: null,
         cursor: null,
       ));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Trò chuyện'));
+      await tester.ensureVisible(find.byKey(const ValueKey('chip-Trò chuyện')));
+      await tester.tap(find.byKey(const ValueKey('chip-Trò chuyện')));
       await tester.pumpAndSettle();
       expect(api.listCalls.last, (
         agent: 'chat',
@@ -297,7 +298,8 @@ void main() {
         route: null,
         cursor: null,
       ));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Sai / bị xóa'));
+      await tester.ensureVisible(find.byKey(const ValueKey('chip-Sai / bị xóa')));
+      await tester.tap(find.byKey(const ValueKey('chip-Sai / bị xóa')));
       await tester.pumpAndSettle();
       expect(api.listCalls.last, (
         agent: 'chat',
@@ -305,7 +307,8 @@ void main() {
         route: null,
         cursor: null,
       ));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Mọi agent'));
+      await tester.ensureVisible(find.byKey(const ValueKey('chip-Mọi agent')));
+      await tester.tap(find.byKey(const ValueKey('chip-Mọi agent')));
       await tester.pumpAndSettle();
       expect(api.listCalls.last, (
         agent: null,
@@ -313,7 +316,8 @@ void main() {
         route: null,
         cursor: null,
       ));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'CLOUD'));
+      await tester.ensureVisible(find.byKey(const ValueKey('chip-CLOUD')));
+      await tester.tap(find.byKey(const ValueKey('chip-CLOUD')));
       await tester.pumpAndSettle();
       expect(api.listCalls.last, (
         agent: null,
@@ -321,7 +325,8 @@ void main() {
         route: TrainingRoute.cloud,
         cursor: null,
       ));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'LOCAL'));
+      await tester.ensureVisible(find.byKey(const ValueKey('chip-LOCAL')));
+      await tester.tap(find.byKey(const ValueKey('chip-LOCAL')));
       await tester.pumpAndSettle();
       expect(api.listCalls.last, (
         agent: null,
@@ -329,7 +334,8 @@ void main() {
         route: TrainingRoute.local,
         cursor: null,
       ));
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Mọi tuyến'));
+      await tester.ensureVisible(find.byKey(const ValueKey('chip-Mọi tuyến')));
+      await tester.tap(find.byKey(const ValueKey('chip-Mọi tuyến')));
       await tester.pumpAndSettle();
       expect(api.listCalls.last, (
         agent: null,
@@ -486,7 +492,8 @@ void main() {
       final (stats, lists) = (api.statsCalls, api.listCalls.length);
       await tester.tap(find.text('Đúng'));
       await tester.pumpAndSettle();
-      await tester.pageBack(); // Riverpod tạm dừng provider của màn đang bị che: quay lại danh sách là nó tải lại
+      // Riverpod tạm dừng provider của màn đang bị che: quay lại danh sách là nó tải lại. Nút ← của thanh trên mới (pageBack chỉ tìm BackButton của AppBar).
+      await tester.tap(find.byKey(const ValueKey('design-top-bar-back')));
       await tester.pumpAndSettle();
       expect(find.text('Chi tiết nhật ký'), findsNothing);
       expect(api.statsCalls, greaterThan(stats));
