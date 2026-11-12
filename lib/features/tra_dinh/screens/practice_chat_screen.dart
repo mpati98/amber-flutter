@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/theme/design_tokens.dart';
+import '../../../shared/widgets/design_page.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../models/practice_message.dart';
 import '../models/practice_session.dart';
@@ -14,7 +16,6 @@ import '../services/tra_dinh_api.dart';
 import '../services/tts_service.dart';
 import '../utils/practice_minutes.dart';
 import '../widgets/practice_end_sheet.dart';
-import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -286,7 +287,12 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
     }
     final subjectId = _subjectId;
     if (subjectId == null || !mounted) return;
-    final message = await showPracticeEndSheet(context, sessionId: widget.sessionId, subjectId: subjectId, minutes: minutes);
+    final message = await showPracticeEndSheet(
+      context,
+      sessionId: widget.sessionId,
+      subjectId: subjectId,
+      minutes: minutes,
+    );
     if (message != null && mounted) _snack(message);
   }
 
@@ -307,57 +313,73 @@ class _PracticeChatScreenState extends ConsumerState<PracticeChatScreen> {
     // Rời màn → provider dispose AudioPlayer → tiếng tắt theo.
     _tts = ref.watch(ttsServiceProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: const AppBarBack(fallback: '/tra-dinh/luyen-tap'),
-        title: session == null
-            ? const Text('Buổi luyện')
-            : Column(
+    return DesignScaffold(
+      title: session?.name ?? 'Buổi luyện',
+      backFallback: '/tra-dinh/luyen-tap',
+      // Ô nhập / mic ở đáy → không gắn nút chat nổi.
+      chat: false,
+      titleWidget: session == null
+          ? null
+          : FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(session.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    session.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: DesignText.serif(fontSize: 16, fontWeight: FontWeight.w700, color: DesignColors.text),
+                  ),
                   Text(session.isEnded ? '${session.mode.label} · Đã kết thúc' : session.mode.label, style: _muted(12)),
                 ],
               ),
-        actions: [
-          if (session != null && !session.isEnded)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton(
-                // Đang gửi/ghi âm/chuyển chữ thì chưa cho kết thúc — ô nhập sẽ biến
-                // mất giữa chừng (vd mic còn ghi mà không còn nút dừng).
-                onPressed: !_ending && _pending == null && _mic == _MicState.idle ? _confirmEnd : null,
-                style: TextButton.styleFrom(foregroundColor: AppColors.shuiro500),
-                child: Text(_ending ? 'Đang kết thúc...' : 'Kết thúc buổi'),
-              ),
             ),
+      actions: [
+        if (session != null && !session.isEnded)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              // Đang gửi/ghi âm/chuyển chữ thì chưa cho kết thúc — ô nhập sẽ biến
+              // mất giữa chừng (vd mic còn ghi mà không còn nút dừng).
+              onPressed: !_ending && _pending == null && _mic == _MicState.idle ? _confirmEnd : null,
+              style: TextButton.styleFrom(foregroundColor: AppColors.shuiro500),
+              child: Text(_ending ? 'Đang kết thúc...' : 'Kết thúc buổi'),
+            ),
+          ),
+      ],
+      // Đang kết thúc buổi: thanh tiến độ mảnh ở đầu thân (thanh trên mới không có vùng `bottom` như AppBar).
+      body: Column(
+        children: [
+          if (_ending) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: switch (detail) {
+              AsyncValue(value: final s?) => _ChatBody(
+                session: s,
+                pending: _pending,
+                input: _input,
+                onSend: _send,
+                mic: _mic,
+                recordSeconds: _recordSeconds,
+                onMic: _toggleMic,
+                speakingId: _speakingId,
+                speakState: _speakState,
+                onSpeak: _toggleSpeak,
+                locked: _ending,
+              ),
+              AsyncValue(error: final e?) => _LoadError(
+                message: e is DioException && e.response?.statusCode == 404
+                    ? 'Không tìm thấy buổi luyện này.'
+                    : 'Không tải được buổi luyện.',
+                onRetry: () => ref.invalidate(sessionDetailProvider(widget.sessionId)),
+              ),
+              _ => const Center(child: CircularProgressIndicator()),
+            },
+          ),
         ],
-        bottom: _ending
-            ? const PreferredSize(preferredSize: Size.fromHeight(2), child: LinearProgressIndicator(minHeight: 2))
-            : null,
       ),
-      body: switch (detail) {
-        AsyncValue(value: final s?) => _ChatBody(
-          session: s,
-          pending: _pending,
-          input: _input,
-          onSend: _send,
-          mic: _mic,
-          recordSeconds: _recordSeconds,
-          onMic: _toggleMic,
-          speakingId: _speakingId,
-          speakState: _speakState,
-          onSpeak: _toggleSpeak,
-          locked: _ending,
-        ),
-        AsyncValue(error: final e?) => _LoadError(
-          message: e is DioException && e.response?.statusCode == 404
-              ? 'Không tìm thấy buổi luyện này.'
-              : 'Không tải được buổi luyện.',
-          onRetry: () => ref.invalidate(sessionDetailProvider(widget.sessionId)),
-        ),
-        _ => const Center(child: CircularProgressIndicator()),
-      },
     );
   }
 }

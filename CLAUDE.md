@@ -144,7 +144,10 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
 
 - **Bộ thiết kế mới (12/11/2026, `design/DESIGN.md` + bản mẫu `design/ref/*.html` ở thư mục workspace)** — đã áp cho Home, Đăng nhập, Nghị Sự Đường,
   Tàng Kinh Các (+ Sách, Tài liệu, Kế hoạch đọc, Dữ liệu huấn luyện và chi tiết), Nghị Sự Đường (+ Dự án, chi tiết dự án, Tài chính, tháng tài chính,
-  kế hoạch học tập, chi tiết kế hoạch; Lịch dự kiến / Thống kê chỉ khung chung), Kiều Lâu (+ Nhạc và trình phát mini), Trà Đình (Hôm nay); các màn con khác còn giao diện cũ.
+  kế hoạch học tập, chi tiết kế hoạch; Lịch dự kiến / Thống kê chỉ khung chung), Kiều Lâu (+ Nhạc và trình phát mini), Trà Đình (Hôm nay).
+  Các màn Trà Đình còn lại (kho thẻ, khóa học, luyện nói, bài test, Lịch / Thống kê) dùng `DesignScaffold` (thanh trên mới + nền) với thân giữ
+  bố cục cũ; màu đi theo `AppTheme.darkTheme` và `AppColors` (đã ánh xạ sang `DesignColors`, 12/11/2026). Màn có nút / ô nhập cố định ở đáy
+  hoặc nút nổi riêng đặt `chat: false`.
   `ScrollCard` và `ChoiceRow` (form_bits) đã vẽ lại theo bộ thiết kế nên màn cũ dùng chúng cũng gần giống. Màn có nội dung rộng (bảng việc): `DesignPage(stacked: true)`.
   Thêm cho màn con: `DesignButton.primary/outline`, `FrameToolbar` (chip + nút "+ Thêm", xuống dòng khi khung < 420), `designInput(hint)`. Màn mới / màn làm lại dùng:
   - `DesignPage` (`shared/widgets/design_page.dart`): thanh trên (← vàng + tên + logo Amber mở `AccountMenu`) → `overview` → `content(context, DesignSize)` → `hint` / `footer`;

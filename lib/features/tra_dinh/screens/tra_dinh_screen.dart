@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../shared/widgets/design_page.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +14,6 @@ import '../models/skill_score.dart';
 import '../hoc_tap/providers/hoc_tap_provider.dart';
 import '../providers/tra_dinh_provider.dart';
 import '../widgets/new_practice_session_modal.dart';
-import '../../../shared/widgets/app_bar_back.dart';
 
 TextStyle _muted(double size) => TextStyle(fontSize: size, color: Colors.white.withValues(alpha: 0.4));
 
@@ -51,8 +51,11 @@ class TraDinhScreen extends ConsumerWidget {
     final skills = ref.watch(skillScoresProvider);
     final sessions = ref.watch(practiceSessionsProvider);
 
-    return Scaffold(
-      appBar: AppBar(leading: const AppBarBack(fallback: '/tra-dinh'), title: const Text('Trà Đình')),
+    return DesignScaffold(
+      title: 'Trà Đình',
+      backFallback: '/tra-dinh',
+      // Có nút nổi "Bắt đầu buổi luyện mới" → không gắn nút chat nổi.
+      chat: false,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _newSession(context, ref),
         icon: const Icon(Icons.add),
