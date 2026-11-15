@@ -1,18 +1,22 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../shared/theme/design_tokens.dart';
 import '../../amber_brain/widgets/amber_chat_dock.dart';
 import '../../auth/widgets/account_menu.dart';
+import '../../kieu_lau/services/music_api.dart';
+import '../world/world_api.dart';
 import '../world/world_bridge.dart';
+import '../world/world_feeder.dart';
 import '../world/world_view.dart';
 
 /// Màn chủ dạng 3D: cảnh Âm Dương Giới phủ kín (HUD, nhạc, thời tiết nằm trong cảnh).
 /// Góc trái dưới (góc trống của cảnh): nút chat Amber, logo mở menu tài khoản, nút về lưới 2D.
 /// Bảng chi tiết công trình trên màn hẹp (< 760, khớp CSS của cảnh) trải hết đáy → ẩn các nút này khi bảng mở.
-class WorldHome extends StatefulWidget {
+class WorldHome extends ConsumerStatefulWidget {
   const WorldHome({super.key, required this.onSwitchTo2D, this.bridge});
 
   final VoidCallback onSwitchTo2D;
@@ -21,26 +25,34 @@ class WorldHome extends StatefulWidget {
   final WorldBridge? bridge;
 
   @override
-  State<WorldHome> createState() => _WorldHomeState();
+  ConsumerState<WorldHome> createState() => _WorldHomeState();
 }
 
-class _WorldHomeState extends State<WorldHome> {
+class _WorldHomeState extends ConsumerState<WorldHome> {
   late final WorldBridge _bridge = widget.bridge ?? WorldBridge();
+  late final WorldFeeder _feeder = WorldFeeder(
+    bridge: _bridge,
+    api: ref.read(worldApiProvider),
+    loadTracks: () => ref.read(musicApiProvider).getTracks(),
+  );
+  late final AppLifecycleListener _life;
   StreamSubscription<WorldEvent>? _sub;
   bool _sheetOpen = false;
 
   @override
   void initState() {
     super.initState();
+    // Trigger nạp dữ liệu: app trở lại foreground (còn lại: cảnh sẵn sàng, quay về từ màn 2D — xem bên dưới)
+    _life = AppLifecycleListener(onResume: () { if (_bridge.ready) _feeder.refresh(); });
     _sub = _bridge.events.listen((e) {
       if (!mounted) return;
       switch (e) {
         case WorldSheet(:final open):
           setState(() => _sheetOpen = open);
         case WorldNavigate(:final path):
-          context.push(path);
+          context.push(path).then((_) { if (mounted) _feeder.refresh(); });
         case WorldReady():
-          break;
+          _feeder.refresh();
       }
     });
   }
@@ -48,6 +60,7 @@ class _WorldHomeState extends State<WorldHome> {
   @override
   void dispose() {
     _sub?.cancel();
+    _life.dispose();
     if (widget.bridge == null) _bridge.dispose();
     super.dispose();
   }

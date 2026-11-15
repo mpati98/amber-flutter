@@ -245,6 +245,13 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
     `NSD_API_TOKEN` (access token của một user thử trên dev, tạo bằng script tạm ở amber-v4 rồi xoá user); tự dọn dữ liệu (xoá môn thử, cascade); riêng ca "Ôn thẻ" tự bỏ qua khi còn < 10 phút tới nửa đêm giờ VN. Tổng (12/11/2026, sau bộ thiết kế mới): `flutter test` = 1042 test qua, 13 bỏ qua khi không có `--dart-define`.
   - **Giới hạn đã biết**: mặt sau thẻ chưa có nhãn nguồn buổi học (backend chỉ trả `sourceLogId`); màn Nhóm khó không có trạng thái riêng "môn chưa có thẻ nào"; thứ tự thẻ trong hàng ôn là thứ tự suy ra của backend (kế hoạch không lưu vị trí);
     chưa có liên kết giữa các thẻ; layout chưa đối chiếu mockup (agent không mở được canvas) — cần xem trên iPhone thật.
+- **Màn chủ 3D — Âm Dương Giới** (15/11/2026; cảnh ở repo `amber-world`, bản build trong `web/world/` — sinh bằng `../amber-world/tools/export-flutter.sh`, đừng sửa tay):
+  `DuDoScreen` trên web có WebGL2 mặc định hiện `WorldHome` (iframe `world/index.html` qua `features/du_do/world/world_view*.dart`; nền tảng khác là stub → lưới 2D cũ), nút "2D" / "Xem bản 3D" nhớ ở `home.view3d`.
+  Cầu nối `WorldBridge` (`postMessage`, chỉ cùng nguồn, giữ lệnh tới khi iframe báo `ready`); sự kiện lên: `ready`, `sheet` (ẩn nút góc trái dưới khi bảng chi tiết che đáy màn < 760), `navigate` (`context.push`).
+  `WorldFeeder` nạp dữ liệu khi có trigger (iframe sẵn sàng, quay về từ màn 2D, app trở lại foreground — không polling): `GET /api/kieu-lau/world?since=` → `setStats` + `push` (quá 6 sự kiện thì gộp phần cũ thành một dòng;
+  con trỏ ở `world.cursor`), `GET /api/kieu-lau/weather` → `setWeather`, `/api/music/tracks` → `music.setLibrary` (một tham số là MẢNG track). Mỗi phần lỗi riêng thì bỏ qua phần đó.
+  **Sinh lực** `/sinh-luc` (`features/sinh_luc`): giấc ngủ tự ghi mỗi sáng (`/api/du-an/sleep`), mở từ nút "Ghi giấc ngủ" của Amber trong cảnh. Test: `test/features/du_do/world/`, `test/features/sinh_luc/`.
+  Thử cầu nối không cần đăng nhập: chạy dev backend, phục vụ bản build ở `http://localhost:8080` (origin CORS của dev) rồi nhúng `world/index.html` trong một trang giả lập.
 - **Routine kind STUDY** (nhãn "Học"): `Routine.isStudy`; thẻ `widgets/study_routine_row.dart` — vòng tiến độ, "X / Y phút · chuỗi N ngày", không tick;
   bấm → `/tra-dinh?openLog=1&subjectId=…`; `pendingReasonDates` → hàng "Thiếu lý do" mở sheet lý do. Form việc hằng ngày cho tạo loại Học
   (chọn môn có mục tiêu và chưa có routine STUDY; sửa thì khoá loại, đổi môn được).

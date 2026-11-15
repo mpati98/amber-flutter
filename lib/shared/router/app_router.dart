@@ -6,6 +6,7 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
 import '../../features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
+import '../../features/sinh_luc/screens/sinh_luc_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
 import '../../features/kieu_lau/screens/music_screen.dart';
 import '../../features/nghi_su_duong/screens/du_an_screen.dart';
@@ -142,6 +143,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: _splash, builder: (_, _) => const _SplashScreen()),
       GoRoute(path: _login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/', builder: (_, _) => const DuDoScreen()),
+      // Giấc ngủ tự ghi (chỉ số Sinh lực của màn chủ 3D) — mở từ bảng chi tiết của Amber
+      GoRoute(path: '/sinh-luc', builder: (_, _) => const SinhLucScreen()),
       GoRoute(
         path: '/kieu-lau',
         builder: (_, _) => const KieuLauScreen(),
