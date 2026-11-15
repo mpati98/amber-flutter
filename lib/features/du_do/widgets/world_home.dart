@@ -17,9 +17,15 @@ import '../world/world_view.dart';
 /// Góc trái dưới (góc trống của cảnh): nút chat Amber, logo mở menu tài khoản, nút về lưới 2D.
 /// Bảng chi tiết công trình trên màn hẹp (< 760, khớp CSS của cảnh) trải hết đáy → ẩn các nút này khi bảng mở.
 class WorldHome extends ConsumerStatefulWidget {
-  const WorldHome({super.key, required this.onSwitchTo2D, this.bridge});
+  const WorldHome({super.key, required this.onSwitchTo2D, this.onFallback, this.retry = false, this.bridge});
 
   final VoidCallback onSwitchTo2D;
+
+  /// Cảnh báo không chạy được / quá chậm ([reason]: 'unsupported' | 'too_slow') → màn chủ chuyển sang 2D.
+  final void Function(String reason)? onFallback;
+
+  /// Bật lại 3D sau khi bị chuyển sang 2D (xem [WorldView.retry]).
+  final bool retry;
 
   /// Cho phép bên ngoài (Giai đoạn 2: lớp dữ liệu) đẩy dữ liệu vào cảnh. Null thì tự tạo.
   final WorldBridge? bridge;
@@ -73,6 +79,10 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
           context.push(path); // tạm dừng + nạp lại khi quay về: didChangeDependencies
         case WorldReady():
           _feeder.refresh();
+        case WorldQuality(:final tooSlow):
+          if (tooSlow) widget.onFallback?.call('too_slow');
+        case WorldUnsupported():
+          widget.onFallback?.call('unsupported');
       }
     });
   }
@@ -99,7 +109,7 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
             hideButton: hideControls,
             child: Stack(
               children: [
-                Positioned.fill(child: WorldView(bridge: _bridge)),
+                Positioned.fill(child: WorldView(bridge: _bridge, retry: widget.retry)),
                 if (!hideControls)
                   Positioned(
                     left: edge,

@@ -25,9 +25,12 @@ var _viewSeq = 0;
 /// iframe `world/index.html` (cùng nguồn với app) phủ kín vùng của widget.
 /// Mỗi lần vào màn là một iframe mới; rời màn thì Flutter gỡ iframe, trình duyệt thu hồi toàn bộ WebGL / âm thanh.
 class WorldView extends StatefulWidget {
-  const WorldView({super.key, required this.bridge});
+  const WorldView({super.key, required this.bridge, this.retry = false});
 
   final WorldBridge bridge;
+
+  /// Người dùng bật lại 3D sau khi bị chuyển sang 2D → cảnh quên bậc đã hạ, đo lại từ đầu.
+  final bool retry;
 
   @override
   State<WorldView> createState() => _WorldViewState();
@@ -43,7 +46,7 @@ class _WorldViewState extends State<WorldView> {
     super.initState();
     ui_web.platformViewRegistry.registerViewFactory(_viewType, (int _) {
       final frame = web.document.createElement('iframe') as web.HTMLIFrameElement
-        ..src = 'world/index.html'
+        ..src = widget.retry ? 'world/index.html?retry=1' : 'world/index.html'
         ..allow = 'autoplay'
         ..title = 'Âm Dương Giới';
       frame.style
@@ -69,6 +72,13 @@ class _WorldViewState extends State<WorldView> {
         'ready' => const WorldReady(),
         'sheet' => WorldSheet(open: data['open'] == true, towerId: data['id'] as String?),
         'navigate' when data['path'] is String => WorldNavigate(data['path'] as String),
+        'quality' => WorldQuality(
+          tier: data['tier'] as String? ?? '',
+          extra: (data['extra'] as num?)?.toInt() ?? 0,
+          fps: (data['fps'] as num?)?.toDouble(),
+          tooSlow: data['tooSlow'] == true,
+        ),
+        'unsupported' => WorldUnsupported(data['reason'] as String? ?? ''),
         _ => null,
       };
       if (event != null) widget.bridge.receive(event);

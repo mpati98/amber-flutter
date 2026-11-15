@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/theme/design_tokens.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../shared/widgets/design_page.dart';
 import '../../../shared/widgets/list_frame.dart';
 import '../../../shared/widgets/overview_block.dart';
@@ -37,6 +38,7 @@ const view3dPrefKey = 'home.view3d';
 class _DuDoScreenState extends State<DuDoScreen> {
   final bool _supported = worldSupported();
   bool? _view3d; // null = đang đọc lựa chọn đã lưu
+  bool _retry3d = false; // bật lại 3D sau khi bị tự chuyển sang 2D
 
   @override
   void initState() {
@@ -53,10 +55,23 @@ class _DuDoScreenState extends State<DuDoScreen> {
     await (await SharedPreferences.getInstance()).setBool(view3dPrefKey, v);
   }
 
+  /// Điểm rẽ nhánh 3D → 2D (Giai đoạn 4): cảnh báo thiết bị không chạy được hoặc quá chậm ngay cả ở bậc thấp nhất.
+  void _fallback(String reason) {
+    if (!mounted || _view3d != true) return;
+    _set3d(false);
+    showToast(
+      context,
+      reason == 'unsupported' ? 'Thiết bị không có tăng tốc đồ hoạ — đã chuyển sang bản 2D.' : 'Máy chạy bản 3D quá chậm — đã chuyển sang bản 2D.',
+      type: ToastType.info,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_supported && _view3d == null) return const Scaffold(backgroundColor: Color(0xFF0D1426));
-    if (_supported && _view3d == true) return WorldHome(onSwitchTo2D: () => _set3d(false));
+    if (_supported && _view3d == true) {
+      return WorldHome(onSwitchTo2D: () => _set3d(false), onFallback: _fallback, retry: _retry3d);
+    }
     return DesignPage(
       title: 'Âm Dương Giới',
       backFallback: null,
@@ -69,7 +84,7 @@ class _DuDoScreenState extends State<DuDoScreen> {
           ? Center(
               child: TextButton(
                 key: const ValueKey('home-switch-3d'),
-                onPressed: () => _set3d(true),
+                onPressed: () { _retry3d = true; _set3d(true); },
                 child: Text('Xem bản 3D', style: DesignText.muted),
               ),
             )

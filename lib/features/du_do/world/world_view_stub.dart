@@ -6,9 +6,10 @@ import 'world_bridge.dart';
 bool worldSupported() => false;
 
 class WorldView extends StatelessWidget {
-  const WorldView({super.key, required this.bridge});
+  const WorldView({super.key, required this.bridge, this.retry = false});
 
   final WorldBridge bridge;
+  final bool retry;
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();

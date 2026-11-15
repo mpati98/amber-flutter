@@ -75,4 +75,28 @@ void main() {
     expect(api.summaries, 2, reason: 'quay về màn chủ → nạp lại');
     bridge.dispose();
   });
+
+  testWidgets('cảnh báo quá chậm / không hỗ trợ → onFallback; bậc bình thường thì không', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final bridge = WorldBridge()..attach((_, _) {});
+    final reasons = <String>[];
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        worldApiProvider.overrideWithValue(_FakeWorldApi()),
+        musicApiProvider.overrideWithValue(_FakeMusicApi()),
+        brainStatusProvider.overrideWith(() => FixedBrainStatus()),
+        authControllerProvider.overrideWith(_Auth.new),
+      ],
+      child: MaterialApp(theme: ThemeData.dark(), home: WorldHome(onSwitchTo2D: () {}, onFallback: reasons.add, bridge: bridge)),
+    ));
+    bridge.receive(const WorldQuality(tier: 'low', extra: 1, fps: 24));
+    await tester.pump();
+    expect(reasons, isEmpty);
+    bridge.receive(const WorldQuality(tier: 'low', extra: 3, fps: 11, tooSlow: true));
+    await tester.pump();
+    bridge.receive(const WorldUnsupported('software_webgl'));
+    await tester.pump();
+    expect(reasons, ['too_slow', 'unsupported']);
+    bridge.dispose();
+  });
 }

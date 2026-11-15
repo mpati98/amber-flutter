@@ -23,6 +23,21 @@ class WorldNavigate extends WorldEvent {
   final String path;
 }
 
+/// Bậc chất lượng cảnh đang chạy (Giai đoạn 4). [tooSlow]: bậc thấp nhất vẫn quá chậm → nên chuyển sang 2D.
+class WorldQuality extends WorldEvent {
+  const WorldQuality({required this.tier, required this.extra, this.fps, this.tooSlow = false});
+  final String tier;
+  final int extra;
+  final double? fps;
+  final bool tooSlow;
+}
+
+/// Thiết bị không nên chạy 3D (vd WebGL chạy bằng phần mềm) — cảnh không dựng.
+class WorldUnsupported extends WorldEvent {
+  const WorldUnsupported(this.reason);
+  final String reason;
+}
+
 /// Cầu nối Flutter ↔ iframe. Gọi [call] trước khi iframe sẵn sàng thì lệnh được giữ lại và gửi khi nhận [WorldReady].
 /// Tên lệnh và tham số theo hợp đồng `window.AmberWorld` (push, setStat, select, setMode, setWeather, music.*).
 class WorldBridge {
