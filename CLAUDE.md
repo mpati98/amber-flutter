@@ -254,7 +254,10 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   con trỏ ở `world.cursor`), `GET /api/kieu-lau/weather` → `setWeather`, `/api/music/tracks` → `music.setLibrary` (một tham số là MẢNG track). Mỗi phần lỗi riêng thì bỏ qua phần đó.
   Tạm dừng vẽ (`setPaused`) khi màn chủ không còn là route trên cùng (`ModalRoute.isCurrent` trong `didChangeDependencies`) hoặc app bị ẩn (`AppLifecycleListener.onHide`); quay về thì chạy lại + nạp lại dữ liệu.
   Điểm rẽ nhánh 3D → 2D (Giai đoạn 4): cảnh báo `unsupported` (WebGL phần mềm) hoặc `quality.tooSlow` (bậc thấp nhất vẫn < 15 FPS) → `DuDoScreen._fallback` chuyển 2D + toast; "Xem bản 3D" mở lại iframe với `?retry=1` (cảnh quên bậc đã hạ). Bậc chất lượng do cảnh tự chọn (`../amber-world/CLAUDE.md`).
-  **Sinh lực** `/sinh-luc` (`features/sinh_luc`): giấc ngủ tự ghi mỗi sáng (`/api/du-an/sleep`), mở từ nút "Ghi giấc ngủ" của Amber trong cảnh. Test: `test/features/du_do/world/`, `test/features/sinh_luc/`.
+  **Sức khoẻ** `/sinh-luc` (`features/sinh_luc`, mở từ nút "Ghi giấc ngủ" của Amber trong cảnh): mọi đầu vào Sức khoẻ của kinh tế amber-v4. Tổng quan "Hôm nay" (đêm qua, TB 7 ngày, check-in trưa / tối, debuff đang có);
+  `DesignChipRow` 3 tab: Giấc ngủ (`/api/du-an/sleep`), Check-in (`/api/du-an/check-ins`: trưa = tự chấm thể lực 1–5, tối = phút tập / thể thao / ngày nghỉ; hôm nay hoặc hôm qua), Debuff (`/api/du-an/debuffs`: mức nhẹ / vừa / nặng,
+  bắt đầu bây giờ / đầu ngày hôm nay / hôm qua, "Đã khỏi" = giờ máy (server kẹp lệch ≤ 5 phút), "Mở lại", xoá). API `HealthInputsApi` (`healthInputsApiProvider`, `checkInHistoryProvider`, `debuffsProvider`); mã lỗi → câu tiếng Việt ở
+  `utils/health_format.dart` (`healthInputError`). Lưu xong backend tự dựng lại sổ cái. WorldFeeder chuyển khối `economy` cho `setEconomy` (thẻ Thể lực / Nguyên Tệ, nhật ký luật). Test: `test/features/du_do/world/`, `test/features/sinh_luc/`.
   Thử cầu nối không cần đăng nhập: chạy dev backend, phục vụ bản build ở `http://localhost:8080` (origin CORS của dev) rồi nhúng `world/index.html` trong một trang giả lập.
 - **Routine kind STUDY** (nhãn "Học"): `Routine.isStudy`; thẻ `widgets/study_routine_row.dart` — vòng tiến độ, "X / Y phút · chuỗi N ngày", không tick;
   bấm → `/tra-dinh?openLog=1&subjectId=…`; `pendingReasonDates` → hàng "Thiếu lý do" mở sheet lý do. Form việc hằng ngày cho tạo loại Học
