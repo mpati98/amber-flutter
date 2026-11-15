@@ -1,11 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/widgets/design_page.dart';
 import '../../../shared/widgets/list_frame.dart';
 import '../../../shared/widgets/overview_block.dart';
 import '../widgets/today_rows.dart';
+import '../widgets/world_home.dart';
+import '../world/world_view.dart';
 
 /// 4 tòa theo design/ref/home.html: chữ Hán trong vòng tròn vàng + tên + mô tả.
 const _buildings = [
@@ -20,11 +23,40 @@ const _buildings = [
 ///
 /// Responsive theo [DesignLayout]: điện thoại đúng bản mẫu (xếp dọc, 2 cột); máy tính bảng rộng 760, 4 tòa một hàng;
 /// web rộng (≥ 1024) đặt tổng quan bên trái, khung 4 tòa (2×2, ô lớn) bên phải.
-class DuDoScreen extends StatelessWidget {
+///
+/// Trên web có WebGL2: mặc định hiện cảnh 3D ([WorldHome]); nút "2D" / "Xem bản 3D" đổi qua lại, nhớ lựa chọn ([view3dPrefKey]).
+class DuDoScreen extends StatefulWidget {
   const DuDoScreen({super.key});
 
   @override
+  State<DuDoScreen> createState() => _DuDoScreenState();
+}
+
+const view3dPrefKey = 'home.view3d';
+
+class _DuDoScreenState extends State<DuDoScreen> {
+  final bool _supported = worldSupported();
+  bool? _view3d; // null = đang đọc lựa chọn đã lưu
+
+  @override
+  void initState() {
+    super.initState();
+    if (_supported) {
+      SharedPreferences.getInstance().then((p) {
+        if (mounted) setState(() => _view3d = p.getBool(view3dPrefKey) ?? true);
+      });
+    }
+  }
+
+  Future<void> _set3d(bool v) async {
+    setState(() => _view3d = v);
+    await (await SharedPreferences.getInstance()).setBool(view3dPrefKey, v);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_supported && _view3d == null) return const Scaffold(backgroundColor: Color(0xFF0D1426));
+    if (_supported && _view3d == true) return WorldHome(onSwitchTo2D: () => _set3d(false));
     return DesignPage(
       title: 'Âm Dương Giới',
       backFallback: null,
@@ -33,6 +65,15 @@ class DuDoScreen extends StatelessWidget {
         child: _BuildingGrid(columns: size == DesignSize.medium ? 4 : 2, large: size == DesignSize.wide),
       ),
       hint: 'Chạm vào một tòa nhà để vào',
+      footer: _supported
+          ? Center(
+              child: TextButton(
+                key: const ValueKey('home-switch-3d'),
+                onPressed: () => _set3d(true),
+                child: Text('Xem bản 3D', style: DesignText.muted),
+              ),
+            )
+          : null,
     );
   }
 }

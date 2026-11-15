@@ -16,9 +16,15 @@ import 'log_push_banner.dart';
 /// Màn rộng (≥ 600): khung 360 × tối đa 520, nổi phía trên nút. Điện thoại: khung trải ngang (lề 8), cao tối đa 70% màn.
 /// Dock luôn theo dõi [brainChatProvider] nên đóng/mở khung không mất lịch sử (lịch sử sống tới khi rời màn).
 class AmberChatDock extends ConsumerStatefulWidget {
-  const AmberChatDock({super.key, required this.child});
+  const AmberChatDock({super.key, required this.child, this.left = false, this.hideButton = false});
 
   final Widget child;
+
+  /// true = nút và khung chat ở góc TRÁI dưới (màn 3D: góc phải dưới là bảng chi tiết công trình).
+  final bool left;
+
+  /// true = ẩn nút khi khung đang đóng (vd bảng chi tiết của màn 3D đang che đáy màn hình).
+  final bool hideButton;
 
   @override
   ConsumerState<AmberChatDock> createState() => _AmberChatDockState();
@@ -47,14 +53,18 @@ class _AmberChatDockState extends ConsumerState<AmberChatDock> {
           children: [
             Positioned.fill(child: widget.child),
             Positioned(
-              right: wide ? edge : 8,
-              left: wide ? null : 8,
+              right: wide ? (widget.left ? null : edge) : 8,
+              left: wide ? (widget.left ? edge : null) : 8,
               bottom: panelBottom,
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 160),
                 transitionBuilder: (child, a) => FadeTransition(
                   opacity: a,
-                  child: ScaleTransition(scale: Tween(begin: 0.96, end: 1.0).animate(a), alignment: Alignment.bottomRight, child: child),
+                  child: ScaleTransition(
+                    scale: Tween(begin: 0.96, end: 1.0).animate(a),
+                    alignment: widget.left ? Alignment.bottomLeft : Alignment.bottomRight,
+                    child: child,
+                  ),
                 ),
                 child: _open
                     ? SizedBox(
@@ -66,11 +76,13 @@ class _AmberChatDockState extends ConsumerState<AmberChatDock> {
                     : const SizedBox.shrink(),
               ),
             ),
-            Positioned(
-              right: edge,
-              bottom: edge,
-              child: _ToggleButton(open: _open, dot: _brainColor(conn), onTap: _toggle),
-            ),
+            if (_open || !widget.hideButton)
+              Positioned(
+                right: widget.left ? null : edge,
+                left: widget.left ? edge : null,
+                bottom: edge,
+                child: _ToggleButton(open: _open, dot: _brainColor(conn), onTap: _toggle),
+              ),
           ],
         );
       },
