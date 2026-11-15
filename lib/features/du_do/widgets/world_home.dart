@@ -38,19 +38,39 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
   late final AppLifecycleListener _life;
   StreamSubscription<WorldEvent>? _sub;
   bool _sheetOpen = false;
+  bool _routeCurrent = true;
+  bool _appVisible = true;
+
+  /// Cảnh chỉ vẽ khi màn chủ đang ở trên cùng và app đang hiện (tiết kiệm pin; âm thanh của cảnh vẫn chạy).
+  void _syncPaused() => _bridge.call('setPaused', [!(_routeCurrent && _appVisible)]);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ModalRoute.of đăng ký phụ thuộc: có màn khác đè lên / gỡ xuống thì hàm này chạy lại
+    final current = ModalRoute.of(context)?.isCurrent ?? true;
+    if (current == _routeCurrent) return;
+    _routeCurrent = current;
+    _syncPaused();
+    if (current && _bridge.ready) _feeder.refresh(); // trigger: quay về màn chủ
+  }
 
   @override
   void initState() {
     super.initState();
-    // Trigger nạp dữ liệu: app trở lại foreground (còn lại: cảnh sẵn sàng, quay về từ màn 2D — xem bên dưới)
-    _life = AppLifecycleListener(onResume: () { if (_bridge.ready) _feeder.refresh(); });
+    // Trigger nạp dữ liệu: app trở lại foreground; cảnh sẵn sàng; quay về màn chủ (didChangeDependencies)
+    _life = AppLifecycleListener(
+      onHide: () { _appVisible = false; _syncPaused(); },
+      onShow: () { _appVisible = true; _syncPaused(); },
+      onResume: () { if (_bridge.ready) _feeder.refresh(); },
+    );
     _sub = _bridge.events.listen((e) {
       if (!mounted) return;
       switch (e) {
         case WorldSheet(:final open):
           setState(() => _sheetOpen = open);
         case WorldNavigate(:final path):
-          context.push(path).then((_) { if (mounted) _feeder.refresh(); });
+          context.push(path); // tạm dừng + nạp lại khi quay về: didChangeDependencies
         case WorldReady():
           _feeder.refresh();
       }

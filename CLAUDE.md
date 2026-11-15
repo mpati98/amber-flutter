@@ -250,6 +250,7 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   Cầu nối `WorldBridge` (`postMessage`, chỉ cùng nguồn, giữ lệnh tới khi iframe báo `ready`); sự kiện lên: `ready`, `sheet` (ẩn nút góc trái dưới khi bảng chi tiết che đáy màn < 760), `navigate` (`context.push`).
   `WorldFeeder` nạp dữ liệu khi có trigger (iframe sẵn sàng, quay về từ màn 2D, app trở lại foreground — không polling): `GET /api/kieu-lau/world?since=` → `setStats` + `push` (quá 6 sự kiện thì gộp phần cũ thành một dòng;
   con trỏ ở `world.cursor`), `GET /api/kieu-lau/weather` → `setWeather`, `/api/music/tracks` → `music.setLibrary` (một tham số là MẢNG track). Mỗi phần lỗi riêng thì bỏ qua phần đó.
+  Tạm dừng vẽ (`setPaused`) khi màn chủ không còn là route trên cùng (`ModalRoute.isCurrent` trong `didChangeDependencies`) hoặc app bị ẩn (`AppLifecycleListener.onHide`); quay về thì chạy lại + nạp lại dữ liệu.
   **Sinh lực** `/sinh-luc` (`features/sinh_luc`): giấc ngủ tự ghi mỗi sáng (`/api/du-an/sleep`), mở từ nút "Ghi giấc ngủ" của Amber trong cảnh. Test: `test/features/du_do/world/`, `test/features/sinh_luc/`.
   Thử cầu nối không cần đăng nhập: chạy dev backend, phục vụ bản build ở `http://localhost:8080` (origin CORS của dev) rồi nhúng `world/index.html` trong một trang giả lập.
 - **Routine kind STUDY** (nhãn "Học"): `Routine.isStudy`; thẻ `widgets/study_routine_row.dart` — vòng tiến độ, "X / Y phút · chuỗi N ngày", không tick;
