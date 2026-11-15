@@ -21,8 +21,10 @@ class WorldActivity {
 }
 
 /// GET /api/kieu-lau/world: 5 chỉ số (`{v: số | null, src}`) + sự kiện sau `since` + con trỏ mới.
+/// `economy` (thêm 15/11/2026): Thể lực, Nguyên Tệ, nhật ký luật — chuyển nguyên khối cho `AmberWorld.setEconomy` (cảnh tự kiểm hình dạng).
+/// null khi backend chưa có / không tính được. Ô `sinhLuc` giờ là Sức khoẻ của kinh tế.
 class WorldSummary {
-  const WorldSummary({required this.stats, required this.events, required this.cursor});
+  const WorldSummary({required this.stats, required this.events, required this.cursor, this.economy});
 
   factory WorldSummary.fromJson(Map<String, dynamic> j) => WorldSummary(
     stats: {
@@ -34,9 +36,11 @@ class WorldSummary {
         if (e is Map) WorldActivity.fromJson(Map<String, dynamic>.from(e)),
     ],
     cursor: j['cursor'] as String?,
+    economy: j['economy'] is Map ? Map<String, Object?>.from(j['economy'] as Map) : null,
   );
 
   final Map<String, Map<String, Object?>> stats;
+  final Map<String, Object?>? economy;
   final List<WorldActivity> events;
   final String? cursor;
 }

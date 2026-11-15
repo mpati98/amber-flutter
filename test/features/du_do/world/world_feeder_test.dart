@@ -69,6 +69,27 @@ void main() {
     expect((await SharedPreferences.getInstance()).getString(worldCursorPrefKey), 'cu');
   });
 
+  test('kinh tế: chuyển nguyên khối economy cho setEconomy; thiếu thì gửi null để gỡ', () async {
+    final economy = {
+      'stamina': {'v': 61.6, 'max': 88},
+      'nguyenTe': {'balance': 42.4, 'earnedToday': 18.8, 'dailyCap': 100},
+      'shadow': true,
+      'log': [
+        {'text': 'Học: Tiếng Anh', 'nguyenTe': 10, 'stamina': -3, 'at': '2026-11-15T03:00:00.000Z'},
+      ],
+    };
+    final parsed = WorldSummary.fromJson({'stats': {}, 'events': [], 'cursor': null, 'economy': economy});
+    await WorldFeeder(bridge: bridge, api: _FakeWorldApi(summary: parsed), loadTracks: () async => []).refresh();
+    final call = calls.firstWhere((c) => c.$1 == 'setEconomy');
+    expect(call.$2.single, economy);
+
+    calls.clear();
+    final old = WorldSummary.fromJson({'stats': {}, 'events': [], 'cursor': null});
+    expect(old.economy, isNull);
+    await WorldFeeder(bridge: bridge, api: _FakeWorldApi(summary: old), loadTracks: () async => []).refresh();
+    expect(calls.firstWhere((c) => c.$1 == 'setEconomy').$2.single, isNull);
+  });
+
   test('pickEvents: quá 6 thì gộp phần cũ thành một dòng', () {
     final many = [for (var i = 0; i < 10; i++) _a('việc $i')];
     final picked = pickEvents(many);

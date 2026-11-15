@@ -143,7 +143,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: _splash, builder: (_, _) => const _SplashScreen()),
       GoRoute(path: _login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/', builder: (_, _) => const DuDoScreen()),
-      // Giấc ngủ tự ghi (chỉ số Sinh lực của màn chủ 3D) — mở từ bảng chi tiết của Amber
+      // Giấc ngủ tự ghi (đầu vào chỉ số Sức khoẻ của màn chủ 3D) — mở từ bảng chi tiết của Amber
       GoRoute(path: '/sinh-luc', builder: (_, _) => const SinhLucScreen()),
       GoRoute(
         path: '/kieu-lau',

@@ -12,7 +12,7 @@ import '../services/sleep_api.dart';
 import '../utils/sleep_format.dart';
 import '../widgets/sleep_form_sheet.dart';
 
-/// `/sinh-luc`: giấc ngủ tự ghi mỗi sáng — nguồn của chỉ số Sinh lực (cùng phút tập 7 ngày) trên màn chủ 3D.
+/// `/sinh-luc`: giấc ngủ tự ghi mỗi sáng — đầu vào chỉ số Sức khoẻ (kinh tế amber-v4, cùng phút tập) trên màn chủ 3D.
 /// Mở từ nút "Ghi giấc ngủ" trong bảng chi tiết của Amber.
 class SinhLucScreen extends ConsumerWidget {
   const SinhLucScreen({super.key});
@@ -33,7 +33,7 @@ class SinhLucScreen extends ConsumerWidget {
     }
 
     return DesignPage(
-      title: 'Sinh lực',
+      title: 'Sức khoẻ',
       onRefresh: () async => ref.refresh(sleepHistoryProvider.future),
       overview: OverviewBlock(
         title: 'Giấc ngủ',
@@ -56,7 +56,7 @@ class SinhLucScreen extends ConsumerWidget {
           _ when history == null => const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
           _ when logs.isEmpty => Padding(
             padding: const EdgeInsets.all(12),
-            child: Text('Chưa có đêm nào. Ghi mỗi sáng để chỉ số Sinh lực dùng dữ liệu thật (đang dùng đêm mẫu 7 giờ).', style: DesignText.muted),
+            child: Text('Chưa có đêm nào. Ghi mỗi sáng để Sức khoẻ dùng dữ liệu thật (chưa có thì đang dùng giá trị trung tính).', style: DesignText.muted),
           ),
           _ => FrameRows(
             children: [
@@ -72,7 +72,7 @@ class SinhLucScreen extends ConsumerWidget {
           ),
         },
       ),
-      hint: 'Chỉ số Sinh lực = 60% giấc ngủ (7–9 giờ là tốt nhất) + 40% phút tập 7 ngày (mục tiêu 150 phút).',
+      hint: 'Sức khoẻ = nửa giấc ngủ (6,5–8 giờ + chất lượng) + nửa vận động (30 phút/ngày), làm mượt qua nhiều ngày; debuff trừ thẳng. Bỏ lỡ một ngày không bị trừ.',
       footer: Center(
         child: DesignButton.primary(
           key: const ValueKey('sleep-add'),

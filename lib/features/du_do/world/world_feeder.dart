@@ -37,6 +37,8 @@ class WorldFeeder {
     try {
       final s = await api.getSummary(since: p.getString(worldCursorPrefKey));
       bridge.call('setStats', [s.stats]);
+      // Luôn gửi (kể cả null) để cảnh gỡ thẻ cũ khi backend không tính được kinh tế.
+      bridge.call('setEconomy', [s.economy]);
       for (final e in pickEvents(s.events)) {
         bridge.call('push', [e]);
       }

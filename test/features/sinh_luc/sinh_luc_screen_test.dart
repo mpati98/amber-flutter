@@ -63,7 +63,7 @@ Future<_FakeSleepApi> _pump(WidgetTester tester, List<SleepLog> logs) async {
 void main() {
   testWidgets('chưa có đêm nào: hướng dẫn + nút ghi đêm qua; ghi 7 giờ 30, chất lượng Tốt', (tester) async {
     final api = await _pump(tester, const []);
-    expect(find.textContaining('đang dùng đêm mẫu'), findsOneWidget);
+    expect(find.textContaining('giá trị trung tính'), findsOneWidget);
     expect(find.text('Chưa ghi'), findsOneWidget);
     await tester.tap(find.text('Ghi giấc ngủ đêm qua'));
     await tester.pumpAndSettle();

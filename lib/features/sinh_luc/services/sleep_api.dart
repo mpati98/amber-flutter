@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/services/api_client.dart';
 import '../models/sleep_log.dart';
 
-/// `/api/du-an/sleep` (backend amber-v4): giấc ngủ tự ghi mỗi sáng, nguồn của chỉ số Sinh lực ở màn chủ 3D.
+/// `/api/du-an/sleep` (backend amber-v4): giấc ngủ tự ghi mỗi sáng, đầu vào chỉ số Sức khoẻ ở màn chủ 3D.
 class SleepApi {
   SleepApi(this._dio);
 
