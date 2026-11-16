@@ -11,7 +11,9 @@ import '../../tra_dinh/hoc_tap/models/study_overview.dart';
 import '../../tra_dinh/hoc_tap/providers/hoc_tap_provider.dart';
 import '../../tra_dinh/hoc_tap/utils/async_view.dart';
 import '../../tra_dinh/hoc_tap/widgets/course_form_sheet.dart';
+import '../../tra_dinh/hoc_tap/utils/hoc_tap_errors.dart';
 import '../../tra_dinh/hoc_tap/widgets/hoc_tap_common.dart';
+import '../../tra_dinh/hoc_tap/widgets/password_confirm_sheet.dart';
 import '../../tra_dinh/hoc_tap/widgets/subject_sheet.dart';
 import '../widgets/plan_widgets.dart';
 import '../widgets/subject_plan_card.dart';
@@ -122,14 +124,60 @@ class HocTapPlanScreen extends ConsumerWidget {
   }
 }
 
-class _Body extends StatelessWidget {
+class _Body extends ConsumerWidget {
   const _Body({required this.subjects, required this.onAddCourse});
 
   final List<SubjectOverview> subjects;
   final VoidCallback onAddCourse;
 
+  /// Xoá mềm khóa đang học (có mật khẩu), vào Thùng rác.
+  Future<void> _deleteCourse(BuildContext context, WidgetRef ref, SubjectOverview s) async {
+    final course = s.activeCourse;
+    if (course == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final actions = ref.read(hocTapActionsProvider);
+    final done = await showPasswordConfirmSheet(
+      context,
+      title: 'Xoá khóa này?',
+      subtitle: course.title,
+      bullets: const [
+        'Khóa vào Thùng rác 30 ngày. Khôi phục được bất cứ lúc nào, sau đó xoá hẳn.',
+        'Các buổi học đã ghi vẫn tính vào chuỗi ngày.',
+      ],
+      actionLabel: 'Xoá khóa',
+      onConfirm: (password) => actions.deleteCourse(course.id, password: password),
+    );
+    if (done) messenger.showSnackBar(const SnackBar(content: Text('Đã chuyển vào Thùng rác')));
+  }
+
+  Future<void> _deleteSubject(BuildContext context, WidgetRef ref, SubjectOverview s) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final actions = ref.read(hocTapActionsProvider);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xoá môn học?'),
+        content: Text('Xoá "${s.name}" cùng mọi khóa học, phần và nhật ký học của nó?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Huỷ')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(ctx).colorScheme.error),
+            child: const Text('Xoá'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await actions.deleteSubject(s.subjectId);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(hocTapErrorMessage(e))));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final queued = subjects.fold<int>(0, (n, s) => n + s.counts.queued);
     // Một môn: danh sách hàng chờ của môn đó; nhiều môn: hàng chờ của mọi môn (CourseListScreen không lọc môn).
     final queueRoute = subjects.length == 1
@@ -143,6 +191,8 @@ class _Body extends StatelessWidget {
         for (final s in subjects)
           SubjectPlanCard(
             subject: s,
+            onDeleteCourse: () => _deleteCourse(context, ref, s),
+            onDeleteSubject: () => _deleteSubject(context, ref, s),
             onTap: () => context.push(
               s.activeCourse == null
                   ? '/tra-dinh/hoc-tap/courses?subjectId=${s.subjectId}'

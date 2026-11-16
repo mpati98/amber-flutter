@@ -407,4 +407,54 @@ void main() {
       },
     );
   });
+
+  group('menu xoá trên thẻ môn', () {
+    final menu = find.byKey(ValueKey('plan-card-menu-${_first['subjectId']}'));
+    final courseId = (_first['activeCourse'] as Map)['id'] as String;
+
+    testWidgets('xoá khóa đang học: hỏi mật khẩu, gọi API với mật khẩu, báo vào Thùng rác', (tester) async {
+      final api = await _pump(tester, '/hoc-tap', overview: _overview([_subject(_first)]));
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Xoá khóa đang học'));
+      await tester.pumpAndSettle();
+      expect(find.text('Xoá khóa này?'), findsOneWidget);
+      await tester.enterText(find.byKey(const ValueKey('pw-field')), 'mat-khau-1');
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('pw-submit')));
+      await tester.pumpAndSettle();
+      expect(api.deletes, [(id: courseId, password: 'mat-khau-1')]);
+      expect(find.text('Đã chuyển vào Thùng rác'), findsOneWidget);
+    });
+
+    testWidgets('không có khóa đang học: menu chỉ còn "Xoá môn"', (tester) async {
+      await _pump(tester, '/hoc-tap', overview: _overview([_subject(_first, active: false)]));
+      await tester.tap(menu);
+      await tester.pumpAndSettle();
+      expect(find.text('Xoá khóa đang học'), findsNothing);
+      expect(find.text('Xoá môn'), findsOneWidget);
+    });
+
+    testWidgets('xoá môn: Huỷ thì không gọi API; Xoá thì gọi; lỗi thì báo snackbar', (tester) async {
+      final api = await _pump(tester, '/hoc-tap', overview: _overview([_subject(_first)]));
+      Future<void> openAndPick(String button) async {
+        await tester.tap(menu);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Xoá môn'));
+        await tester.pumpAndSettle();
+        expect(find.text('Xoá môn học?'), findsOneWidget);
+        await tester.tap(find.widgetWithText(TextButton, button));
+        await tester.pumpAndSettle();
+      }
+
+      await openAndPick('Huỷ');
+      expect(api.subjectDeletes, isEmpty);
+      await openAndPick('Xoá');
+      expect(api.subjectDeletes, [_first['subjectId']]);
+
+      api.subjectDeleteError = apiError(500, 'x');
+      await openAndPick('Xoá');
+      expect(find.byType(SnackBar), findsOneWidget);
+    });
+  });
 }

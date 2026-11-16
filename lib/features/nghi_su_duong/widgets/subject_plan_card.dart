@@ -15,10 +15,14 @@ class SubjectPlanCard extends StatelessWidget {
     super.key,
     required this.subject,
     required this.onTap,
+    this.onDeleteCourse,
+    this.onDeleteSubject,
   });
 
   final SubjectOverview subject;
   final VoidCallback onTap;
+  final VoidCallback? onDeleteCourse;
+  final VoidCallback? onDeleteSubject;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +64,24 @@ class SubjectPlanCard extends StatelessWidget {
                   goalLabel(subject.goalMinutes),
                   style: TextStyle(fontSize: 13, color: theme.textMuted),
                 ),
+                if (onDeleteCourse != null || onDeleteSubject != null)
+                  SizedBox(
+                    width: 32,
+                    height: 24,
+                    child: PopupMenuButton<String>(
+                      key: ValueKey('plan-card-menu-${subject.subjectId}'),
+                      padding: EdgeInsets.zero,
+                      tooltip: 'Tùy chọn',
+                      icon: Icon(Icons.more_horiz, size: 20, color: theme.textMuted),
+                      onSelected: (v) => v == 'course' ? onDeleteCourse?.call() : onDeleteSubject?.call(),
+                      itemBuilder: (_) => [
+                        if (active != null && onDeleteCourse != null)
+                          const PopupMenuItem(value: 'course', child: Text('Xoá khóa đang học')),
+                        if (onDeleteSubject != null)
+                          const PopupMenuItem(value: 'subject', child: Text('Xoá môn')),
+                      ],
+                    ),
+                  ),
               ],
             ),
             if (active != null && p != null) ...[
