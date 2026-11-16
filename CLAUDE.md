@@ -72,7 +72,9 @@ Dev local: chạy amber-v4 trước (`npm run dev` :3000).
 
 - Project Vercel `amber-flutter` (alias `amber.duangmai.io.vn`) **không nối Git**: `git push` KHÔNG deploy. Deploy bằng
   `API_BASE_URL=https://api.duangmai.io.vn tool/deploy_web.sh` từ `main` sạch, SAU khi backend amber-v4 đã deploy.
-- **Đang chạy** (16/11/2026): `dpl_A5MbuDGssptUKVhHFk3xYGLXHqY4`, build từ `main` = `913add7` (kinh tế chỉ đọc trên màn chủ: Sức khoẻ, Thể lực, Nguyên Tệ, nhật ký luật; check-in trưa / tối + debuff),
+- **Đang chạy** (16/11/2026, tối): `dpl_9WipJBeGS2uKbA8J3bqj2hdny9jg`, build từ `main` = `de5a418` (thêm menu xoá khóa đang học / xoá môn trên thẻ môn ở Học tập của Nghị Sự Đường),
+  alias `amber.duangmai.io.vn`, backend như bên dưới. **Mốc rollback**: `dpl_A5MbuDGssptUKVhHFk3xYGLXHqY4`.
+- Bản trước (16/11/2026): `dpl_A5MbuDGssptUKVhHFk3xYGLXHqY4`, build từ `main` = `913add7` (kinh tế chỉ đọc trên màn chủ: Sức khoẻ, Thể lực, Nguyên Tệ, nhật ký luật; check-in trưa / tối + debuff),
   alias `amber.duangmai.io.vn`; backend `dpl_3Y3er3i34HMWSrsxfu8ZH2W1Dm6G` (`fa6c13d`, migration 19/20). **Mốc rollback**: `dpl_7741vsHA2YTa7uoX1Pa4FzNAimax` (bản 15/11 bên dưới).
 - Bản trước (15/11/2026): `dpl_7741vsHA2YTa7uoX1Pa4FzNAimax`, build từ `main` = `c924667` (bộ thiết kế mới + màn chủ 3D Âm Dương Giới + Sinh lực), alias `amber.duangmai.io.vn`; backend tương ứng `dpl_C2chmRj897QZmQoUSCqJA32gk4Vh` (`c8e189b`, migration 0017).
   **Mốc rollback**: `dpl_8ZjLrzDmZhYnh5MiFEnJzVRtJaY3` (12/11). Kiểm sau deploy: `/` và `/world/index.html` 200, `main.dart.js` chứa `api.duangmai.io.vn`, không chứa `localhost:3000`.
