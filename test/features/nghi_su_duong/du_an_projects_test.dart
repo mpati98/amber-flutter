@@ -7,6 +7,7 @@ import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
+import 'package:amber_flutter/features/nghi_su_duong/services/ats_tasks_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/project_card.dart';
 import 'package:amber_flutter/shared/providers/auth_provider.dart';
 import 'package:amber_flutter/shared/services/api_client.dart';
@@ -15,6 +16,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+
+import 'ats_test_support.dart';
 
 // Khu "Dự án" của màn Dự án: bộ lọc, thẻ, form thêm. API giả, không request thật.
 
@@ -103,7 +106,7 @@ class _FakeAuth extends AuthController {
   Future<AuthState> build() async => const Authenticated({'name': 'Test'});
 }
 
-Future<_FakeApi> _pump(WidgetTester tester, List<ProjectSummary> projects, {double width = 390}) async {
+Future<_FakeApi> _pump(WidgetTester tester, List<ProjectSummary> projects, {double width = 390, FakeAtsTasksApi? ats}) async {
   _requests.clear();
   final api = _FakeApi(projects);
   tester.view.physicalSize = Size(width, 1600);
@@ -121,6 +124,7 @@ Future<_FakeApi> _pump(WidgetTester tester, List<ProjectSummary> projects, {doub
       overrides: [
         apiClientProvider.overrideWithValue(_offlineDio()),
         nghiSuDuongApiProvider.overrideWithValue(api),
+        atsTasksApiProvider.overrideWithValue(ats ?? FakeAtsTasksApi()),
         authControllerProvider.overrideWith(_FakeAuth.new),
         notificationsProvider.overrideWith((ref) async => (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[])),
       ],
@@ -180,6 +184,27 @@ void main() {
       await tester.pumpAndSettle();
       expect(api.summaryFetches, greaterThan(fetches));
       expect(_requests, isEmpty);
+    });
+  });
+
+  group('khối Công việc ATS', () {
+    testWidgets('GET ATS lỗi không làm hỏng màn Dự án: dự án vẫn hiện, khối tự báo lỗi', (tester) async {
+      final ats = FakeAtsTasksApi(getError: atsHttpError(500, {'error': 'boom'}));
+      await _pump(tester, _mixed, ats: ats);
+      expect(find.byType(ProjectCard), findsNWidgets(3));
+      expect(find.text('Không tải được việc ATS.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('kéo làm mới cũng tải lại khối ATS (kể cả khi khối đang lỗi)', (tester) async {
+      final ats = FakeAtsTasksApi(getError: atsHttpError(500, {'error': 'boom'}));
+      final api = await _pump(tester, _mixed, ats: ats);
+      final calls = ats.getCalls.length;
+      final fetches = api.summaryFetches;
+      await tester.widget<RefreshIndicator>(find.byType(RefreshIndicator)).onRefresh();
+      await tester.pumpAndSettle();
+      expect(ats.getCalls.length, greaterThan(calls));
+      expect(api.summaryFetches, greaterThan(fetches));
     });
   });
 

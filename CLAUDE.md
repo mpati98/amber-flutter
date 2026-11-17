@@ -263,6 +263,13 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   bắt đầu bây giờ / đầu ngày hôm nay / hôm qua, "Đã khỏi" = giờ máy (server kẹp lệch ≤ 5 phút), "Mở lại", xoá). API `HealthInputsApi` (`healthInputsApiProvider`, `checkInHistoryProvider`, `debuffsProvider`); mã lỗi → câu tiếng Việt ở
   `utils/health_format.dart` (`healthInputError`). Lưu xong backend tự dựng lại sổ cái. WorldFeeder chuyển khối `economy` cho `setEconomy` (thẻ Thể lực / Nguyên Tệ, nhật ký luật). Test: `test/features/du_do/world/`, `test/features/sinh_luc/`.
   Thử cầu nối không cần đăng nhập: chạy dev backend, phục vụ bản build ở `http://localhost:8080` (origin CORS của dev) rồi nhúng `world/index.html` trong một trang giả lập.
+- **Công việc ATS** (khối trên màn Dự án, dưới khu "Hôm nay", trên khu "Dự án"; nhánh `feat/ats-tasks` 17/11/2026): task công ty đồng bộ một chiều từ ats-app qua amber-v4
+  (`GET /api/du-an/ats-tasks[?all=1]`, `POST /api/du-an/ats-tasks/sync` — xem mục "Task ats-app" trong `amber-v4/CLAUDE.md`). **CHỈ ĐỌC**: không có nút sửa / xoá / tạo; chạm dòng mở
+  chi tiết chỉ đọc (`showFinanceSheet`) kèm ghi chú "Sửa trên ats-app". `models/ats_task.dart` (parse phòng thủ: status lạ → PREP "Chưa làm", project / dueDate null được),
+  `services/ats_tasks_api.dart` (`atsTasksApiProvider`, tách khỏi `NghiSuDuongApi`), `providers/ats_tasks_provider.dart` (`atsTasksProvider` **tắt tự thử lại** của Riverpod — nếu không, kéo làm mới
+  cả màn chờ mãi khi ats lỗi; `atsIncludeAllProvider` cho `?all=1`), `widgets/ats_tasks_card.dart`. Giữ nguyên thứ tự server. Mặc định chỉ hiện việc chưa xong; "Xem cả việc đã xong" bung phần DONE
+  (mờ) từ cùng dữ liệu; "Xem tất cả (gồm lưu trữ)" tải `?all=1`. "Đồng bộ ngay": 429 → toast "Thử lại sau N giây"; mọi kết cục đều tải lại danh sách (429 thường do đồng bộ nền vừa chạy khi mở màn lần đầu).
+  GET lỗi chỉ làm khối hiện lỗi + "Thử lại". Test: `ats_task_test.dart`, `ats_tasks_card_test.dart`, `FakeAtsTasksApi` ở `ats_test_support.dart` (test màn Dự án phải override `atsTasksApiProvider`).
 - **Routine kind STUDY** (nhãn "Học"): `Routine.isStudy`; thẻ `widgets/study_routine_row.dart` — vòng tiến độ, "X / Y phút · chuỗi N ngày", không tick;
   bấm → `/tra-dinh?openLog=1&subjectId=…`; `pendingReasonDates` → hàng "Thiếu lý do" mở sheet lý do. Form việc hằng ngày cho tạo loại Học
   (chọn môn có mục tiêu và chưa có routine STUDY; sửa thì khoá loại, đổi môn được).
