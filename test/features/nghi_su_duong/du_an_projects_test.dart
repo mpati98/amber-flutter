@@ -8,6 +8,7 @@ import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/ats_tasks_api.dart';
+import 'package:amber_flutter/features/nghi_su_duong/widgets/ats_tasks_card.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/project_card.dart';
 import 'package:amber_flutter/shared/providers/auth_provider.dart';
 import 'package:amber_flutter/shared/services/api_client.dart';
@@ -188,6 +189,26 @@ void main() {
   });
 
   group('khối Công việc ATS', () {
+    testWidgets('web rộng: khối ATS ở cột trái ngay dưới Tổng quan, cột phải là Hôm nay + Dự án', (tester) async {
+      await _pump(tester, _mixed, width: 1400);
+      final left = find.byKey(const ValueKey('du-an-left-column'));
+      expect(left, findsOneWidget);
+      expect(find.descendant(of: left, matching: find.byType(AtsTasksCard)), findsOneWidget);
+      expect(find.byType(AtsTasksCard), findsOneWidget);
+      // Cột trái (x nhỏ hơn) so với khu Dự án ở cột phải.
+      expect(tester.getTopLeft(find.byType(AtsTasksCard)).dx, lessThan(tester.getTopLeft(find.byType(ProjectCard).first).dx));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('điện thoại: Tổng quan → Hôm nay → Công việc ATS → Dự án', (tester) async {
+      await _pump(tester, _mixed);
+      expect(find.byKey(const ValueKey('du-an-left-column')), findsNothing);
+      final hom = tester.getTopLeft(find.text('Cần chú ý')).dy;
+      final ats = tester.getTopLeft(find.byType(AtsTasksCard)).dy;
+      final duAn = tester.getTopLeft(find.byType(ProjectCard).first).dy;
+      expect(hom < ats && ats < duAn, isTrue);
+    });
+
     testWidgets('GET ATS lỗi không làm hỏng màn Dự án: dự án vẫn hiện, khối tự báo lỗi', (tester) async {
       final ats = FakeAtsTasksApi(getError: atsHttpError(500, {'error': 'boom'}));
       await _pump(tester, _mixed, ats: ats);
