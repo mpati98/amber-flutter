@@ -8,7 +8,9 @@ import '../../../shared/widgets/design_page.dart';
 import '../../../shared/widgets/list_frame.dart';
 import '../../../shared/widgets/overview_block.dart';
 import '../models/project_summary.dart';
+import '../providers/ats_tasks_provider.dart';
 import '../providers/nghi_su_duong_provider.dart';
+import '../widgets/ats_tasks_card.dart';
 import '../widgets/attention_card.dart';
 import '../widgets/new_project_modal.dart';
 import '../widgets/project_card.dart';
@@ -60,7 +62,12 @@ class DuAnScreen extends ConsumerWidget {
     return DesignPage(
       title: 'Dự án',
       backFallback: '/nghi-su-duong',
-      onRefresh: () => Future.wait([ref.refresh(duAnSummaryProvider.future), ref.refresh(routinesProvider.future)]),
+      onRefresh: () => Future.wait([
+        ref.refresh(duAnSummaryProvider.future),
+        ref.refresh(routinesProvider.future),
+        // Khối ATS tự hiện lỗi của nó — lỗi ở đây không được làm hỏng lần kéo làm mới của cả màn.
+        ref.refresh(atsTasksProvider.future).then<void>((_) {}, onError: (_) {}),
+      ]),
       overview: OverviewBlock(
         title: 'Tổng quan',
         labelWidth: 90,
@@ -96,6 +103,8 @@ class DuAnScreen extends ConsumerWidget {
           children: [
             const _SectionTitle('Hôm nay'),
             _TodayArea(summary: summary),
+            const SizedBox(height: 4),
+            const AtsTasksCard(),
             const SizedBox(height: 4),
             _ProjectsArea(summary: summary, filter: filter),
           ],
