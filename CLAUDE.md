@@ -263,6 +263,10 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   bắt đầu bây giờ / đầu ngày hôm nay / hôm qua, "Đã khỏi" = giờ máy (server kẹp lệch ≤ 5 phút), "Mở lại", xoá). API `HealthInputsApi` (`healthInputsApiProvider`, `checkInHistoryProvider`, `debuffsProvider`); mã lỗi → câu tiếng Việt ở
   `utils/health_format.dart` (`healthInputError`). Lưu xong backend tự dựng lại sổ cái. WorldFeeder chuyển khối `economy` cho `setEconomy` (thẻ Thể lực / Nguyên Tệ, nhật ký luật). Test: `test/features/du_do/world/`, `test/features/sinh_luc/`.
   Thử cầu nối không cần đăng nhập: chạy dev backend, phục vụ bản build ở `http://localhost:8080` (origin CORS của dev) rồi nhúng `world/index.html` trong một trang giả lập.
+- **Màn Dự án dạng dashboard** (nhánh `fix/du-an-viewport`): web rộng (≥ 1024) VÀ cao ≥ `duAnDashboardMinHeight` (640) → `DesignScaffold` + `_Dashboard` vừa đúng một màn, KHÔNG cuộn trang
+  (lề trên 24, đáy 88 chừa nút chat, khoảng cách khung 16). Trái: Tổng quan + `AtsTasksCard(fill: true)` (lấp phần còn lại). Phải: khung "Hôm nay" (hàng `RoutinesCard(fill)` | `AttentionCard(fill)`,
+  `IntrinsicHeight` nên luôn cao bằng nhau, tối đa 35% cột) + khung "Dự án" (lấp phần còn lại). `fill` = đầu thẻ cố định (2 thẻ Hôm nay cao chung `nsdCardHeaderHeight` 40, tiêu đề 1 dòng), nội dung cuộn TRONG thẻ;
+  ATS ở `fill` không cắt 6 dòng. Thẻ trong hàng Hôm nay không được chứa `LayoutBuilder` (IntrinsicHeight không đo được). Thấp hơn 640 / dưới 1024: bố cục `DesignPage` cuộn trang như cũ. Test: `du_an_dashboard_test.dart`.
 - **Công việc ATS** (khối trên màn Dự án; web rộng ≥ 1024: cột trái ngay dưới Tổng quan — `DuAnScreen` tự chọn theo `DesignSize.of(MediaQuery…width)`, cùng mốc với `DesignPage`;
   điện thoại / máy tính bảng: giữa "Hôm nay" và "Dự án". Gọn (nhánh `fix/du-an-layout`): gom theo dự án (`utils/ats_grouping.dart`: nhóm có quá hạn trước, rồi hạn gần nhất), mỗi việc MỘT dòng
   (tên … ×N nếu trùng tên + hạn + trạng thái; chip chỉ Đang làm / Chờ / Xong; Quá hạn thay ngày), tối đa 6 dòng rồi "Xem thêm N", hai lựa chọn xem nằm trong menu ⋯): task công ty đồng bộ một chiều từ ats-app qua amber-v4

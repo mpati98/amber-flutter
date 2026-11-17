@@ -61,7 +61,11 @@ class DuAnScreen extends ConsumerWidget {
     int count(ProjectStatus s) => projects?.where((p) => p.status == s).length ?? 0;
     // Cùng cách DesignPage chọn bố cục (thân màn rộng đúng bằng màn hình; panel chat chỉ nổi đè, không làm hẹp).
     // Rộng (2 cột): khối ATS nằm dưới Tổng quan ở cột trái để cột phải chỉ còn Hôm nay + Dự án.
-    final split = DesignSize.of(MediaQuery.sizeOf(context).width) == DesignSize.wide;
+    final screen = MediaQuery.sizeOf(context);
+    final split = DesignSize.of(screen.width) == DesignSize.wide;
+    // Rộng và đủ cao: dashboard vừa đúng một màn (không cuộn trang, nội dung dài cuộn trong từng thẻ).
+    // Thấp hơn [duAnDashboardMinHeight]: về bố cục cuộn trang của DesignPage.
+    final dashboard = split && screen.height >= duAnDashboardMinHeight;
 
     final overview = OverviewBlock(
       title: 'Tổng quan',
@@ -91,6 +95,14 @@ class DuAnScreen extends ConsumerWidget {
         ),
       ],
     );
+
+    if (dashboard) {
+      return DesignScaffold(
+        title: 'Dự án',
+        backFallback: '/nghi-su-duong',
+        body: _Dashboard(overview: overview, summary: summary, filter: filter),
+      );
+    }
 
     return DesignPage(
       title: 'Dự án',
@@ -126,6 +138,131 @@ class DuAnScreen extends ConsumerWidget {
   }
 }
 
+/// Màn cao tối thiểu (px) để dùng dashboard vừa một màn; thấp hơn thì cuộn trang như DesignPage.
+const duAnDashboardMinHeight = 640.0;
+
+/// Khoảng cách giữa các khung của dashboard (giữa 2 cột và giữa các khung trong một cột) — một số cho cả màn.
+const _dashGap = 16.0;
+
+/// Lề đáy chừa cho nút chat nổi (như DesignPage).
+const _dashBottom = 88.0;
+
+/// Hàng "Việc hằng ngày" | "Cần chú ý" cao tối đa chừng này phần chiều cao cột phải.
+const _todayRowMaxFraction = 0.35;
+
+/// Bố cục dashboard (web rộng, đủ cao): khung trang cao đúng bằng màn (trừ thanh trên và lề đáy cho nút chat), 2 cột
+/// `stretch` nên đáy bằng nhau.
+/// - Trái: Tổng quan (cao theo nội dung) + Công việc ATS (lấp phần còn lại, danh sách cuộn trong thẻ).
+/// - Phải: khung "Hôm nay" (2 thẻ luôn cao bằng nhau, tối đa ~35% cột, cuộn trong thẻ) + khung "Dự án" (lấp phần còn lại,
+///   lưới cuộn trong khung). Hai khung riêng thay vì một khung bao chung để đỉnh "Hôm nay" = đỉnh "Tổng quan" và
+///   đáy "Dự án" = đáy "Công việc ATS".
+class _Dashboard extends StatelessWidget {
+  const _Dashboard({required this.overview, required this.summary, required this.filter});
+
+  final Widget overview;
+  final AsyncValue<DuAnSummary> summary;
+  final ProjectStatus filter;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = c.maxWidth;
+        final gutter = DesignLayout.gutter(w);
+        final columnHeight = (c.maxHeight - 24 - _dashBottom).clamp(0.0, double.infinity);
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: DesignLayout.maxContentWidth(w)),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(gutter, 24, gutter, _dashBottom),
+              child: SizedBox(
+                height: columnHeight,
+                child: Row(
+                  key: const ValueKey('du-an-dashboard'),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: _dashGap,
+                  children: [
+                    SizedBox(
+                      width: 380,
+                      child: Column(
+                        key: const ValueKey('du-an-left-column'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: _dashGap,
+                        children: [overview, const Expanded(child: AtsTasksCard(fill: true))],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        key: const ValueKey('du-an-right-column'),
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        spacing: _dashGap,
+                        children: [
+                          ListFrame(
+                            key: const ValueKey('du-an-today-frame'),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              spacing: 12,
+                              children: [
+                                const _SectionTitle('Hôm nay'),
+                                _TodayRow(summary: summary, maxHeight: columnHeight * _todayRowMaxFraction),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: ListFrame(
+                              key: const ValueKey('du-an-projects-frame'),
+                              child: _ProjectsArea(summary: summary, filter: filter, fill: true),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Hàng "Việc hằng ngày" | "Cần chú ý" của dashboard: luôn cạnh nhau, CAO BẰNG NHAU (IntrinsicHeight lấy thẻ cao hơn),
+/// không vượt [maxHeight] — vượt thì mỗi thẻ cuộn bên trong. Không có LayoutBuilder bên trong (IntrinsicHeight không đo được).
+class _TodayRow extends StatelessWidget {
+  const _TodayRow({required this.summary, required this.maxHeight});
+
+  final AsyncValue<DuAnSummary> summary;
+  final double maxHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: IntrinsicHeight(
+        child: Row(
+          key: const ValueKey('du-an-today-row'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 12,
+          children: [
+            const Expanded(child: RoutinesCard(fill: true)),
+            Expanded(
+              child: AttentionCard(
+                items: summary.value?.attention,
+                loading: summary.isLoading,
+                failed: summary.hasError,
+                fill: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Khu "Hôm nay": thẻ "Việc hằng ngày" và thẻ "Cần chú ý" — cạnh nhau khi khung rộng, hẹp hơn thì xếp dọc.
 class _TodayArea extends StatelessWidget {
   const _TodayArea({required this.summary});
@@ -153,11 +290,13 @@ class _TodayArea extends StatelessWidget {
 }
 
 /// Khu "Dự án": chip trạng thái kèm số đếm + "+ Thêm dự án", rồi lưới thẻ.
+/// [fill] (dashboard): lấp chiều cao cha cấp, tiêu đề + thanh chip cố định, lưới cuộn bên trong.
 class _ProjectsArea extends ConsumerWidget {
-  const _ProjectsArea({required this.summary, required this.filter});
+  const _ProjectsArea({required this.summary, required this.filter, this.fill = false});
 
   final AsyncValue<DuAnSummary> summary;
   final ProjectStatus filter;
+  final bool fill;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -165,6 +304,13 @@ class _ProjectsArea extends ConsumerWidget {
     int count(ProjectStatus s) => projects?.where((p) => p.status == s).length ?? 0;
     String label(String name, ProjectStatus s) => '$name · ${projects == null ? '–' : count(s)}';
     final shown = projects?.where((p) => p.status == filter).toList();
+    final Widget list = summary.hasError && projects == null
+        ? const Text('Không tải được dự án.', style: DesignText.muted)
+        : shown == null
+        ? const Text('Đang tải...', style: DesignText.muted)
+        : shown.isEmpty
+        ? const Text('Không có dự án nào ở trạng thái này.', style: DesignText.muted)
+        : ProjectGrid(projects: shown);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -187,14 +333,10 @@ class _ProjectsArea extends ConsumerWidget {
             onPressed: () => showNewProjectModal(context),
           ),
         ),
-        if (summary.hasError && projects == null)
-          const Text('Không tải được dự án.', style: DesignText.muted)
-        else if (shown == null)
-          const Text('Đang tải...', style: DesignText.muted)
-        else if (shown.isEmpty)
-          const Text('Không có dự án nào ở trạng thái này.', style: DesignText.muted)
+        if (fill)
+          Expanded(child: SingleChildScrollView(key: const ValueKey('projects-scroll'), child: list))
         else
-          ProjectGrid(projects: shown),
+          list,
       ],
     );
   }
