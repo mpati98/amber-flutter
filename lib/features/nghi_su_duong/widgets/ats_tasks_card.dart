@@ -34,8 +34,13 @@ bool atsShowsStatusChip(AtsTaskStatus s) => s != AtsTaskStatus.prep;
 
 /// Khối "Công việc ATS" trên màn Dự án: việc công ty đồng bộ một chiều từ ats-app, CHỈ ĐỌC (không sửa / xoá / tạo).
 /// Gom theo dự án, mỗi việc một dòng, việc trùng gộp "×N", tối đa [atsMaxLines] dòng rồi "Xem thêm N".
+///
+/// [fill] (bố cục dashboard của màn Dự án): thẻ lấp chiều cao cha cấp; đầu thẻ cố định, danh sách cuộn bên trong,
+/// không cắt 6 dòng. Mặc định false: cao theo nội dung (điện thoại / máy tính bảng / web thấp).
 class AtsTasksCard extends ConsumerStatefulWidget {
-  const AtsTasksCard({super.key});
+  const AtsTasksCard({super.key, this.fill = false});
+
+  final bool fill;
 
   @override
   ConsumerState<AtsTasksCard> createState() => _AtsTasksCardState();
@@ -101,137 +106,146 @@ class _AtsTasksCardState extends ConsumerState<AtsTasksCard> {
     final showDone = includeAll || _showDone;
     final shown = data?.tasks.where((t) => showDone || !t.isDone).toList();
     final groups = shown == null ? null : groupAtsTasks(shown);
-    final limited = groups == null ? null : (_expanded ? (groups: groups, hidden: 0) : limitAtsLines(groups, atsMaxLines));
+    // fill: danh sách cuộn trong thẻ nên không cần cắt 6 dòng / "Xem thêm".
+    final limited = groups == null ? null : (_expanded || widget.fill ? (groups: groups, hidden: 0) : limitAtsLines(groups, atsMaxLines));
     final totalLines = groups?.fold<int>(0, (n, g) => n + g.lines.length) ?? 0;
 
     final syncState = data?.sync;
     final err = syncState?.lastError;
 
-    return ScrollCard(
-      key: const ValueKey('ats-tasks-card'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 6,
+    // Đầu thẻ (luôn cố định ở chế độ fill): tiêu đề, cập nhật / lỗi đồng bộ, nút.
+    final header = <Widget>[
+      // Tiêu đề trái; "Cập nhật lúc…" + nút + ⋯ phải. Không đủ rộng thì cụm phải xuống dòng (Wrap).
+      Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          // Tiêu đề trái; "Cập nhật lúc…" + nút + ⋯ phải. Không đủ rộng thì cụm phải xuống dòng (Wrap).
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Công việc ATS',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.primary),
+                ),
+                if (openCount != null) TextSpan(text: '  $openCount chưa xong', style: muted),
+              ],
+            ),
+          ),
           Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            alignment: WrapAlignment.spaceBetween,
+            spacing: 6,
+            runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: 'Công việc ATS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.primary)),
-                    if (openCount != null) TextSpan(text: '  $openCount chưa xong', style: muted),
-                  ],
+              if (syncState != null && err == null)
+                Text(
+                  syncState.lastSuccessAt == null ? 'Chưa đồng bộ' : 'Cập nhật lúc ${formatVnTimeDayMonth(syncState.lastSuccessAt!)}',
+                  key: const ValueKey('ats-sync-line'),
+                  style: muted,
                 ),
-              ),
               Wrap(
-                spacing: 6,
-                runSpacing: 4,
+                spacing: 2,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (syncState != null && err == null)
-                    Text(
-                      syncState.lastSuccessAt == null ? 'Chưa đồng bộ' : 'Cập nhật lúc ${formatVnTimeDayMonth(syncState.lastSuccessAt!)}',
-                      key: const ValueKey('ats-sync-line'),
-                      style: muted,
-                    ),
-                  Wrap(
-                    spacing: 2,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      DesignButton.outline(
-                        key: const ValueKey('ats-sync'),
-                        label: _syncing ? 'Đang đồng bộ…' : 'Đồng bộ ngay',
-                        onPressed: _syncing ? null : _sync,
-                      ),
-                      if (data != null)
-                        PopupMenuButton<_MenuAction>(
-                          key: const ValueKey('ats-menu'),
-                          tooltip: 'Tuỳ chọn',
-                          icon: Icon(Icons.more_horiz, color: theme.textMuted, size: 20),
-                          padding: EdgeInsets.zero,
-                          onSelected: (a) => _onMenu(a, includeAll),
-                          itemBuilder: (_) => [
-                            if (!includeAll && doneCount > 0)
-                              PopupMenuItem(
-                                key: const ValueKey('ats-toggle-done'),
-                                value: _MenuAction.toggleDone,
-                                child: Text(_showDone ? 'Ẩn việc đã xong' : 'Xem cả việc đã xong ($doneCount)'),
-                              ),
-                            PopupMenuItem(
-                              key: const ValueKey('ats-toggle-all'),
-                              value: _MenuAction.toggleAll,
-                              child: Text(includeAll ? 'Chỉ việc hiện hành' : 'Xem tất cả (gồm lưu trữ)'),
-                            ),
-                          ],
+                  DesignButton.outline(key: const ValueKey('ats-sync'), label: _syncing ? 'Đang đồng bộ…' : 'Đồng bộ ngay', onPressed: _syncing ? null : _sync),
+                  if (data != null)
+                    PopupMenuButton<_MenuAction>(
+                      key: const ValueKey('ats-menu'),
+                      tooltip: 'Tuỳ chọn',
+                      icon: Icon(Icons.more_horiz, color: theme.textMuted, size: 20),
+                      padding: EdgeInsets.zero,
+                      onSelected: (a) => _onMenu(a, includeAll),
+                      itemBuilder: (_) => [
+                        if (!includeAll && doneCount > 0)
+                          PopupMenuItem(
+                            key: const ValueKey('ats-toggle-done'),
+                            value: _MenuAction.toggleDone,
+                            child: Text(_showDone ? 'Ẩn việc đã xong' : 'Xem cả việc đã xong ($doneCount)'),
+                          ),
+                        PopupMenuItem(
+                          key: const ValueKey('ats-toggle-all'),
+                          value: _MenuAction.toggleAll,
+                          child: Text(includeAll ? 'Chỉ việc hiện hành' : 'Xem tất cả (gồm lưu trữ)'),
                         ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
             ],
           ),
-          if (err != null)
-            Text(
-              'Lỗi đồng bộ: $err',
-              key: const ValueKey('ats-sync-error'),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: DesignColors.warning),
-            ),
-          if (failed)
-            Row(
-              spacing: 8,
-              children: [
-                Expanded(child: Text('Không tải được việc ATS.', key: const ValueKey('ats-load-error'), style: muted)),
-                TextButton(onPressed: () => ref.invalidate(atsTasksProvider), child: const Text('Thử lại')),
-              ],
-            )
-          else if (data == null)
-            Text('Đang tải...', style: muted)
-          else if (data.tasks.isEmpty)
-            Text('Không có việc ATS nào', key: const ValueKey('ats-empty'), style: muted)
-          else if (shown!.isEmpty)
-            Text('Không còn việc nào chưa xong.', style: muted)
-          else ...[
-            for (final g in limited!.groups) ...[
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  atsGroupLabel(g.project),
-                  key: ValueKey('ats-group-${g.project?.atsId ?? 'none'}'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: muted,
-                ),
-              ),
-              for (final l in g.lines) AtsTaskRow(line: l),
-            ],
-            if (limited.hidden > 0)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  key: const ValueKey('ats-more'),
-                  onPressed: () => setState(() => _expanded = true),
-                  child: Text('Xem thêm ${limited.hidden}'),
-                ),
-              )
-            else if (_expanded && totalLines > atsMaxLines)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  key: const ValueKey('ats-less'),
-                  onPressed: () => setState(() => _expanded = false),
-                  child: const Text('Thu gọn'),
-                ),
-              ),
-          ],
         ],
       ),
+      if (err != null)
+        Text(
+          'Lỗi đồng bộ: $err',
+          key: const ValueKey('ats-sync-error'),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12, color: DesignColors.warning),
+        ),
+    ];
+    final body = <Widget>[
+      if (failed)
+        Row(
+          spacing: 8,
+          children: [
+            Expanded(
+              child: Text('Không tải được việc ATS.', key: const ValueKey('ats-load-error'), style: muted),
+            ),
+            TextButton(onPressed: () => ref.invalidate(atsTasksProvider), child: const Text('Thử lại')),
+          ],
+        )
+      else if (data == null)
+        Text('Đang tải...', style: muted)
+      else if (data.tasks.isEmpty)
+        Text('Không có việc ATS nào', key: const ValueKey('ats-empty'), style: muted)
+      else if (shown!.isEmpty)
+        Text('Không còn việc nào chưa xong.', style: muted)
+      else ...[
+        for (final g in limited!.groups) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              atsGroupLabel(g.project),
+              key: ValueKey('ats-group-${g.project?.atsId ?? 'none'}'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: muted,
+            ),
+          ),
+          for (final l in g.lines) AtsTaskRow(line: l),
+        ],
+        if (limited.hidden > 0)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(key: const ValueKey('ats-more'), onPressed: () => setState(() => _expanded = true), child: Text('Xem thêm ${limited.hidden}')),
+          )
+        else if (_expanded && !widget.fill && totalLines > atsMaxLines)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(key: const ValueKey('ats-less'), onPressed: () => setState(() => _expanded = false), child: const Text('Thu gọn')),
+          ),
+      ],
+    ];
+
+    return ScrollCard(
+      key: const ValueKey('ats-tasks-card'),
+      child: widget.fill
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 6,
+              children: [
+                ...header,
+                Expanded(
+                  child: SingleChildScrollView(
+                    key: const ValueKey('ats-scroll'),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: body),
+                  ),
+                ),
+              ],
+            )
+          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [...header, ...body]),
     );
   }
 }
@@ -257,7 +271,11 @@ class AtsTaskRow extends StatelessWidget {
       TextSpan(
         children: [
           TextSpan(text: t.title.isEmpty ? '(Không có tên)' : t.title),
-          if (line.count > 1) TextSpan(text: ' ×${line.count}', style: TextStyle(color: theme.textMuted)),
+          if (line.count > 1)
+            TextSpan(
+              text: ' ×${line.count}',
+              style: TextStyle(color: theme.textMuted),
+            ),
         ],
       ),
       maxLines: 1,
@@ -266,16 +284,15 @@ class AtsTaskRow extends StatelessWidget {
     );
     final trailing = <Widget>[
       if (atsShowsStatusChip(t.status))
-        Tag(
-          key: ValueKey('ats-status-${t.id}'),
-          label: t.status.label,
-          color: atsStatusColor(context, t.status),
-          variant: TagVariant.tonal,
-        ),
+        Tag(key: ValueKey('ats-status-${t.id}'), label: t.status.label, color: atsStatusColor(context, t.status), variant: TagVariant.tonal),
       if (t.overdue)
         Tag(key: ValueKey('ats-overdue-${t.id}'), label: 'Quá hạn', color: cs.error)
       else if (t.dueDate != null)
-        Text(formatDayMonth(t.dueDate!), key: ValueKey('ats-due-${t.id}'), style: TextStyle(fontSize: 12, color: theme.textMuted)),
+        Text(
+          formatDayMonth(t.dueDate!),
+          key: ValueKey('ats-due-${t.id}'),
+          style: TextStyle(fontSize: 12, color: theme.textMuted),
+        ),
     ];
 
     return Opacity(
@@ -291,15 +308,17 @@ class AtsTaskRow extends StatelessWidget {
               builder: (context, c) => c.maxWidth >= 260 * scale
                   ? Row(
                       spacing: 8,
-                      children: [Expanded(child: title), ...trailing],
+                      children: [
+                        Expanded(child: title),
+                        ...trailing,
+                      ],
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: 4,
                       children: [
                         title,
-                        if (trailing.isNotEmpty)
-                          Wrap(spacing: 6, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: trailing),
+                        if (trailing.isNotEmpty) Wrap(spacing: 6, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: trailing),
                       ],
                     ),
             ),
@@ -347,10 +366,7 @@ class AtsTaskDetailPage extends StatelessWidget {
           key: const ValueKey('ats-detail-title'),
           style: TextStyle(fontSize: 18, color: theme.colorScheme.onSurface),
         ),
-        if (count > 1) ...[
-          const SizedBox(height: 4),
-          Text('$count việc giống nhau trên ats-app', key: const ValueKey('ats-detail-count'), style: muted),
-        ],
+        if (count > 1) ...[const SizedBox(height: 4), Text('$count việc giống nhau trên ats-app', key: const ValueKey('ats-detail-count'), style: muted)],
         const SizedBox(height: 8),
         row('Dự án', text(t.project == null ? 'Không thuộc dự án' : (t.project!.name.isEmpty ? 'Không rõ' : t.project!.name))),
         row('Loại', text(t.project?.typeLabel.isNotEmpty == true ? t.project!.typeLabel : '—')),
