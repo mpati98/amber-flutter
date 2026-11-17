@@ -263,7 +263,9 @@ phải sửa cả amber-v4. Mọi route con cố định của `/tra-dinh` (`luy
   bắt đầu bây giờ / đầu ngày hôm nay / hôm qua, "Đã khỏi" = giờ máy (server kẹp lệch ≤ 5 phút), "Mở lại", xoá). API `HealthInputsApi` (`healthInputsApiProvider`, `checkInHistoryProvider`, `debuffsProvider`); mã lỗi → câu tiếng Việt ở
   `utils/health_format.dart` (`healthInputError`). Lưu xong backend tự dựng lại sổ cái. WorldFeeder chuyển khối `economy` cho `setEconomy` (thẻ Thể lực / Nguyên Tệ, nhật ký luật). Test: `test/features/du_do/world/`, `test/features/sinh_luc/`.
   Thử cầu nối không cần đăng nhập: chạy dev backend, phục vụ bản build ở `http://localhost:8080` (origin CORS của dev) rồi nhúng `world/index.html` trong một trang giả lập.
-- **Công việc ATS** (khối trên màn Dự án, dưới khu "Hôm nay", trên khu "Dự án"; nhánh `feat/ats-tasks` 17/11/2026): task công ty đồng bộ một chiều từ ats-app qua amber-v4
+- **Công việc ATS** (khối trên màn Dự án; web rộng ≥ 1024: cột trái ngay dưới Tổng quan — `DuAnScreen` tự chọn theo `DesignSize.of(MediaQuery…width)`, cùng mốc với `DesignPage`;
+  điện thoại / máy tính bảng: giữa "Hôm nay" và "Dự án". Gọn (nhánh `fix/du-an-layout`): gom theo dự án (`utils/ats_grouping.dart`: nhóm có quá hạn trước, rồi hạn gần nhất), mỗi việc MỘT dòng
+  (tên … ×N nếu trùng tên + hạn + trạng thái; chip chỉ Đang làm / Chờ / Xong; Quá hạn thay ngày), tối đa 6 dòng rồi "Xem thêm N", hai lựa chọn xem nằm trong menu ⋯): task công ty đồng bộ một chiều từ ats-app qua amber-v4
   (`GET /api/du-an/ats-tasks[?all=1]`, `POST /api/du-an/ats-tasks/sync` — xem mục "Task ats-app" trong `amber-v4/CLAUDE.md`). **CHỈ ĐỌC**: không có nút sửa / xoá / tạo; chạm dòng mở
   chi tiết chỉ đọc (`showFinanceSheet`) kèm ghi chú "Sửa trên ats-app". `models/ats_task.dart` (parse phòng thủ: status lạ → PREP "Chưa làm", project / dueDate null được),
   `services/ats_tasks_api.dart` (`atsTasksApiProvider`, tách khỏi `NghiSuDuongApi`), `providers/ats_tasks_provider.dart` (`atsTasksProvider` **tắt tự thử lại** của Riverpod — nếu không, kéo làm mới

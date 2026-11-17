@@ -45,6 +45,7 @@ class _SectionTitle extends StatelessWidget {
 
 /// Màn Dự án theo bộ thiết kế mới: Tổng quan (lời chào + ngày, số dự án theo trạng thái, việc cần chú ý) → khung gồm
 /// khu "Hôm nay" (Việc hằng ngày + Cần chú ý) và khu "Dự án" (chip trạng thái kèm số đếm + "+ Thêm dự án", lưới thẻ).
+/// Khối "Công việc ATS": web rộng (2 cột) nằm dưới Tổng quan ở cột trái; điện thoại / máy tính bảng nằm giữa Hôm nay và Dự án.
 /// Việc chỉ được tạo / xem bên trong một dự án (màn chi tiết), không có danh sách việc ở đây.
 class DuAnScreen extends ConsumerWidget {
   const DuAnScreen({super.key});
@@ -58,6 +59,38 @@ class DuAnScreen extends ConsumerWidget {
     final projects = summary.value?.projects;
     final attention = summary.value?.attention;
     int count(ProjectStatus s) => projects?.where((p) => p.status == s).length ?? 0;
+    // Cùng cách DesignPage chọn bố cục (thân màn rộng đúng bằng màn hình; panel chat chỉ nổi đè, không làm hẹp).
+    // Rộng (2 cột): khối ATS nằm dưới Tổng quan ở cột trái để cột phải chỉ còn Hôm nay + Dự án.
+    final split = DesignSize.of(MediaQuery.sizeOf(context).width) == DesignSize.wide;
+
+    final overview = OverviewBlock(
+      title: 'Tổng quan',
+      labelWidth: 90,
+      rows: [
+        OverviewRow.muted(
+          label: 'Hôm nay',
+          text: '${_greeting()}${userName != null && userName.isNotEmpty ? ', $userName' : ''} · ${_dateLabel()}',
+        ),
+        OverviewRow.muted(
+          label: 'Dự án',
+          text: projects == null
+              ? (summary.hasError ? 'Không tải được.' : 'Đang tải…')
+              : '${count(ProjectStatus.active)} đang triển khai · ${count(ProjectStatus.paused)} tạm dừng · '
+                    '${count(ProjectStatus.done)} đã xong',
+        ),
+        OverviewRow(
+          label: 'Chú ý',
+          child: attention == null
+              ? Text(summary.hasError ? 'Không tải được.' : 'Đang tải…', style: DesignText.muted)
+              : attention.isEmpty
+              ? const Text('Không có gì cần chú ý. Mọi thứ ổn.', style: TextStyle(color: DesignColors.success))
+              : Text(
+                  '${attention.where((a) => a.isOverdue).length} quá hạn · ${attention.where((a) => !a.isOverdue).length} nằm im',
+                  style: const TextStyle(color: DesignColors.danger),
+                ),
+        ),
+      ],
+    );
 
     return DesignPage(
       title: 'Dự án',
@@ -68,44 +101,23 @@ class DuAnScreen extends ConsumerWidget {
         // Khối ATS tự hiện lỗi của nó — lỗi ở đây không được làm hỏng lần kéo làm mới của cả màn.
         ref.refresh(atsTasksProvider.future).then<void>((_) {}, onError: (_) {}),
       ]),
-      overview: OverviewBlock(
-        title: 'Tổng quan',
-        labelWidth: 90,
-        rows: [
-          OverviewRow.muted(
-            label: 'Hôm nay',
-            text: '${_greeting()}${userName != null && userName.isNotEmpty ? ', $userName' : ''} · ${_dateLabel()}',
-          ),
-          OverviewRow.muted(
-            label: 'Dự án',
-            text: projects == null
-                ? (summary.hasError ? 'Không tải được.' : 'Đang tải…')
-                : '${count(ProjectStatus.active)} đang triển khai · ${count(ProjectStatus.paused)} tạm dừng · '
-                      '${count(ProjectStatus.done)} đã xong',
-          ),
-          OverviewRow(
-            label: 'Chú ý',
-            child: attention == null
-                ? Text(summary.hasError ? 'Không tải được.' : 'Đang tải…', style: DesignText.muted)
-                : attention.isEmpty
-                ? const Text('Không có gì cần chú ý. Mọi thứ ổn.', style: TextStyle(color: DesignColors.success))
-                : Text(
-                    '${attention.where((a) => a.isOverdue).length} quá hạn · ${attention.where((a) => !a.isOverdue).length} nằm im',
-                    style: const TextStyle(color: DesignColors.danger),
-                  ),
-          ),
-        ],
-      ),
-      content: (context, _) => ListFrame(
+      overview: split
+          ? Column(
+              key: const ValueKey('du-an-left-column'),
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 14, // = khoảng cách giữa các khối của DesignPage
+              children: [overview, const AtsTasksCard()],
+            )
+          : overview,
+      // Khoảng cách giữa các khu = 12, như các màn khác (trước đây thêm SizedBox 4 → 28, thừa chỗ).
+      content: (context, size) => ListFrame(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 12,
           children: [
             const _SectionTitle('Hôm nay'),
             _TodayArea(summary: summary),
-            const SizedBox(height: 4),
-            const AtsTasksCard(),
-            const SizedBox(height: 4),
+            if (!split) const AtsTasksCard(),
             _ProjectsArea(summary: summary, filter: filter),
           ],
         ),
