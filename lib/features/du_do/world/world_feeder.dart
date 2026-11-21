@@ -27,7 +27,8 @@ class WorldFeeder {
   final Future<SharedPreferences> Function()? prefs;
 
   /// Thông báo chung cho popup gọn của từng tòa trong cảnh, theo id tòa: `nghisu` (cùng nguồn khung "Cần chú ý" —
-  /// `fetchNsdNotices`), `tangkinh` (`fetchTkcNotices`), `tradinh` (`fetchTraDinhNotices`). Mỗi phần tử `{text, lvl}`.
+  /// `fetchNsdNotices`), `tangkinh` (`fetchTkcNotices`), `tradinh` (`fetchTraDinhNotices`), `kieulau` (`fetchKieuLauNotices`).
+  /// Mỗi phần tử `{text, lvl}`.
   final Map<String, Future<List<Map<String, Object?>>> Function()> towerNotices;
 
   bool _busy = false;
