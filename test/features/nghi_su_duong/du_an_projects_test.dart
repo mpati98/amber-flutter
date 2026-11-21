@@ -1,39 +1,19 @@
-import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
-import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
-import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
-import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
-import 'package:amber_flutter/features/nghi_su_duong/services/ats_tasks_api.dart';
-import 'package:amber_flutter/features/nghi_su_duong/widgets/ats_tasks_card.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/project_card.dart';
-import 'package:amber_flutter/shared/providers/auth_provider.dart';
-import 'package:amber_flutter/shared/services/api_client.dart';
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'ats_test_support.dart';
+import 'nsd_screen_support.dart';
 
-// Khu "Dự án" của màn Dự án: bộ lọc, thẻ, form thêm. API giả, không request thật.
-
-final _requests = <String>[];
-
-/// Mọi request lọt tới Dio (không qua api giả) bị chặn và ghi lại.
-Dio _offlineDio() => Dio()
-  ..interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (o, h) {
-        _requests.add(o.path);
-        h.reject(DioException(requestOptions: o, error: 'network blocked in test'));
-      },
-    ),
-  );
+// Dự án trên màn Nghị Sự Đường (một màn): nhãn trạng thái, thẻ dự án (modal mở rộng dùng ProjectGrid), form thêm,
+// khung Công việc ATS. API giả, không request thật.
 
 ProjectSummary _p(
   String id,
@@ -67,7 +47,7 @@ ProjectSummary _p(
     );
 
 class _FakeApi extends NghiSuDuongApi {
-  _FakeApi(this.projects) : super(_offlineDio());
+  _FakeApi(this.projects) : super(Dio());
 
   List<ProjectSummary> projects;
   Object? createError;
@@ -102,38 +82,26 @@ class _FakeApi extends NghiSuDuongApi {
   }
 }
 
-class _FakeAuth extends AuthController {
-  @override
-  Future<AuthState> build() async => const Authenticated({'name': 'Test'});
+Future<_FakeApi> _pump(WidgetTester tester, List<ProjectSummary> projects, {FakeAtsTasksApi? ats}) async {
+  final api = _FakeApi(projects);
+  await pumpNsd(tester, api: api, ats: ats);
+  return api;
 }
 
-Future<_FakeApi> _pump(WidgetTester tester, List<ProjectSummary> projects, {double width = 390, FakeAtsTasksApi? ats}) async {
-  _requests.clear();
-  final api = _FakeApi(projects);
+/// Lưới thẻ (modal mở rộng của khung Dự án) dựng riêng ở bề rộng [width]; chạm thẻ → /du-an/:id.
+Future<void> _pumpGrid(WidgetTester tester, List<ProjectSummary> projects, {double width = 390}) async {
   tester.view.physicalSize = Size(width, 1600);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   final router = GoRouter(
     routes: [
-      GoRoute(path: '/', builder: (_, _) => const DuAnScreen()),
+      GoRoute(path: '/', builder: (_, _) => Scaffold(body: SingleChildScrollView(child: ProjectGrid(projects: projects)))),
       GoRoute(path: '/du-an/:projectId', builder: (_, s) => Text('detail ${s.pathParameters['projectId']}')),
     ],
   );
   addTearDown(router.dispose);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        apiClientProvider.overrideWithValue(_offlineDio()),
-        nghiSuDuongApiProvider.overrideWithValue(api),
-        atsTasksApiProvider.overrideWithValue(ats ?? FakeAtsTasksApi()),
-        authControllerProvider.overrideWith(_FakeAuth.new),
-        notificationsProvider.overrideWith((ref) async => (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[])),
-      ],
-      child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),
-    ),
-  );
+  await tester.pumpWidget(MaterialApp.router(theme: ThemeData.dark(), routerConfig: router));
   await tester.pumpAndSettle();
-  return api;
 }
 
 final _mixed = [
@@ -144,13 +112,6 @@ final _mixed = [
   _p('c1', 'Dự án đã xong 1', status: ProjectStatus.done, total: 5, done: 5),
   _p('c2', 'Dự án đã xong 2', status: ProjectStatus.done),
 ];
-
-/// Chip trạng thái nằm trong hàng cuộn ngang: font test rộng nên chip sau có thể khuất → cuộn tới trước khi bấm.
-Future<void> _tapChip(WidgetTester tester, String label) async {
-  await tester.ensureVisible(find.text(label));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text(label));
-}
 
 void main() {
   group('projectBadge: 5 trường hợp nhãn trạng thái', () {
@@ -173,113 +134,39 @@ void main() {
     });
   });
 
-  group('màn Dự án không còn danh sách việc', () {
-    testWidgets('không gọi GET /api/tasks, không có "Task hôm nay" và "+ Việc"; làm mới chỉ tải summary', (tester) async {
-      final api = await _pump(tester, _mixed);
-      expect(_requests, isEmpty, reason: 'không có request lọt qua api giả (không GET /api/tasks)');
-      expect(find.text('Task hôm nay'), findsNothing);
-      expect(find.text('+ Việc'), findsNothing);
-
-      final fetches = api.summaryFetches;
-      await tester.widget<RefreshIndicator>(find.byType(RefreshIndicator)).onRefresh();
-      await tester.pumpAndSettle();
-      expect(api.summaryFetches, greaterThan(fetches));
-      expect(_requests, isEmpty);
-    });
-  });
-
-  group('khối Công việc ATS', () {
-    testWidgets('web rộng: khối ATS ở cột trái ngay dưới Tổng quan, cột phải là Hôm nay + Dự án', (tester) async {
-      await _pump(tester, _mixed, width: 1400);
-      final left = find.byKey(const ValueKey('du-an-left-column'));
-      expect(left, findsOneWidget);
-      expect(find.descendant(of: left, matching: find.byType(AtsTasksCard)), findsOneWidget);
-      expect(find.byType(AtsTasksCard), findsOneWidget);
-      // Cột trái (x nhỏ hơn) so với khu Dự án ở cột phải.
-      expect(tester.getTopLeft(find.byType(AtsTasksCard)).dx, lessThan(tester.getTopLeft(find.byType(ProjectCard).first).dx));
+  group('khung Công việc ATS', () {
+    testWidgets('GET ATS lỗi không làm hỏng màn: dự án vẫn hiện, khung ATS tự báo lỗi', (tester) async {
+      await _pump(tester, _mixed, ats: FakeAtsTasksApi(getError: atsHttpError(500, {'error': 'boom'})));
+      expect(find.byKey(const ValueKey('nsd-project-a1')), findsOneWidget);
+      expect(find.descendant(of: nsdFrame('Công việc ATS'), matching: find.text('Không tải được việc ATS.')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('điện thoại: Tổng quan → Hôm nay → Công việc ATS → Dự án', (tester) async {
-      await _pump(tester, _mixed);
-      expect(find.byKey(const ValueKey('du-an-left-column')), findsNothing);
-      final hom = tester.getTopLeft(find.text('Cần chú ý')).dy;
-      final ats = tester.getTopLeft(find.byType(AtsTasksCard)).dy;
-      final duAn = tester.getTopLeft(find.byType(ProjectCard).first).dy;
-      expect(hom < ats && ats < duAn, isTrue);
-    });
-
-    testWidgets('GET ATS lỗi không làm hỏng màn Dự án: dự án vẫn hiện, khối tự báo lỗi', (tester) async {
-      final ats = FakeAtsTasksApi(getError: atsHttpError(500, {'error': 'boom'}));
-      await _pump(tester, _mixed, ats: ats);
-      expect(find.byType(ProjectCard), findsNWidgets(3));
-      expect(find.text('Không tải được việc ATS.'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('kéo làm mới cũng tải lại khối ATS (kể cả khi khối đang lỗi)', (tester) async {
+    testWidgets('kéo làm mới trong khung ATS tải lại ATS (kể cả khi đang lỗi); khung Dự án tải lại summary', (tester) async {
       final ats = FakeAtsTasksApi(getError: atsHttpError(500, {'error': 'boom'}));
       final api = await _pump(tester, _mixed, ats: ats);
+      RefreshIndicator refreshOf(String frame) =>
+          tester.widget<RefreshIndicator>(find.descendant(of: nsdFrame(frame), matching: find.byType(RefreshIndicator)));
       final calls = ats.getCalls.length;
-      final fetches = api.summaryFetches;
-      await tester.widget<RefreshIndicator>(find.byType(RefreshIndicator)).onRefresh();
+      await refreshOf('Công việc ATS').onRefresh();
       await tester.pumpAndSettle();
       expect(ats.getCalls.length, greaterThan(calls));
+      final fetches = api.summaryFetches;
+      await refreshOf('Dự án').onRefresh();
+      await tester.pumpAndSettle();
       expect(api.summaryFetches, greaterThan(fetches));
     });
-  });
 
-  group('bộ lọc', () {
-    testWidgets('số đếm đúng; mặc định Đang triển khai chỉ hiện dự án ACTIVE', (tester) async {
+    testWidgets('khung ATS không lặp lại tiêu đề "Công việc ATS" trong thân và không cắt 6 dòng', (tester) async {
       await _pump(tester, _mixed);
-      expect(find.text('Đang triển khai · 3'), findsOneWidget);
-      expect(find.text('Tạm dừng · 1'), findsOneWidget);
-      expect(find.text('Đã xong · 2'), findsOneWidget);
-      expect(find.byType(ProjectCard), findsNWidgets(3));
-      expect(find.text('Dự án đúng nhịp'), findsOneWidget);
-      expect(find.text('Dự án tạm dừng'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('đổi bộ lọc đổi danh sách', (tester) async {
-      await _pump(tester, _mixed);
-      await _tapChip(tester, 'Tạm dừng · 1');
-      await tester.pumpAndSettle();
-      expect(find.byType(ProjectCard), findsOneWidget);
-      expect(find.text('Dự án tạm dừng'), findsOneWidget);
-      expect(find.text('Dự án đúng nhịp'), findsNothing);
-
-      await _tapChip(tester, 'Đã xong · 2');
-      await tester.pumpAndSettle();
-      expect(find.byType(ProjectCard), findsNWidgets(2));
-      expect(find.text('Dự án đã xong 1'), findsOneWidget);
-    });
-
-    testWidgets('nhãn trên thẻ ở từng bộ lọc', (tester) async {
-      await _pump(tester, _mixed);
-      expect(find.text('Đúng nhịp'), findsOneWidget);
-      expect(find.text('2 việc cần xử lý'), findsOneWidget);
-      expect(find.text('Mới tạo'), findsOneWidget);
-      await _tapChip(tester, 'Tạm dừng · 1');
-      await tester.pumpAndSettle();
-      expect(find.text('Tạm dừng'), findsOneWidget);
-      await _tapChip(tester, 'Đã xong · 2');
-      await tester.pumpAndSettle();
-      expect(find.text('Đã xong'), findsNWidgets(2));
-    });
-
-    testWidgets('không có dự án ở bộ lọc đang chọn → dòng trống', (tester) async {
-      await _pump(tester, [_p('a1', 'Chỉ một dự án')]);
-      await _tapChip(tester, 'Tạm dừng · 0');
-      await tester.pumpAndSettle();
-      expect(find.text('Không có dự án nào ở trạng thái này.'), findsOneWidget);
-      expect(find.byType(ProjectCard), findsNothing);
+      expect(find.descendant(of: nsdFrame('Công việc ATS'), matching: find.textContaining('Công việc ATS', findRichText: true)), findsNothing);
+      expect(find.byKey(const ValueKey('ats-more')), findsNothing);
     });
   });
 
   group('thẻ dự án', () {
     testWidgets('đủ các dòng: KR %, việc, ngày, mốc, ròng (âm có dấu trừ)', (tester) async {
-      await _pump(tester, [
+      await _pumpGrid(tester, [
         _p(
           'a1',
           'Sự kiện tháng 11',
@@ -306,7 +193,7 @@ void main() {
     });
 
     testWidgets('thiếu dữ liệu: "Chưa ghi mục tiêu.", "Chưa có KR", "Chưa có mốc", "Chưa có ngày"', (tester) async {
-      await _pump(tester, [_p('a1', 'Trống')]);
+      await _pumpGrid(tester, [_p('a1', 'Trống')]);
       expect(find.text('Chưa ghi mục tiêu.'), findsOneWidget);
       expect(find.text('Chưa có KR'), findsOneWidget);
       expect(find.text('Chưa có mốc'), findsOneWidget);
@@ -315,19 +202,19 @@ void main() {
     });
 
     testWidgets('chạm thẻ → /du-an/:id', (tester) async {
-      await _pump(tester, [_p('a1', 'Mở tôi')]);
+      await _pumpGrid(tester, [_p('a1', 'Mở tôi')]);
       await tester.tap(find.text('Mở tôi'));
       await tester.pumpAndSettle();
       expect(find.text('detail a1'), findsOneWidget);
     });
 
     testWidgets('bề rộng 390: không tràn, 1 cột; màn rộng: nhiều cột, mỗi thẻ ≤ 420', (tester) async {
-      await _pump(tester, _mixed, width: 390);
+      await _pumpGrid(tester, _mixed, width: 390);
       expect(tester.takeException(), isNull);
       final xs = {for (final c in tester.widgetList<ProjectCard>(find.byType(ProjectCard))) tester.getTopLeft(find.byWidget(c)).dx};
       expect(xs.length, 1);
 
-      await _pump(tester, _mixed, width: 1000);
+      await _pumpGrid(tester, _mixed, width: 1000);
       expect(tester.takeException(), isNull);
       final cards = find.byType(ProjectCard);
       final columns = {for (final c in tester.widgetList<ProjectCard>(cards)) tester.getTopLeft(find.byWidget(c)).dx};
@@ -340,17 +227,13 @@ void main() {
 
   group('form Thêm dự án', () {
     Future<void> openForm(WidgetTester tester) async {
-      await tester.tap(find.text('+ Thêm dự án'));
+      await tester.tap(find.byKey(const ValueKey('add-project')));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, 'Thêm dự án'), findsOneWidget);
     }
 
-    testWidgets('Tạo khoá khi tên rỗng; gửi tên, mục tiêu, ngày bắt đầu mặc định; về bộ lọc Đang triển khai', (tester) async {
+    testWidgets('Tạo khoá khi tên rỗng; gửi tên, mục tiêu, ngày bắt đầu mặc định; tải lại danh sách', (tester) async {
       final api = await _pump(tester, _mixed);
-      await _tapChip(tester, 'Đã xong · 2');
-      await tester.pumpAndSettle();
-      expect(find.text('Dự án đúng nhịp'), findsNothing);
-
       await openForm(tester);
       expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Tạo')).onPressed, isNull);
       final fetches = api.summaryFetches;
@@ -366,7 +249,7 @@ void main() {
       expect(api.creates.single['endDate'], isNull);
       expect(api.summaryFetches, greaterThan(fetches));
       expect(find.byType(Dialog), findsNothing);
-      expect(find.text('Dự án đúng nhịp'), findsOneWidget, reason: 'bộ lọc quay về Đang triển khai');
+      expect(find.byKey(const ValueKey('nsd-project-a1')), findsOneWidget);
     });
 
     testWidgets('server trả end_before_start → "Hạn phải sau ngày bắt đầu."; form giữ nguyên', (tester) async {

@@ -176,7 +176,15 @@ class _FrameShellState extends State<_FrameShell> {
                       style: const TextStyle(fontSize: 13, letterSpacing: 1, color: DesignColors.gold),
                     ),
                   ),
-                  ...f.actions,
+                  // Khung hẹp / chữ phóng to: cụm nút co nhỏ lại thay vì đẩy tràn hàng tiêu đề.
+                  if (f.actions.isNotEmpty)
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Row(mainAxisSize: MainAxisSize.min, spacing: 4, children: f.actions),
+                      ),
+                    ),
                   ?widget.button,
                 ],
               ),

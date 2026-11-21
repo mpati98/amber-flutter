@@ -16,17 +16,13 @@ String routineSubtitle(Routine r) => [
       'chuỗi ${r.streak} ngày',
     ].join(' · ');
 
-/// Chiều cao đầu thẻ ở chế độ [RoutinesCard.fill] / [AttentionCard] fill — chung một số để tiêu đề hai thẻ cạnh nhau thẳng hàng.
-const nsdCardHeaderHeight = 40.0;
-
 /// Thẻ "Việc hằng ngày": đếm đã làm / đến hạn hôm nay, mỗi việc một dòng (tick, tên, lịch, 7 ô, sửa).
 ///
-/// [fill] (bố cục dashboard của màn Dự án): thẻ lấp chiều cao cha cấp; đầu thẻ cố định cao [nsdCardHeaderHeight],
-/// danh sách cuộn bên trong. Mặc định false: cao theo nội dung như cũ.
+/// [bare] (đặt trong một ZoneFrame đã có khung + vùng cuộn): bỏ vỏ thẻ, chỉ còn đầu (tên, đếm, + Thêm) và các dòng.
 class RoutinesCard extends ConsumerWidget {
-  const RoutinesCard({super.key, this.fill = false});
+  const RoutinesCard({super.key, this.bare = false});
 
-  final bool fill;
+  final bool bare;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,25 +35,16 @@ class RoutinesCard extends ConsumerWidget {
 
     final title = Text(
       'Việc hằng ngày',
-      maxLines: fill ? 1 : null,
-      overflow: fill ? TextOverflow.ellipsis : null,
       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.primary),
     );
     final counter = routines == null ? null : Text('$doneCount / $dueCount hôm nay', maxLines: 1, style: muted);
     final header = Row(
       children: [
         Expanded(
-          // fill: luôn MỘT dòng (cắt "…" khi hẹp) để đầu thẻ đúng nsdCardHeaderHeight, thẳng hàng với thẻ bên cạnh.
-          child: fill
-              ? Row(spacing: 8, children: [Flexible(child: title), ?counter])
-              : Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [title, ?counter]),
+          child: Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [title, ?counter]),
         ),
         TextButton.icon(
           onPressed: () => showRoutineForm(context),
-          // fill: nút cao đúng bằng đầu thẻ (không đệm vùng chạm lên 48) để hai tiêu đề cạnh nhau thẳng hàng.
-          style: fill
-              ? TextButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap, minimumSize: const Size(0, nsdCardHeaderHeight))
-              : null,
           icon: const Icon(Icons.add, size: 18),
           label: const Text('Thêm'),
         ),
@@ -74,24 +61,8 @@ class RoutinesCard extends ConsumerWidget {
       Text('7 ngày gần nhất · ô cuối là hôm nay', style: muted),
     ];
 
-    return ScrollCard(
-      glow: ScrollCardGlow.kincha,
-      child: fill
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 8,
-              children: [
-                SizedBox(height: nsdCardHeaderHeight, child: header),
-                Expanded(
-                  child: SingleChildScrollView(
-                    key: const ValueKey('routines-scroll'),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: body),
-                  ),
-                ),
-              ],
-            )
-          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [header, ...body]),
-    );
+    final column = Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [header, ...body]);
+    return bare ? column : ScrollCard(glow: ScrollCardGlow.kincha, child: column);
   }
 }
 

@@ -3,7 +3,14 @@ import 'package:amber_flutter/features/du_do/widgets/world_home.dart';
 import 'package:amber_flutter/features/du_do/world/world_api.dart';
 import 'package:amber_flutter/features/du_do/world/world_bridge.dart';
 import 'package:amber_flutter/features/kieu_lau/models/music_track.dart';
+import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
+import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
+import 'package:amber_flutter/features/kieu_lau/services/kieu_lau_api.dart';
 import 'package:amber_flutter/features/kieu_lau/services/music_api.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
+import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
+import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
 import 'package:amber_flutter/shared/providers/auth_provider.dart';
 import 'package:amber_flutter/shared/services/token_storage.dart';
 import 'package:dio/dio.dart';
@@ -36,6 +43,28 @@ class _FakeMusicApi extends MusicApi {
   Future<List<MusicTrack>> getTracks() async => const [];
 }
 
+class _FakeKieuLauApi extends KieuLauApi {
+  _FakeKieuLauApi() : super(Dio());
+
+  @override
+  Future<KieuLauNotifications> getNotifications() async => (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[]);
+}
+
+/// Popup Nghị Sự Đường: 1 cảnh báo âm quỹ + 1 routine chưa xong.
+class _FakeNsdApi extends NghiSuDuongApi {
+  _FakeNsdApi() : super(Dio());
+
+  @override
+  Future<FinanceOverview> getFinanceOverview({int? year}) async =>
+      const FinanceOverview(currentBalance: -1000, totalIncome: 0, totalExpense: 0);
+
+  @override
+  Future<DuAnSummary> getDuAnSummary() async => const DuAnSummary(projects: [], attention: []);
+
+  @override
+  Future<List<Routine>> getRoutines({String? date}) async => const [];
+}
+
 class _Auth extends AuthController {
   @override
   Future<AuthState> build() async => const Authenticated({'id': 'u', 'email': 'me@example.invalid'});
@@ -55,6 +84,8 @@ void main() {
       overrides: [
         worldApiProvider.overrideWithValue(api),
         musicApiProvider.overrideWithValue(_FakeMusicApi()),
+        kieuLauApiProvider.overrideWithValue(_FakeKieuLauApi()),
+        nghiSuDuongApiProvider.overrideWithValue(_FakeNsdApi()),
         brainStatusProvider.overrideWith(() => FixedBrainStatus()),
         authControllerProvider.overrideWith(_Auth.new),
       ],
@@ -63,6 +94,9 @@ void main() {
     bridge.receive(const WorldReady());
     await tester.pumpAndSettle();
     expect(api.summaries, 1, reason: 'cảnh sẵn sàng → nạp dữ liệu');
+    final notices = calls.where((c) => c.$1 == 'setTowerNotices').single.$2;
+    expect(notices.first, 'nghisu');
+    expect((notices.last as List).map((n) => (n as Map)['lvl']), ['bad'], reason: 'cùng nguồn với khung Cần chú ý: âm quỹ');
 
     bridge.receive(const WorldNavigate('/finance'));
     await tester.pumpAndSettle();
@@ -84,6 +118,8 @@ void main() {
       overrides: [
         worldApiProvider.overrideWithValue(_FakeWorldApi()),
         musicApiProvider.overrideWithValue(_FakeMusicApi()),
+        kieuLauApiProvider.overrideWithValue(_FakeKieuLauApi()),
+        nghiSuDuongApiProvider.overrideWithValue(_FakeNsdApi()),
         brainStatusProvider.overrideWith(() => FixedBrainStatus()),
         authControllerProvider.overrideWith(_Auth.new),
       ],

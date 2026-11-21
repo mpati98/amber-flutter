@@ -73,7 +73,7 @@ Future<_FakeApi> _pump(
         builder: (_, _) => const KieuLauScreen(),
         routes: [GoRoute(path: 'nhac', builder: (_, _) => const Scaffold(body: Text('ĐÍCH nhạc')))],
       ),
-      for (final p in ['/finance', '/tra-dinh', '/du-an', '/tang-kinh-cac/du-lieu-huan-luyen'])
+      for (final p in ['/nghi-su-duong', '/du-an', '/tra-dinh', '/tang-kinh-cac/du-lieu-huan-luyen'])
         GoRoute(path: p, builder: (_, _) => Scaffold(body: Text('ĐÍCH $p'))),
     ],
   );
@@ -199,7 +199,8 @@ void main() {
     expect(_rowTitles(tester), hasLength(5));
   });
 
-  for (final (i, path) in [(0, '/finance'), (2, '/tra-dinh'), (4, '/du-an')]) {
+  // Tài chính / Dự án mở thẳng màn Nghị Sự Đường (một màn) — /finance, /du-an cũ chỉ còn là redirect.
+  for (final (i, path) in [(0, '/nghi-su-duong'), (2, '/tra-dinh'), (4, '/nghi-su-duong')]) {
     testWidgets('bấm dòng nhật ký $i → $path', (tester) async {
       await _pump(tester);
       await tester.tap(find.byKey(ValueKey('kl-activity-$i')));

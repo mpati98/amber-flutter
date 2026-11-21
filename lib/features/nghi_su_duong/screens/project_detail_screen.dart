@@ -63,7 +63,7 @@ class _ProjectDetailScreenState extends ConsumerState<ProjectDetailScreen> {
 
     return DesignPage(
       title: project?.name ?? 'Dự án',
-      backFallback: '/du-an',
+      backFallback: '/nghi-su-duong',
       // Bảng việc nhiều cột và dòng thời gian cần cả bề ngang → luôn xếp dọc.
       stacked: true,
       onRefresh: () => Future.wait([

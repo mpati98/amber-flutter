@@ -1,35 +1,16 @@
 import 'dart:async';
 
-import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
-import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
-import 'package:amber_flutter/features/nghi_su_duong/services/finance_api.dart';
-import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
-import 'package:amber_flutter/features/nghi_su_duong/screens/project_detail_screen.dart';
-import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
-import 'package:amber_flutter/features/nghi_su_duong/widgets/attention_card.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/routines_card.dart';
-import 'package:amber_flutter/shared/providers/auth_provider.dart';
-import 'package:amber_flutter/shared/services/api_client.dart';
-import 'package:amber_flutter/shared/widgets/scroll_card.dart';
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 
-import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
-import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
-import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
 
 import 'detail_test_support.dart';
+import 'nsd_screen_support.dart';
 
-// Thẻ "Việc hằng ngày" và "Cần chú ý" trên màn Dự án. API giả.
-
-class _FakeAuth extends AuthController {
-  @override
-  Future<AuthState> build() async => const Authenticated({'name': 'Test'});
-}
+// Thẻ "Việc hằng ngày" (khung Hôm nay của màn Nghị Sự Đường). API giả. Cần chú ý: nghi_su_duong_screen_test.dart.
 
 DioException _badRequest(String code) {
   final req = RequestOptions(path: '/api/du-an/routines/x/logs/2026-10-08');
@@ -40,59 +21,18 @@ DioException _badRequest(String code) {
   );
 }
 
-Future<FakeApi> _pump(
-  WidgetTester tester, {
-  List<Routine> routines = const [],
-  List<AttentionItem> attention = const [],
-  List<Task> tasks = const [],
-  double width = 390,
-}) async {
-  final api = FakeApi(project: mkProject(), tasks: [...tasks])
-    ..routines = [...routines]
-    ..summaryAttention = [...attention];
-  tester.view.physicalSize = Size(width, 2400);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-  final router = GoRouter(
-    initialLocation: '/du-an',
-    routes: [
-      GoRoute(
-        path: '/du-an',
-        builder: (_, _) => const DuAnScreen(),
-        routes: [
-          GoRoute(
-            path: ':projectId',
-            builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['projectId']!, initialTaskId: s.uri.queryParameters['task']),
-          ),
-        ],
-      ),
-    ],
-  );
-  addTearDown(router.dispose);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        apiClientProvider.overrideWithValue(offlineDio()),
-        nghiSuDuongApiProvider.overrideWithValue(api),
-        financeApiProvider.overrideWithValue(FakeFinanceApi()),
-        authControllerProvider.overrideWith(_FakeAuth.new),
-        notificationsProvider.overrideWith((ref) async => (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[])),
-      ],
-      child: MaterialApp.router(theme: ThemeData.dark(), routerConfig: router),
-    ),
-  );
-  await tester.pumpAndSettle();
+/// Màn Nghị Sự Đường ở web rộng và cao: khung "Hôm nay" đủ chỗ cho mọi dòng việc hằng ngày.
+Future<FakeApi> _pump(WidgetTester tester, {List<Routine> routines = const []}) async {
+  final api = FakeApi(project: mkProject(), tasks: [])..routines = [...routines];
+  await pumpNsd(tester, api: api, size: const Size(1280, 2400));
   return api;
 }
 
 Finder _row(String id) => find.byKey(ValueKey('routine-$id'));
 Finder _checkbox(String id) => find.descendant(of: _row(id), matching: find.byType(Checkbox));
 bool _checked(WidgetTester t, String id) => t.widget<Checkbox>(_checkbox(id)).value!;
-Finder _top(Finder f) => find.descendant(of: find.byType(Dialog).last, matching: f);
 Finder _saveButton() => find.byType(FilledButton).last;
 
-AttentionItem _att(String taskId, String title, {String kind = 'OVERDUE', int days = 3, String status = 'PREP'}) =>
-    AttentionItem(taskId: taskId, title: title, status: status, projectId: 'p1', projectName: 'Sự kiện tháng 11', kind: kind, days: days);
 
 void main() {
   group('hàm thuần', () {
@@ -122,9 +62,6 @@ void main() {
       expect(mkRoutine('z', 'Z').withDoneToday(false).streak, 0, reason: 'không âm');
     });
 
-    test('attentionLocation: mở dự án kèm id việc', () {
-      expect(attentionLocation(_att('t9', 'x')), '/du-an/p1?task=t9');
-    });
   });
 
   group('thẻ Việc hằng ngày', () {
@@ -335,73 +272,6 @@ void main() {
       api.routineGate!.complete();
       await tester.pumpAndSettle();
       expect(api.routineCreates, hasLength(1));
-    });
-  });
-
-  group('thẻ Cần chú ý', () {
-    testWidgets('hiện tên việc, "dự án · trạng thái", nhãn cảnh báo, số lượng', (tester) async {
-      await _pump(tester, attention: [_att('t1', 'Soạn kế hoạch', days: 15), _att('t2', 'Chốt địa điểm', kind: 'IDLE', days: 6, status: 'IN_PROGRESS')]);
-      expect(find.text('Cần chú ý'), findsOneWidget);
-      expect(find.text('2 việc'), findsOneWidget);
-      expect(find.text('Soạn kế hoạch'), findsOneWidget);
-      expect(find.text('Sự kiện tháng 11 · Chờ'), findsOneWidget);
-      expect(find.text('Sự kiện tháng 11 · Đang làm'), findsOneWidget);
-      expect(find.text('Quá hạn 15 ngày'), findsOneWidget);
-      expect(find.text('Nằm im 6 ngày'), findsOneWidget);
-    });
-
-    testWidgets('trống → "Không có việc nào cần chú ý."', (tester) async {
-      await _pump(tester);
-      expect(find.text('Không có việc nào cần chú ý.'), findsOneWidget);
-      expect(find.text('0 việc'), findsOneWidget);
-    });
-
-    testWidgets('chạm một mục → mở màn dự án và trang chi tiết đúng việc', (tester) async {
-      await _pump(tester, attention: [_att('t2', 'Việc hai')], tasks: [mkTask('t1', 'Việc một', TaskStatus.prep), mkTask('t2', 'Việc hai', TaskStatus.prep)]);
-      await tester.tap(find.byKey(const ValueKey('attention-t2')));
-      await tester.pumpAndSettle();
-      expect(find.byType(ProjectDetailScreen), findsOneWidget);
-      expect(find.widgetWithText(AppBar, 'Chi tiết việc'), findsOneWidget);
-      expect(_top(find.text('Việc hai')), findsOneWidget);
-      expect(_top(find.text('Việc một')), findsNothing);
-    });
-
-    testWidgets('việc không còn tồn tại → chỉ mở màn dự án', (tester) async {
-      await _pump(tester, attention: [_att('gone', 'Đã xoá')], tasks: [mkTask('t1', 'Việc một', TaskStatus.prep)]);
-      await tester.tap(find.byKey(const ValueKey('attention-gone')));
-      await tester.pumpAndSettle();
-      expect(find.byType(ProjectDetailScreen), findsOneWidget);
-      expect(find.text('Chi tiết việc'), findsNothing);
-      expect(find.byType(Dialog), findsNothing);
-    });
-  });
-
-  group('bố cục', () {
-    final routines = [mkRoutine('a', 'Một việc hằng ngày có tên khá dài để thử xuống dòng', weekdays: const [1, 2, 3, 4, 5, 6], streak: 12, done: {1, 2, 3, 4, 5, 6})];
-    final attention = [_att('t1', 'Một việc quá hạn có tên cũng khá dài để thử cắt hai dòng thôi nhé', days: 120)];
-
-    testWidgets('390: xếp dọc, "Việc hằng ngày" trước "Cần chú ý"; không tràn', (tester) async {
-      await _pump(tester, routines: routines, attention: attention);
-      expect(tester.takeException(), isNull);
-      final r = tester.getTopLeft(find.text('Việc hằng ngày'));
-      final a = tester.getTopLeft(find.text('Cần chú ý'));
-      expect(a.dy, greaterThan(r.dy));
-      expect(a.dx, r.dx);
-    });
-
-    testWidgets('1200: hai thẻ cạnh nhau; không tràn', (tester) async {
-      await _pump(tester, routines: routines, attention: attention, width: 1200);
-      expect(tester.takeException(), isNull);
-      Offset cardOf(String title) => tester.getTopLeft(find.ancestor(of: find.text(title), matching: find.byType(ScrollCard)).first);
-      final r = cardOf('Việc hằng ngày');
-      final a = cardOf('Cần chú ý');
-      expect(a.dy, r.dy, reason: 'cùng hàng');
-      expect(a.dx, greaterThan(r.dx + 200));
-    });
-
-    testWidgets('khu "Dự án" vẫn nằm bên dưới', (tester) async {
-      await _pump(tester, routines: routines, attention: attention);
-      expect(tester.getTopLeft(find.text('+ Thêm dự án')).dy, greaterThan(tester.getTopLeft(find.text('Cần chú ý')).dy));
     });
   });
 }

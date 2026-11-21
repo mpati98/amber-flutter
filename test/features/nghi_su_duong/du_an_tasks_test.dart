@@ -1,25 +1,18 @@
 import 'dart:async';
 
-import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
-import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
-import 'package:amber_flutter/features/kieu_lau/providers/kieu_lau_provider.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_detail.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/task.dart';
-import 'package:amber_flutter/features/nghi_su_duong/screens/du_an_screen.dart';
-import 'package:amber_flutter/features/nghi_su_duong/screens/project_detail_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
-import 'package:amber_flutter/shared/providers/auth_provider.dart';
-import 'package:amber_flutter/shared/services/api_client.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
+
+import 'nsd_screen_support.dart';
 
 // Form Thêm dự án + body các lệnh gọi việc. API giả, không request
 // thật: mọi request còn sót tới Dio bị chặn và đếm.
@@ -144,58 +137,10 @@ class _FakeApi extends NghiSuDuongApi {
   }
 }
 
-class _FakeAuth extends AuthController {
-  @override
-  Future<AuthState> build() async => const Authenticated({'name': 'Test'});
-}
-
 class _Harness {
   final api = _FakeApi();
-  int notificationFetches = 0;
 
-  Future<void> pump(WidgetTester tester, {String location = '/du-an'}) async {
-    tester.view.physicalSize = const Size(430, 1400);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final router = GoRouter(
-      initialLocation: location,
-      routes: [
-        GoRoute(
-          path: '/du-an',
-          builder: (_, _) => const DuAnScreen(),
-          routes: [
-            GoRoute(path: ':projectId', builder: (_, s) => ProjectDetailScreen(projectId: s.pathParameters['projectId']!)),
-          ],
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          apiClientProvider.overrideWithValue(_offlineDio()),
-          nghiSuDuongApiProvider.overrideWithValue(api),
-          authControllerProvider.overrideWith(_FakeAuth.new),
-          notificationsProvider.overrideWith((ref) async {
-            notificationFetches++;
-            return (alerts: const <Alert>[], recentActivity: const <ActivityLogEntry>[]);
-          }),
-        ],
-        child: MaterialApp.router(
-          theme: ThemeData.dark(),
-          routerConfig: router,
-          // Như app thật: Dư Đồ (dưới cùng ngăn xếp) luôn nghe thông báo cho badge.
-          builder: (context, child) => Consumer(
-            builder: (context, ref, _) {
-              ref.watch(notificationsProvider);
-              return child!;
-            },
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-  }
+  Future<void> pump(WidgetTester tester) => pumpNsd(tester, api: api);
 }
 
 
@@ -204,7 +149,7 @@ void main() {
     testWidgets('Thêm dự án: Dialog toàn màn hình; X đóng không tạo; Tạo thì tạo và tải lại summary', (tester) async {
       final h = _Harness();
       await h.pump(tester);
-      await tester.tap(find.text('+ Thêm dự án'));
+      await tester.tap(find.byKey(const ValueKey('add-project')));
       await tester.pumpAndSettle();
       expect(find.byType(Dialog), findsOneWidget);
       expect(find.widgetWithText(AppBar, 'Thêm dự án'), findsOneWidget);
@@ -213,7 +158,7 @@ void main() {
       expect(h.api.projectCreates, 0);
 
       final summary = h.api.summaryFetches;
-      await tester.tap(find.text('+ Thêm dự án'));
+      await tester.tap(find.byKey(const ValueKey('add-project')));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextField, 'Tên dự án'), '  Dự án mới ');
       await tester.enterText(find.widgetWithText(TextField, 'Mục tiêu'), 'Ra mắt sản phẩm');

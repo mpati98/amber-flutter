@@ -57,16 +57,6 @@ class RoutinesNotifier extends AsyncNotifier<List<Routine>> {
 
 final routinesProvider = AsyncNotifierProvider.autoDispose<RoutinesNotifier, List<Routine>>(RoutinesNotifier.new);
 
-/// Bộ lọc trạng thái ở khu "Dự án" của màn Dự án (mặc định Đang triển khai).
-class DuAnFilterNotifier extends Notifier<ProjectStatus> {
-  @override
-  ProjectStatus build() => ProjectStatus.active;
-
-  void select(ProjectStatus status) => state = status;
-}
-
-final duAnFilterProvider = NotifierProvider.autoDispose<DuAnFilterNotifier, ProjectStatus>(DuAnFilterNotifier.new);
-
 final financeOverviewProvider = FutureProvider.autoDispose<FinanceOverview>(
   (ref) => ref.watch(nghiSuDuongApiProvider).getFinanceOverview(),
 );

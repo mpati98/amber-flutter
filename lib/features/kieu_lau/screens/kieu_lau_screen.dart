@@ -32,10 +32,10 @@ const _filters = [
 
 /// Giá trị `source` thật của activity_logs (xem logActivity bên amber-v4) → chữ Hán + màn mở khi bấm (null = không mở gì).
 const _sources = <String, (String, String?)>{
-  'FINANCE': ('財', '/finance'),
+  'FINANCE': ('財', '/nghi-su-duong'),
   'TRA_DINH': ('學', '/tra-dinh'),
   'LEARN': ('訓', '/tang-kinh-cac/du-lieu-huan-luyen'), // nhật ký sửa đáp án amber-brain
-  'DU_AN': ('案', '/du-an'),
+  'DU_AN': ('案', '/nghi-su-duong'),
   'MUSIC': ('樂', '/kieu-lau/nhac'),
   'KIEU_LAU': ('樓', null),
 };

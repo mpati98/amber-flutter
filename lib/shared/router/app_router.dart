@@ -9,9 +9,7 @@ import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/sinh_luc/screens/sinh_luc_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
 import '../../features/kieu_lau/screens/music_screen.dart';
-import '../../features/nghi_su_duong/screens/du_an_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
-import '../../features/nghi_su_duong/screens/finance_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_plan_detail_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_plan_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_schedule_screen.dart';
@@ -120,6 +118,10 @@ String? traDinhLegacyTabRedirect(Uri uri) {
   };
 }
 
+/// Màn trung gian cũ của Nghị Sự Đường (/du-an, /finance) → màn chính /nghi-su-duong. Chỉ đúng hai đường dẫn đó:
+/// chi tiết (/du-an/:id, /finance/:id) là route riêng nên không đi qua đây.
+String? nsdLegacyRedirect(BuildContext _, GoRouterState state) => '/nghi-su-duong';
+
 /// Tạo 1 lần cho cả app — KHÔNG watch authControllerProvider ở đây (dựng lại
 /// GoRouter sẽ mất toàn bộ stack điều hướng). Đổi trạng thái đăng nhập chỉ
 /// kích hoạt chạy lại redirect qua [GoRouter.refreshListenable].
@@ -179,32 +181,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/nghi-su-duong',
         builder: (_, _) => const NghiSuDuongScreen(),
       ),
-      // 3 mảng của Nghị Sự Đường nằm ở CẤP GỐC như web, không dưới /nghi-su-duong.
+      // Nghị Sự Đường là MỘT màn (/nghi-su-duong). Hai màn trung gian cũ — /du-an ("Việc & dự án") và /finance
+      // ("Tài chính cá nhân") — đã gộp vào đó; giữ route để link cũ (alert.href của backend, cảnh 3D bản cũ) không gãy.
+      // Chi tiết dự án / tháng vẫn ở đường dẫn cũ, khai báo cấp gốc để không kéo màn cha (đã bỏ) vào stack.
+      GoRoute(path: '/du-an', redirect: nsdLegacyRedirect),
       GoRoute(
-        path: '/du-an',
-        builder: (_, _) => const DuAnScreen(),
-        routes: [
-          GoRoute(
-            path: ':projectId',
-            builder: (_, state) => ProjectDetailScreen(
-              projectId: state.pathParameters['projectId']!,
-              // ?task=<id>: tự mở trang chi tiết của việc đó (từ thẻ "Cần chú ý").
-              initialTaskId: state.uri.queryParameters['task'],
-            ),
-          ),
-        ],
+        path: '/du-an/:projectId',
+        builder: (_, state) => ProjectDetailScreen(
+          projectId: state.pathParameters['projectId']!,
+          // ?task=<id>: tự mở trang chi tiết của việc đó (từ khung "Cần chú ý").
+          initialTaskId: state.uri.queryParameters['task'],
+        ),
       ),
+      GoRoute(path: '/finance', redirect: nsdLegacyRedirect),
       GoRoute(
-        path: '/finance',
-        builder: (_, _) => const FinanceScreen(),
-        routes: [
-          GoRoute(
-            path: ':projectId',
-            builder: (_, state) => FinanceMonthScreen(
-              projectId: state.pathParameters['projectId']!,
-            ),
-          ),
-        ],
+        path: '/finance/:projectId',
+        builder: (_, state) => FinanceMonthScreen(projectId: state.pathParameters['projectId']!),
       ),
       // Học tập ở Nghị Sự Đường (kế hoạch): cấp gốc như /du-an, /finance. Màn đích đều là màn Trà Đình.
       GoRoute(

@@ -6,7 +6,6 @@ import '../../../shared/utils/date_format.dart';
 import '../../../shared/utils/vn_time.dart';
 import '../../../shared/widgets/form_bits.dart';
 import '../models/project.dart';
-import '../models/project_summary.dart';
 import '../providers/nghi_su_duong_provider.dart';
 import '../services/nghi_su_duong_api.dart';
 
@@ -86,7 +85,6 @@ class _NewProjectModalState extends ConsumerState<NewProjectModal> {
       // Trang chính Nghị Sự Đường và màn Dự án đều đọc các provider này.
       ref.invalidate(duAnOverviewProvider);
       ref.invalidate(duAnSummaryProvider);
-      ref.read(duAnFilterProvider.notifier).select(ProjectStatus.active);
       if (mounted) Navigator.of(context).pop();
     } on DioException catch (e) {
       if (!mounted) return;

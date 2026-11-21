@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:amber_flutter/features/auth/screens/login_screen.dart';
 import 'package:amber_flutter/features/du_do/screens/du_do_screen.dart';
@@ -13,6 +15,10 @@ import 'package:amber_flutter/shared/services/token_storage.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:amber_flutter/features/nghi_su_duong/screens/finance_month_screen.dart';
+import 'package:amber_flutter/features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
+import 'package:amber_flutter/shared/services/api_client.dart';
+import '../../features/nghi_su_duong/detail_test_support.dart' show offlineDio;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -249,6 +255,33 @@ void main() {
       expect(routePath('/hoc-tap/lich?view=month&date=2026-10-15'), 'lich');
       expect(routePath('/hoc-tap/thong-ke'), 'thong-ke');
       expect(routePath('/hoc-tap/thong-ke?range=7&subject=all'), 'thong-ke');
+    });
+
+    testWidgets('Nghị Sự Đường một màn: /du-an và /finance cũ redirect về /nghi-su-duong; chi tiết dự án / tháng giữ route', (tester) async {
+      // Mọi request của màn bị chặn ngay (màn tự hiện lỗi từng khung) — chỉ kiểm điều hướng.
+      final c = await pumpApp(tester, token: 'saved-access', extra: [apiClientProvider.overrideWithValue(offlineDio())]);
+      final router = c.read(routerProvider);
+      for (final old in ['/du-an', '/finance']) {
+        router.go(old);
+        await tester.pumpAndSettle();
+        expect(location(c), '/nghi-su-duong', reason: old);
+        expect(find.byType(NghiSuDuongScreen), findsOneWidget, reason: old);
+      }
+      // push (vd alert.href của Kiều Lâu) cũng đi qua redirect.
+      router.go('/');
+      await tester.pumpAndSettle();
+      unawaited(router.push('/du-an'));
+      await tester.pumpAndSettle();
+      expect(find.byType(NghiSuDuongScreen), findsOneWidget);
+
+      String? routePath(String l) => router.configuration.findMatch(Uri.parse(l)).last.route.path;
+      expect(routePath('/du-an/p1'), '/du-an/:projectId');
+      expect(routePath('/du-an/p1?task=t1'), '/du-an/:projectId');
+      expect(routePath('/finance/m11'), '/finance/:projectId');
+      router.go('/finance/m11');
+      await tester.pumpAndSettle();
+      expect(location(c), '/finance/m11');
+      expect(find.byType(FinanceMonthScreen), findsOneWidget);
     });
 
     test('liên kết cũ /tra-dinh?tab=… được chuyển hướng', () {

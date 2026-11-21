@@ -8,6 +8,9 @@ import '../../../shared/theme/design_tokens.dart';
 import '../../amber_brain/widgets/amber_chat_dock.dart';
 import '../../auth/widgets/account_menu.dart';
 import '../../kieu_lau/services/music_api.dart';
+import '../../kieu_lau/services/kieu_lau_api.dart';
+import '../../nghi_su_duong/services/nghi_su_duong_api.dart';
+import '../../nghi_su_duong/utils/nsd_notices.dart';
 import '../world/world_api.dart';
 import '../world/world_bridge.dart';
 import '../world/world_feeder.dart';
@@ -40,6 +43,7 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
     bridge: _bridge,
     api: ref.read(worldApiProvider),
     loadTracks: () => ref.read(musicApiProvider).getTracks(),
+    loadNsdNotices: () => fetchNsdNotices(kieuLau: ref.read(kieuLauApiProvider), nsd: ref.read(nghiSuDuongApiProvider)),
   );
   late final AppLifecycleListener _life;
   StreamSubscription<WorldEvent>? _sub;

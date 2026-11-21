@@ -1,11 +1,18 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../kieu_lau/models/music_track.dart';
+import '../../nghi_su_duong/utils/nsd_notices.dart';
 import 'world_api.dart';
 import 'world_bridge.dart';
 
 /// Mốc nhật ký hoạt động đã đẩy vào cảnh (con trỏ của backend, có micro giây).
 const worldCursorPrefKey = 'world.cursor';
+
+/// Quá lâu thì bỏ phần cảnh báo Nghị Sự Đường của lần nạp này (lần sau thử lại).
+const nsdNoticesTimeout = Duration(seconds: 15);
+
+/// Số dòng cảnh báo tối đa trên popup một tòa của cảnh.
+const maxTowerNotices = 3;
 
 /// Nhiều hơn số này thì gộp phần cũ thành một dòng, tránh dội hàng loạt toast + cầu sáng.
 const maxWorldEvents = 6;
@@ -13,12 +20,15 @@ const maxWorldEvents = 6;
 /// Nạp dữ liệu thật vào cảnh 3D — gọi khi có "trigger" (cảnh sẵn sàng, quay lại màn chủ, app trở lại foreground), không polling.
 /// Mỗi phần lỗi riêng thì bỏ qua phần đó: cảnh vẫn chạy với phần còn lại.
 class WorldFeeder {
-  WorldFeeder({required this.bridge, required this.api, required this.loadTracks, this.prefs});
+  WorldFeeder({required this.bridge, required this.api, required this.loadTracks, this.prefs, this.loadNsdNotices});
 
   final WorldBridge bridge;
   final WorldApi api;
   final Future<List<MusicTrack>> Function() loadTracks;
   final Future<SharedPreferences> Function()? prefs;
+
+  /// Cảnh báo của Nghị Sự Đường (cùng nguồn với khung "Cần chú ý" — `fetchNsdNotices`) cho popup của tòa trong cảnh.
+  final Future<List<NsdNotice>> Function()? loadNsdNotices;
 
   bool _busy = false;
 
@@ -26,7 +36,7 @@ class WorldFeeder {
     if (_busy) return;
     _busy = true;
     try {
-      await Future.wait([_summary(), _weather(), _music()]);
+      await Future.wait([_summary(), _weather(), _music(), _nsd()]);
     } finally {
       _busy = false;
     }
@@ -52,6 +62,20 @@ class WorldFeeder {
     try {
       final w = await api.getWeather();
       if (w['code'] != null) bridge.call('setWeather', [w]);
+    } catch (_) {}
+  }
+
+  /// Popup Nghị Sự Đường chỉ hiện tối đa [maxTowerNotices] dòng; gửi cả danh sách rỗng để cảnh hiện "Mọi thứ ổn".
+  Future<void> _nsd() async {
+    final load = loadNsdNotices;
+    if (load == null) return;
+    try {
+      // Có giới hạn thời gian: 4 request gộp lại, một cái treo không được giữ cờ _busy (chặn mọi lần nạp sau).
+      final notices = await load().timeout(nsdNoticesTimeout);
+      bridge.call('setTowerNotices', [
+        'nghisu',
+        [for (final n in notices.take(maxTowerNotices)) n.toWorld()],
+      ]);
     } catch (_) {}
   }
 
