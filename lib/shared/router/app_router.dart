@@ -3,29 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/screens/login_screen.dart';
-import '../../features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
-import '../../features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/sinh_luc/screens/sinh_luc_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
 import '../../features/kieu_lau/screens/music_screen.dart';
-import '../../features/nghi_su_duong/screens/du_an_screen.dart';
 import '../../features/nghi_su_duong/screens/finance_month_screen.dart';
-import '../../features/nghi_su_duong/screens/finance_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_plan_detail_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_plan_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_schedule_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_stats_screen.dart';
 import '../../features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
 import '../../features/nghi_su_duong/screens/project_detail_screen.dart';
-import '../../features/tang_kinh_cac/screens/ke_hoach_doc_screen.dart';
-import '../../features/tang_kinh_cac/screens/sach_screen.dart';
-import '../../features/tang_kinh_cac/screens/tai_lieu_screen.dart';
 import '../../features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
 import '../../features/tra_dinh/hoc_tap/models/study_enums.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_import_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_insights_screen.dart';
-import '../../features/tra_dinh/hoc_tap/screens/card_library_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_review_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart'
     as hoc_tap;
@@ -120,6 +112,17 @@ String? traDinhLegacyTabRedirect(Uri uri) {
   };
 }
 
+/// Màn danh sách riêng từng tầng cũ của Tàng Kinh Các → tầng tương ứng trên màn chính (3 tầng: Kế hoạch đọc nằm ở tầng Sách).
+const tkcLegacyFloors = [('sach', 1), ('tai-lieu', 2), ('ke-hoach-doc', 1), ('du-lieu-huan-luyen', tkcTrainingFloor)];
+
+/// Màn trung gian cũ của Nghị Sự Đường (/du-an, /finance) → màn chính /nghi-su-duong. Chỉ đúng hai đường dẫn đó:
+/// chi tiết (/du-an/:id, /finance/:id) là route riêng nên không đi qua đây.
+String? nsdLegacyRedirect(BuildContext _, GoRouterState state) => '/nghi-su-duong';
+
+/// Khung Kho thẻ của Trà Đình (`?kho=1`: điện thoại mở sẵn tab Kho thẻ) cho môn [subjectId] (null = môn đang chọn).
+String traDinhCardsLocation(String? subjectId) =>
+    Uri(path: '/tra-dinh', queryParameters: {'kho': '1', 'subjectId': ?subjectId}).toString();
+
 /// Tạo 1 lần cho cả app — KHÔNG watch authControllerProvider ở đây (dựng lại
 /// GoRouter sẽ mất toàn bộ stack điều hướng). Đổi trạng thái đăng nhập chỉ
 /// kích hoạt chạy lại redirect qua [GoRouter.refreshListenable].
@@ -150,28 +153,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const KieuLauScreen(),
         routes: [GoRoute(path: 'nhac', builder: (_, _) => const MusicScreen())],
       ),
+      // Tàng Kinh Các là MỘT màn: tầng + mục ở query (?tang=1..3&id=). Các màn danh sách riêng từng tầng và chi tiết
+      // nhật ký huấn luyện cũ đã gộp vào đó; route cũ chỉ còn redirect để link cũ không gãy.
       GoRoute(
         path: '/tang-kinh-cac',
-        builder: (_, _) => const TangKinhCacScreen(),
+        // ?tang=4 (khi còn 4 tầng) → ?tang=3.
+        redirect: (_, state) => tkcLegacyQueryRedirect(state.uri),
+        builder: (_, state) => TangKinhCacScreen(
+          tang: tkcFloorOf(state.uri.queryParameters['tang']),
+          id: state.uri.queryParameters['id'],
+        ),
         routes: [
-          GoRoute(path: 'sach', builder: (_, _) => const SachScreen()),
-          GoRoute(path: 'tai-lieu', builder: (_, _) => const TaiLieuScreen()),
+          for (final (path, tang) in tkcLegacyFloors) GoRoute(path: path, redirect: (_, _) => tkcLocation(tang)),
           GoRoute(
-            path: 'ke-hoach-doc',
-            builder: (_, _) => const KeHoachDocScreen(),
-          ),
-          // Nhật ký lượt gọi mô hình của amber-brain (dataset fine-tune): tách riêng khỏi sách/tài liệu.
-          GoRoute(
-            path: 'du-lieu-huan-luyen',
-            builder: (_, _) => const TrainingLogsScreen(),
-            routes: [
-              GoRoute(
-                path: ':logId',
-                builder: (_, state) => TrainingLogDetailScreen(
-                  logId: state.pathParameters['logId']!,
-                ),
-              ),
-            ],
+            path: 'du-lieu-huan-luyen/:logId',
+            redirect: (_, state) => tkcLocation(tkcTrainingFloor, id: state.pathParameters['logId']),
           ),
         ],
       ),
@@ -179,32 +175,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/nghi-su-duong',
         builder: (_, _) => const NghiSuDuongScreen(),
       ),
-      // 3 mảng của Nghị Sự Đường nằm ở CẤP GỐC như web, không dưới /nghi-su-duong.
+      // Nghị Sự Đường là MỘT màn (/nghi-su-duong). Hai màn trung gian cũ — /du-an ("Việc & dự án") và /finance
+      // ("Tài chính cá nhân") — đã gộp vào đó; giữ route để link cũ (alert.href của backend, cảnh 3D bản cũ) không gãy.
+      // Chi tiết dự án / tháng vẫn ở đường dẫn cũ, khai báo cấp gốc để không kéo màn cha (đã bỏ) vào stack.
+      GoRoute(path: '/du-an', redirect: nsdLegacyRedirect),
       GoRoute(
-        path: '/du-an',
-        builder: (_, _) => const DuAnScreen(),
-        routes: [
-          GoRoute(
-            path: ':projectId',
-            builder: (_, state) => ProjectDetailScreen(
-              projectId: state.pathParameters['projectId']!,
-              // ?task=<id>: tự mở trang chi tiết của việc đó (từ thẻ "Cần chú ý").
-              initialTaskId: state.uri.queryParameters['task'],
-            ),
-          ),
-        ],
+        path: '/du-an/:projectId',
+        builder: (_, state) => ProjectDetailScreen(
+          projectId: state.pathParameters['projectId']!,
+          // ?task=<id>: tự mở trang chi tiết của việc đó (từ khung "Cần chú ý").
+          initialTaskId: state.uri.queryParameters['task'],
+        ),
       ),
+      GoRoute(path: '/finance', redirect: nsdLegacyRedirect),
       GoRoute(
-        path: '/finance',
-        builder: (_, _) => const FinanceScreen(),
-        routes: [
-          GoRoute(
-            path: ':projectId',
-            builder: (_, state) => FinanceMonthScreen(
-              projectId: state.pathParameters['projectId']!,
-            ),
-          ),
-        ],
+        path: '/finance/:projectId',
+        builder: (_, state) => FinanceMonthScreen(projectId: state.pathParameters['projectId']!),
       ),
       // Học tập ở Nghị Sự Đường (kế hoạch): cấp gốc như /du-an, /finance. Màn đích đều là màn Trà Đình.
       GoRoute(
@@ -229,6 +215,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => TraDinhHocTapScreen(
           openLog: state.uri.queryParameters['openLog'] == '1',
           subjectId: state.uri.queryParameters['subjectId'],
+          cards: state.uri.queryParameters['kho'] == '1',
         ),
         routes: [
           // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.
@@ -270,11 +257,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               subjectId: state.uri.queryParameters['subjectId'],
             ),
           ),
-          // Kho thẻ từ vựng: hai route tĩnh, đứng trước ':sessionId'.
-          GoRoute(
-            path: 'hoc-tap/the',
-            builder: (_, state) => CardLibraryScreen(subjectId: state.uri.queryParameters['subjectId']),
-          ),
+          // Kho thẻ từ vựng: route tĩnh, đứng trước ':sessionId'. Màn danh sách Kho thẻ riêng đã gộp vào khung "Kho thẻ"
+          // của /tra-dinh — route cũ chỉ còn redirect (giữ môn).
+          GoRoute(path: 'hoc-tap/the', redirect: (_, state) => traDinhCardsLocation(state.uri.queryParameters['subjectId'])),
           GoRoute(
             path: 'hoc-tap/the/on',
             builder: (_, state) => CardReviewScreen(subjectId: state.uri.queryParameters['subjectId']),

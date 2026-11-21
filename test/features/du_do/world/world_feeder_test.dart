@@ -4,6 +4,7 @@ import 'package:amber_flutter/features/du_do/world/world_feeder.dart';
 import 'package:amber_flutter/features/kieu_lau/models/music_track.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:amber_flutter/features/nghi_su_duong/utils/nsd_notices.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeWorldApi extends WorldApi {
@@ -97,5 +98,40 @@ void main() {
     expect(picked.first['text'], contains('4 hoạt động khác'));
     expect(picked.last['text'], 'việc 9');
     expect(pickEvents(many.sublist(0, 3)).length, 3);
+  });
+
+  test('popup tòa: setTowerNotices(id, tối đa 3 dòng {text, lvl}) cho từng tòa; rỗng vẫn gửi ("Mọi thứ ổn"); tòa lỗi thì chỉ bỏ tòa đó', () async {
+    SharedPreferences.setMockInitialValues({});
+    final nsd = [for (var i = 0; i < 5; i++) NsdNotice(id: 'n$i', title: 'Cảnh báo $i', level: i == 0 ? NsdNoticeLevel.bad : NsdNoticeLevel.warn)];
+    await WorldFeeder(
+      bridge: bridge,
+      api: _FakeWorldApi(),
+      loadTracks: () async => [],
+      towerNotices: {
+        'nghisu': () async => [for (final n in nsd) n.toWorld()],
+        'tangkinh': () async => const [],
+      },
+    ).refresh();
+    final sent = {for (final c in calls.where((c) => c.$1 == 'setTowerNotices')) c.$2.first: c.$2.last};
+    expect(sent['nghisu'], [
+      {'text': 'Cảnh báo 0', 'lvl': 'bad'},
+      {'text': 'Cảnh báo 1', 'lvl': 'warn'},
+      {'text': 'Cảnh báo 2', 'lvl': 'warn'},
+    ]);
+    expect(sent['tangkinh'], <Object?>[]);
+
+    calls.clear();
+    await WorldFeeder(
+      bridge: bridge,
+      api: _FakeWorldApi(),
+      loadTracks: () async => [],
+      towerNotices: {
+        'nghisu': () async => throw Exception('x'),
+        'tangkinh': () async => [
+          {'text': '2 mục mới tuần này', 'lvl': 'ok'},
+        ],
+      },
+    ).refresh();
+    expect(calls.where((c) => c.$1 == 'setTowerNotices').map((c) => c.$2.first), ['tangkinh']);
   });
 }

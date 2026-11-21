@@ -8,6 +8,16 @@ import '../../../shared/theme/design_tokens.dart';
 import '../../amber_brain/widgets/amber_chat_dock.dart';
 import '../../auth/widgets/account_menu.dart';
 import '../../kieu_lau/services/music_api.dart';
+import '../../kieu_lau/services/kieu_lau_api.dart';
+import '../../kieu_lau/utils/kieu_lau_notices.dart';
+import '../../nghi_su_duong/services/nghi_su_duong_api.dart';
+import '../../nghi_su_duong/utils/nsd_notices.dart';
+import '../../tang_kinh_cac/services/document_api.dart';
+import '../../tang_kinh_cac/services/publication_api.dart';
+import '../../tang_kinh_cac/services/reading_goal_api.dart';
+import '../../tang_kinh_cac/utils/tkc_notices.dart';
+import '../../tra_dinh/hoc_tap/services/hoc_tap_api.dart';
+import '../../tra_dinh/hoc_tap/utils/tra_dinh_notices.dart';
 import '../world/world_api.dart';
 import '../world/world_bridge.dart';
 import '../world/world_feeder.dart';
@@ -15,7 +25,12 @@ import '../world/world_view.dart';
 
 /// Màn chủ dạng 3D: cảnh Âm Dương Giới phủ kín (HUD, nhạc, thời tiết nằm trong cảnh).
 /// Góc trái dưới (góc trống của cảnh): nút chat Amber, logo mở menu tài khoản, nút về lưới 2D.
-/// Bảng chi tiết công trình trên màn hẹp (< 760, khớp CSS của cảnh) trải hết đáy → ẩn các nút này khi bảng mở.
+/// Bề ngang (px CSS) từ đó popup của cảnh là thẻ góc phải dưới thay vì trải hết đáy — trùng `@media(min-width:800px)` ở
+/// amber-world `src/ui/styles.css`. 800 để khung chat mở (rộng 360 từ lề 20) không chạm thẻ popup (rộng 380, lề phải 16).
+const worldSheetCardMinWidth = 800.0;
+
+/// Popup công trình trên màn hẹp (< [worldSheetCardMinWidth], khớp CSS của cảnh) trải hết đáy → ẩn các nút này (và đóng khung chat)
+/// khi popup mở. Từ mốc đó popup là thẻ rộng 380 ở góc phải, không chạm nút / khung chat ở góc trái.
 class WorldHome extends ConsumerStatefulWidget {
   const WorldHome({super.key, required this.onSwitchTo2D, this.onFallback, this.retry = false, this.bridge});
 
@@ -40,6 +55,18 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
     bridge: _bridge,
     api: ref.read(worldApiProvider),
     loadTracks: () => ref.read(musicApiProvider).getTracks(),
+    towerNotices: {
+      'nghisu': () async => [
+        for (final n in await fetchNsdNotices(kieuLau: ref.read(kieuLauApiProvider), nsd: ref.read(nghiSuDuongApiProvider))) n.toWorld(),
+      ],
+      'kieulau': () => fetchKieuLauNotices(ref.read(kieuLauApiProvider)),
+      'tradinh': () => fetchTraDinhNotices(ref.read(hocTapApiProvider)),
+      'tangkinh': () => fetchTkcNotices(
+        publications: ref.read(publicationApiProvider),
+        documents: ref.read(documentApiProvider),
+        goals: ref.read(readingGoalApiProvider),
+      ),
+    },
   );
   late final AppLifecycleListener _life;
   StreamSubscription<WorldEvent>? _sub;
@@ -101,7 +128,7 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
       backgroundColor: const Color(0xFF0D1426),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final hideControls = _sheetOpen && constraints.maxWidth < 760;
+          final hideControls = _sheetOpen && constraints.maxWidth < worldSheetCardMinWidth;
           final edge = constraints.maxWidth >= DesignLayout.medium ? 20.0 : 12.0;
           final bottomInset = MediaQuery.paddingOf(context).bottom;
           return AmberChatDock(

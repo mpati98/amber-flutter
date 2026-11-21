@@ -2,7 +2,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_enums.dart'
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/log_sheet.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/schedule_day_row.dart';
 import 'package:amber_flutter/shared/utils/vn_time.dart';
@@ -101,7 +101,7 @@ void main() {
 
   testWidgets('"Việc hôm nay": buổi đã ghi hiện "Luyện AI · …", bấm → sheet sửa của buổi luyện AI', (tester) async {
     api.logs = [practiceLog()];
-    await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
+    await pumpHocTap(tester, const TraDinhHocTapScreen(), api: api);
     expect(find.descendant(of: _k('today-log-prac-1'), matching: find.text('Luyện AI')), findsOneWidget);
     expect(find.descendant(of: _k('today-log-prac-1'), matching: find.text('15p')), findsOneWidget);
     await tester.tap(_k('today-log-prac-1'));

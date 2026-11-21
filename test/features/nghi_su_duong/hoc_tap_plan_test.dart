@@ -4,7 +4,6 @@ import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/providers/nghi_su_duong_provider.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/hoc_tap_plan_detail_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/screens/hoc_tap_plan_screen.dart';
-import 'package:amber_flutter/features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
 import 'package:amber_flutter/features/nghi_su_duong/widgets/plan_widgets.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
@@ -14,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import '../tra_dinh/hoc_tap/hoc_tap_test_support.dart';
+import 'nsd_screen_support.dart';
 
 final _visited = <String>[];
 
@@ -60,9 +60,10 @@ Future<FakeHocTapApi> _pump(
         path: '/',
         builder: (_, _) => const Scaffold(body: Text('trang gốc')),
       ),
+      // Màn Nghị Sự Đường thật có test riêng (nghi_su_duong_screen_test.dart) — ở đây chỉ cần đích của nút quay lại.
       GoRoute(
         path: '/nghi-su-duong',
-        builder: (_, _) => const NghiSuDuongScreen(),
+        builder: (_, _) => const Scaffold(body: Text('màn Nghị Sự Đường')),
       ),
       GoRoute(
         path: '/hoc-tap',
@@ -104,48 +105,22 @@ Map<String, dynamic> get _second =>
     (fixtureMap('overview')['subjects'] as List)[1] as Map<String, dynamic>;
 
 void main() {
-  group('mục Học tập ở Nghị Sự Đường', () {
+  group('dòng Học tập trong khung Hôm nay của Nghị Sự Đường', () {
     final row = find.byKey(const ValueKey('nsd-hoc-tap'));
-    Finder inRow(String text) => find.descendant(of: row, matching: find.text(text));
 
-    testWidgets(
-      'đứng sau Dự án và Tài chính (ba mục trong khung), dòng phụ là khóa đang học + nhãn, bấm mở /hoc-tap',
-      (tester) async {
-        await _pump(tester, '/nghi-su-duong');
-        double y(String key) => tester.getTopLeft(find.byKey(ValueKey(key))).dy;
-        expect(y('nsd-du-an'), lessThan(y('nsd-finance')));
-        expect(y('nsd-finance'), lessThan(y('nsd-hoc-tap')));
-        expect(inRow('Học tập'), findsOneWidget);
-        expect(inRow('Đang học: English Tenses 101'), findsOneWidget);
-        expect(inRow('Đang học'), findsOneWidget); // nhãn
-        // Tổng quan cũng có dòng Học tập cùng nội dung.
-        expect(find.text('Đang học: English Tenses 101'), findsNWidgets(2));
-        await tester.tap(row);
-        await tester.pumpAndSettle();
-        expect(find.byType(HocTapPlanScreen), findsOneWidget);
-      },
-    );
-
-    testWidgets('không có khóa đang học: dòng phụ "N khóa chờ" + nhãn "Chờ"', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        '/nghi-su-duong',
-        overview: _overview([_subject(_first, active: false, queued: 3)]),
-      );
-      expect(inRow('3 khóa chờ'), findsOneWidget);
-      expect(inRow('Chờ'), findsOneWidget);
+    testWidgets('không có việc tiếp theo / khóa đang học: dòng phụ "N khóa chờ"', (tester) async {
+      await pumpNsd(tester, study: _overview([{..._subject(_first, active: false, queued: 3), 'next': null}]));
+      expect(find.descendant(of: row, matching: find.text('3 khóa chờ')), findsOneWidget);
     });
 
-    testWidgets('lỗi tải: mục chỉ có tiêu đề, vẫn bấm được; tổng quan báo không tải được', (tester) async {
-      await _pump(tester, '/nghi-su-duong', overviewError: apiError(500, 'x'));
-      expect(inRow('Học tập'), findsOneWidget);
-      expect(find.descendant(of: row, matching: find.byType(Text)), findsNWidgets(2)); // chữ Hán + tiêu đề, không có dòng phụ
-      expect(find.text('Không tải được số liệu.'), findsOneWidget);
+    testWidgets('lỗi tải: dòng báo không tải được, vẫn bấm mở /hoc-tap', (tester) async {
+      await pumpNsd(tester, studyError: apiError(500, 'x'));
+      expect(find.descendant(of: row, matching: find.text('Không tải được số liệu.')), findsOneWidget);
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
       await tester.tap(row);
       await tester.pumpAndSettle();
-      expect(find.byType(HocTapPlanScreen), findsOneWidget);
+      expect(find.text('ĐÍCH /hoc-tap'), findsOneWidget);
     });
   });
 
@@ -153,15 +128,13 @@ void main() {
     testWidgets(
       'đầu màn: "‹ Nghị Sự Đường", tiêu đề, dòng phụ; quay lại về Nghị Sự Đường',
       (tester) async {
-        await _pump(tester, '/nghi-su-duong');
-        await tester.tap(find.byKey(const ValueKey('nsd-hoc-tap')));
-        await tester.pumpAndSettle();
+        await _pump(tester, '/hoc-tap');
         expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
         expect(find.text('Học tập'), findsOneWidget);
         expect(find.text('Học gì, bao nhiêu phút mỗi ngày'), findsOneWidget);
         await tester.tap(find.byKey(const ValueKey('design-top-bar-back')));
         await tester.pumpAndSettle();
-        expect(find.byType(NghiSuDuongScreen), findsOneWidget);
+        expect(find.text('màn Nghị Sự Đường'), findsOneWidget);
       },
     );
 

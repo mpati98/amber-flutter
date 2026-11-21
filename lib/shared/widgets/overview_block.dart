@@ -37,16 +37,37 @@ class OverviewBlock extends StatelessWidget {
                 style: const TextStyle(fontSize: 13, letterSpacing: 1, color: DesignColors.gold),
               ),
             ),
-            for (final (i, row) in rows.indexed)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  border: i == 0 ? null : const Border(top: BorderSide(color: DesignColors.rowDivider)),
-                ),
-                child: row,
-              ),
+            OverviewRows(rows: rows, labelWidth: labelWidth),
             if (footer != null) Padding(padding: const EdgeInsets.only(top: 8), child: footer),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Chỉ các dòng [OverviewRow] kẻ ngang giữa (không nền / viền / tiêu đề) — cho khung đã có sẵn tiêu đề (vd ZoneFrame).
+class OverviewRows extends StatelessWidget {
+  const OverviewRows({super.key, required this.rows, this.labelWidth = 70});
+
+  final List<Widget> rows;
+  final double labelWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return _LabelWidth(
+      width: labelWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final (i, row) in rows.indexed)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: i == 0 ? null : const Border(top: BorderSide(color: DesignColors.rowDivider)),
+              ),
+              child: row,
+            ),
+        ],
       ),
     );
   }

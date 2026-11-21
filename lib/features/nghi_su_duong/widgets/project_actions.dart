@@ -92,7 +92,7 @@ class ProjectActionsButton extends ConsumerWidget {
       if (context.canPop()) {
         context.pop();
       } else {
-        context.go('/du-an');
+        context.go('/nghi-su-duong');
       }
     }
     refreshAfterProjectDeleted(ref.invalidate);

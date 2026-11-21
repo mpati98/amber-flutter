@@ -23,7 +23,8 @@ class AmberChatDock extends ConsumerStatefulWidget {
   /// true = nút và khung chat ở góc TRÁI dưới (màn 3D: góc phải dưới là bảng chi tiết công trình).
   final bool left;
 
-  /// true = ẩn nút khi khung đang đóng (vd bảng chi tiết của màn 3D đang che đáy màn hình).
+  /// true = ẩn nút (vd popup của màn 3D đang che đáy màn hình). Bật lên lúc khung chat đang mở thì khung cũng đóng lại
+  /// để hai lớp phủ không đè nhau; lịch sử chat vẫn giữ.
   final bool hideButton;
 
   @override
@@ -34,6 +35,12 @@ class _AmberChatDockState extends ConsumerState<AmberChatDock> {
   bool _open = false;
 
   void _toggle() => setState(() => _open = !_open);
+
+  @override
+  void didUpdateWidget(AmberChatDock old) {
+    super.didUpdateWidget(old);
+    if (widget.hideButton && !old.hideButton && _open) _open = false;
+  }
 
   @override
   Widget build(BuildContext context) {

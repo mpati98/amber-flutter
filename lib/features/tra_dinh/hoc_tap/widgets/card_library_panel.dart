@@ -2,41 +2,33 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../shared/theme/design_tokens.dart';
-import '../../../../shared/widgets/design_page.dart';
 import '../../../../shared/theme/app_theme.dart';
 import '../models/study_card.dart';
 import '../providers/card_provider.dart';
 import '../utils/async_view.dart';
-import '../widgets/card_filter_sheet.dart';
-import '../widgets/card_sheet.dart';
-import '../widgets/card_widgets.dart';
-import '../widgets/hoc_tap_common.dart';
+import 'card_filter_sheet.dart';
+import 'card_sheet.dart';
+import 'card_widgets.dart';
+import 'hoc_tap_common.dart';
 
-/// Kho thẻ từ vựng của một môn: tìm, lọc theo giai đoạn / loại / chủ đề, cuộn vô hạn, thêm / sửa / xoá thẻ.
-class CardLibraryScreen extends StatelessWidget {
-  const CardLibraryScreen({super.key, this.subjectId});
-
-  final String? subjectId;
-
-  @override
-  Widget build(BuildContext context) =>
-      CardSubjectGate(subjectId: subjectId, title: 'Kho thẻ', builder: (context, id, name) => _Library(key: ValueKey('library-$id'), subjectId: id, subjectName: name));
-}
-
-class _Library extends ConsumerStatefulWidget {
-  const _Library({super.key, required this.subjectId, this.subjectName});
+/// Kho thẻ từ vựng của một môn — thân khung "Kho thẻ" trên màn Trà Đình (ZoneFrame không tự cuộn: panel có đầu cố định
+/// = tổng số + ô tìm + "Lọc" + chip giai đoạn, rồi danh sách cuộn vô hạn của riêng nó). Chạm thẻ → sheet xem / sửa ([showCardSheet]).
+/// Nút "Ôn thẻ" ở khung Hôm nay (nút vàng duy nhất của màn); "+ Nhập thẻ", "+ một thẻ", "Thống kê" là action của khung.
+class CardLibraryPanel extends ConsumerStatefulWidget {
+  const CardLibraryPanel({super.key, required this.subjectId, required this.onImport});
 
   final String subjectId;
-  final String? subjectName;
+
+  /// Mở màn nhập thẻ từ Claude (lời mời khi kho còn trống).
+  final Future<void> Function() onImport;
 
   @override
-  ConsumerState<_Library> createState() => _LibraryState();
+  ConsumerState<CardLibraryPanel> createState() => _LibraryState();
 }
 
-class _LibraryState extends ConsumerState<_Library> {
+class _LibraryState extends ConsumerState<CardLibraryPanel> {
   static const _searchDebounce = Duration(milliseconds: 350);
 
   final _search = TextEditingController();
@@ -44,8 +36,6 @@ class _LibraryState extends ConsumerState<_Library> {
   Timer? _debounce;
 
   CardLibraryNotifier get _notifier => ref.read(cardLibraryProvider(widget.subjectId).notifier);
-  String get _reviewPath => '/tra-dinh/hoc-tap/the/on?subjectId=${widget.subjectId}';
-  String get _importPath => '/tra-dinh/hoc-tap/the/them?subjectId=${widget.subjectId}';
 
   @override
   void initState() {
@@ -92,74 +82,21 @@ class _LibraryState extends ConsumerState<_Library> {
     if (next != null && mounted) await _notifier.setFilter(next);
   }
 
-  Future<void> _openReview() async {
-    await context.push(_reviewPath);
-    if (mounted) await _notifier.reload(); // có thể vừa ôn: lịch hạn của thẻ đã đổi
-  }
-
-  Future<void> _openImport() async {
-    await context.push(_importPath);
-    if (mounted) await _notifier.reload(); // có thể vừa nhập thẻ
-  }
+  Future<void> _openImport() => widget.onImport();
 
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(cardLibraryProvider(widget.subjectId));
-    final state = async.value;
     // Danh sách ngắn hơn màn hình thì không có cuộn để kích hoạt: kiểm tra sau mỗi lần dựng.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _maybeLoadMore();
     });
 
-    return DesignScaffold(
-      title: 'Kho thẻ',
-      backFallback: '/tra-dinh',
-      // Màn có nút "+ Thêm thẻ từ Claude" cố định ở đáy → không gắn nút chat nổi (sẽ che nút).
-      chat: false,
-      // Tiêu đề 2 dòng: thu nhỏ khi không vừa thanh trên cao 52 (màn hẹp / chữ phóng to).
-      titleWidget: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Kho thẻ', style: DesignText.serif(fontSize: 16, fontWeight: FontWeight.w700, color: DesignColors.text)),
-          if (state != null)
-            Text(
-              '${state.counts.total} thẻ${widget.subjectName == null ? '' : ' · ${widget.subjectName}'}',
-              key: const ValueKey('library-total'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: DesignColors.muted),
-            ),
-        ],
-      ),
-      ),
-      actions: [
-        IconButton(key: const ValueKey('card-stats'), tooltip: 'Thống kê', color: DesignColors.gold, icon: const Icon(Icons.insights_outlined), onPressed: () => context.push('/tra-dinh/hoc-tap/the/thong-ke?subjectId=${widget.subjectId}')),
-        IconButton(key: const ValueKey('card-add'), tooltip: 'Thêm một thẻ', color: DesignColors.gold, icon: const Icon(Icons.add), onPressed: () => _openCard(null)),
-      ],
-      bottomNavigationBar: SafeArea(
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: FilledButton(key: const ValueKey('card-import'), onPressed: _openImport, child: const Text('+ Thêm thẻ từ Claude')),
-            ),
-          ),
-        ),
-      ),
-      body: HocTapBody(
-        child: switch (async.settled) {
-          AsyncData(:final value) => _content(value),
-          AsyncError() => ListView(children: [HocTapLoadError(what: 'kho thẻ', onRetry: () => ref.invalidate(cardLibraryProvider(widget.subjectId)))]),
-          _ => const Center(child: CircularProgressIndicator()),
-        },
-      ),
-    );
+    return switch (async.settled) {
+      AsyncData(:final value) => _content(value),
+      AsyncError() => HocTapLoadError(what: 'kho thẻ', onRetry: () => ref.invalidate(cardLibraryProvider(widget.subjectId))),
+      _ => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+    };
   }
 
   Widget _content(CardLibraryState s) {
@@ -168,12 +105,9 @@ class _LibraryState extends ConsumerState<_Library> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Text('${s.counts.total} thẻ', key: const ValueKey('library-total'), style: DesignText.muted),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: FilledButton.icon(key: const ValueKey('card-review-start'), onPressed: _openReview, icon: const Icon(Icons.play_arrow), label: const Text('Ôn thẻ hôm nay')),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.fromLTRB(0, 6, 8, 8),
           child: Row(
             spacing: 8,
             children: [
@@ -196,7 +130,7 @@ class _LibraryState extends ConsumerState<_Library> {
           ),
         ),
         ChipScrollRow(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.only(right: 8),
           children: [
             for (final stage in const [null, CardStage.newCard, CardStage.learning, CardStage.weekly, CardStage.monthly, CardStage.quarterly])
               FilterPill(
@@ -218,7 +152,8 @@ class _LibraryState extends ConsumerState<_Library> {
                 : ListView.separated(
                     controller: _scroll,
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    // Đáy chừa chỗ cho nút chat nổi (như ZoneFrame.chatClearance).
+                    padding: const EdgeInsets.fromLTRB(0, 8, 8, 56),
                     itemCount: s.cards.length + 1,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, i) {
@@ -255,7 +190,7 @@ class _LibraryState extends ConsumerState<_Library> {
     final truly = s.counts.total == 0 && s.filter.isEmpty;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(24),
       children: [
         Column(
           key: ValueKey(truly ? 'library-empty' : 'library-no-match'),
@@ -263,11 +198,12 @@ class _LibraryState extends ConsumerState<_Library> {
           children: [
             Text(truly ? 'Kho thẻ còn trống.' : 'Không có thẻ nào khớp bộ lọc.', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
             Text(
-              truly ? 'Nhập thẻ từ Claude hoặc thêm từng thẻ bằng nút + ở góc trên.' : 'Thử đổi từ khoá hoặc bỏ bớt bộ lọc.',
+              truly ? 'Nhập thẻ từ Claude hoặc thêm từng thẻ bằng nút + ở đầu khung.' : 'Thử đổi từ khoá hoặc bỏ bớt bộ lọc.',
               textAlign: TextAlign.center,
               style: TextStyle(color: theme.textMuted),
             ),
-            if (truly) FilledButton.tonal(key: const ValueKey('library-empty-import'), onPressed: _openImport, child: const Text('Nhập thẻ từ Claude'))
+            // Nút viền: nút vàng duy nhất của màn là việc tiếp theo ở khung Hôm nay.
+            if (truly) OutlinedButton(key: const ValueKey('library-empty-import'), onPressed: _openImport, child: const Text('Nhập thẻ từ Claude'))
             else OutlinedButton(key: const ValueKey('library-clear-filters'), onPressed: _clearFilters, child: const Text('Xoá bộ lọc')),
           ],
         ),

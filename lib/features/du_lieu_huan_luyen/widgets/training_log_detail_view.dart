@@ -6,16 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/utils/api_error.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/design_page.dart';
 import '../../../shared/widgets/form_bits.dart';
 import '../../../shared/widgets/list_frame.dart';
 import '../../../shared/widgets/overview_block.dart';
 import '../models/training_log.dart';
 import '../providers/training_log_provider.dart';
 import '../services/training_log_api.dart';
-import '../widgets/training_log_correction_sheet.dart';
-import '../widgets/outcome_tag.dart';
-import 'training_logs_screen.dart' show formatLogTime;
+import 'training_log_correction_sheet.dart';
+import 'outcome_tag.dart';
+import 'training_log_list.dart' show formatLogTime;
 
 const _pretty = JsonEncoder.withIndent('  ');
 
@@ -23,19 +22,20 @@ const _pretty = JsonEncoder.withIndent('  ');
 String showJson(Object? v) =>
     v == null ? '—' : (v is String ? v : _pretty.convert(v));
 
-/// Chi tiết một dòng nhật ký. Chỉ ĐỌC nội dung; hành động duy nhất là đánh giá đúng/sai và bật/tắt loại khỏi dataset.
-class TrainingLogDetailScreen extends ConsumerStatefulWidget {
-  const TrainingLogDetailScreen({super.key, required this.logId});
+/// Chi tiết một dòng nhật ký (khung "Nội dung" của Tàng Kinh Các, tầng 4). Chỉ ĐỌC nội dung; hành động duy nhất là
+/// đánh giá đúng/sai, sửa đáp án và bật/tắt loại khỏi dataset. Không có vỏ cuộn riêng — khung chứa tự cuộn.
+class TrainingLogDetailView extends ConsumerStatefulWidget {
+  const TrainingLogDetailView({super.key, required this.logId});
 
   final String logId;
 
   @override
-  ConsumerState<TrainingLogDetailScreen> createState() =>
-      _TrainingLogDetailScreenState();
+  ConsumerState<TrainingLogDetailView> createState() =>
+      _TrainingLogDetailViewState();
 }
 
-class _TrainingLogDetailScreenState
-    extends ConsumerState<TrainingLogDetailScreen> {
+class _TrainingLogDetailViewState
+    extends ConsumerState<TrainingLogDetailView> {
   bool _busy = false;
 
   Future<void> _act(
@@ -75,36 +75,22 @@ class _TrainingLogDetailScreenState
   @override
   Widget build(BuildContext context) {
     final detail = ref.watch(trainingLogDetailProvider(widget.logId));
-    final d = detail.value;
-    return DesignPage(
-      title: 'Chi tiết nhật ký',
-      backFallback: '/tang-kinh-cac/du-lieu-huan-luyen',
-      overview: d == null
-          ? OverviewBlock(
-              title: 'Nhật ký',
-              labelWidth: 90,
-              rows: [OverviewRow.muted(label: 'Trạng thái', text: detail.hasError ? 'Không tải được.' : 'Đang tải…')],
-            )
-          : _overview(d),
-      content: (context, _) => ListFrame(
-        child: detail.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: CircularProgressIndicator(color: DesignColors.gold)),
-          ),
-          error: (_, _) => Column(
-            spacing: 8,
-            children: [
-              const Text('Không tải được dòng nhật ký.', style: DesignText.muted),
-              DesignButton.outline(
-                label: 'Thử lại',
-                onPressed: () => ref.invalidate(trainingLogDetailProvider(widget.logId)),
-              ),
-            ],
-          ),
-          data: _body,
-        ),
+    return detail.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(child: CircularProgressIndicator(color: DesignColors.gold)),
       ),
+      error: (_, _) => Column(
+        spacing: 8,
+        children: [
+          const Text('Không tải được dòng nhật ký.', style: DesignText.muted),
+          DesignButton.outline(
+            label: 'Thử lại',
+            onPressed: () => ref.invalidate(trainingLogDetailProvider(widget.logId)),
+          ),
+        ],
+      ),
+      data: (d) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 12, children: [_overview(d), _body(d)]),
     );
   }
 

@@ -38,10 +38,13 @@ String documentGlyph(DocumentType t) => switch (t) {
 /// Một tài liệu trong khung của màn Tài liệu (bộ thiết kế mới): chữ Hán theo loại · tên · xem trước 2 dòng ·
 /// nhãn loại + chủ đề + "ghim". Không hiện ngày (updatedAt chỉ để sắp xếp), IMAGE / FILE không có xem trước.
 class DocumentCard extends StatelessWidget {
-  const DocumentCard({super.key, required this.doc, this.onTap});
+  const DocumentCard({super.key, required this.doc, this.onTap, this.selected = false});
 
   final Document doc;
   final VoidCallback? onTap;
+
+  /// Tài liệu đang mở ở khung Nội dung — viền vàng đậm.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +56,7 @@ class DocumentCard extends StatelessWidget {
       key: ValueKey('doc-${doc.id}'),
       glyph: documentGlyph(doc.type),
       title: doc.title,
-      borderColor: doc.pinned ? DesignColors.gold.withValues(alpha: 0.5) : null,
+      borderColor: selected ? DesignColors.gold : (doc.pinned ? DesignColors.gold.withValues(alpha: 0.5) : null),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

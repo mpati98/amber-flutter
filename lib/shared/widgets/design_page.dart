@@ -128,6 +128,7 @@ class DesignScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.bottomNavigationBar,
     this.chat = true,
+    this.fullWidth = false,
   });
 
   final String title;
@@ -145,6 +146,9 @@ class DesignScaffold extends StatelessWidget {
   /// false = không gắn nút chat nổi (màn có ô nhập / nút riêng ở góc dưới, vd chat luyện nói).
   final bool chat;
 
+  /// Thanh trên trải hết bề ngang (xem [DesignTopBar.fullWidth]).
+  final bool fullWidth;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,6 +157,7 @@ class DesignScaffold extends StatelessWidget {
         title: title,
         titleWidget: titleWidget,
         backFallback: backFallback,
+        fullWidth: fullWidth,
         trailing: Row(mainAxisSize: MainAxisSize.min, spacing: 4, children: [...actions, const AccountMenu()]),
       ),
       floatingActionButton: floatingActionButton,

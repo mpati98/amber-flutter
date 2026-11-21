@@ -35,12 +35,12 @@ bool atsShowsStatusChip(AtsTaskStatus s) => s != AtsTaskStatus.prep;
 /// Khối "Công việc ATS" trên màn Dự án: việc công ty đồng bộ một chiều từ ats-app, CHỈ ĐỌC (không sửa / xoá / tạo).
 /// Gom theo dự án, mỗi việc một dòng, việc trùng gộp "×N", tối đa [atsMaxLines] dòng rồi "Xem thêm N".
 ///
-/// [fill] (bố cục dashboard của màn Dự án): thẻ lấp chiều cao cha cấp; đầu thẻ cố định, danh sách cuộn bên trong,
-/// không cắt 6 dòng. Mặc định false: cao theo nội dung (điện thoại / máy tính bảng / web thấp).
+/// [bare] (đặt trong ZoneFrame "Công việc ATS" — khung có tiêu đề + vùng cuộn riêng): bỏ vỏ thẻ và chữ tiêu đề,
+/// không cắt 6 dòng (khung cuộn được). Mặc định false: thẻ đầy đủ, cắt 6 dòng rồi "Xem thêm".
 class AtsTasksCard extends ConsumerStatefulWidget {
-  const AtsTasksCard({super.key, this.fill = false});
+  const AtsTasksCard({super.key, this.bare = false});
 
-  final bool fill;
+  final bool bare;
 
   @override
   ConsumerState<AtsTasksCard> createState() => _AtsTasksCardState();
@@ -106,14 +106,14 @@ class _AtsTasksCardState extends ConsumerState<AtsTasksCard> {
     final showDone = includeAll || _showDone;
     final shown = data?.tasks.where((t) => showDone || !t.isDone).toList();
     final groups = shown == null ? null : groupAtsTasks(shown);
-    // fill: danh sách cuộn trong thẻ nên không cần cắt 6 dòng / "Xem thêm".
-    final limited = groups == null ? null : (_expanded || widget.fill ? (groups: groups, hidden: 0) : limitAtsLines(groups, atsMaxLines));
+    // bare: khung chứa tự cuộn nên không cần cắt 6 dòng / "Xem thêm".
+    final limited = groups == null ? null : (_expanded || widget.bare ? (groups: groups, hidden: 0) : limitAtsLines(groups, atsMaxLines));
     final totalLines = groups?.fold<int>(0, (n, g) => n + g.lines.length) ?? 0;
 
     final syncState = data?.sync;
     final err = syncState?.lastError;
 
-    // Đầu thẻ (luôn cố định ở chế độ fill): tiêu đề, cập nhật / lỗi đồng bộ, nút.
+    // Đầu thẻ: tiêu đề (bare: chỉ số chưa xong — tên đã ở tiêu đề khung), cập nhật / lỗi đồng bộ, nút.
     final header = <Widget>[
       // Tiêu đề trái; "Cập nhật lúc…" + nút + ⋯ phải. Không đủ rộng thì cụm phải xuống dòng (Wrap).
       Wrap(
@@ -125,11 +125,12 @@ class _AtsTasksCardState extends ConsumerState<AtsTasksCard> {
           Text.rich(
             TextSpan(
               children: [
-                TextSpan(
-                  text: 'Công việc ATS',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.primary),
-                ),
-                if (openCount != null) TextSpan(text: '  $openCount chưa xong', style: muted),
+                if (!widget.bare)
+                  TextSpan(
+                    text: 'Công việc ATS  ',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: cs.primary),
+                  ),
+                if (openCount != null) TextSpan(text: '$openCount chưa xong', style: muted),
               ],
             ),
           ),
@@ -221,7 +222,7 @@ class _AtsTasksCardState extends ConsumerState<AtsTasksCard> {
             alignment: Alignment.centerLeft,
             child: TextButton(key: const ValueKey('ats-more'), onPressed: () => setState(() => _expanded = true), child: Text('Xem thêm ${limited.hidden}')),
           )
-        else if (_expanded && !widget.fill && totalLines > atsMaxLines)
+        else if (_expanded && !widget.bare && totalLines > atsMaxLines)
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(key: const ValueKey('ats-less'), onPressed: () => setState(() => _expanded = false), child: const Text('Thu gọn')),
@@ -229,24 +230,10 @@ class _AtsTasksCardState extends ConsumerState<AtsTasksCard> {
       ],
     ];
 
-    return ScrollCard(
-      key: const ValueKey('ats-tasks-card'),
-      child: widget.fill
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: 6,
-              children: [
-                ...header,
-                Expanded(
-                  child: SingleChildScrollView(
-                    key: const ValueKey('ats-scroll'),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: body),
-                  ),
-                ),
-              ],
-            )
-          : Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [...header, ...body]),
-    );
+    final column = Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 6, children: [...header, ...body]);
+    return widget.bare
+        ? KeyedSubtree(key: const ValueKey('ats-tasks-card'), child: column)
+        : ScrollCard(key: const ValueKey('ats-tasks-card'), child: column);
   }
 }
 

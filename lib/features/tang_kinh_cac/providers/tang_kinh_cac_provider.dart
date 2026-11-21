@@ -5,16 +5,17 @@ import '../models/reading_goal.dart';
 import '../services/highlight_api.dart';
 import '../services/reading_goal_api.dart';
 
-// Số sách/tài liệu trên trang chính: dùng lại publicationsProvider(null) và
+// Số sách / tài liệu (danh sách, popup cảnh 3D): dùng lại publicationsProvider(null) và
 // documentsProvider(null), đếm ở client — giống web, quy mô cá nhân không đáng
 // thêm endpoint riêng chỉ để đếm.
 
-/// Mỗi lần vào trang chính rút 1 highlight mới (autoDispose).
+/// "Ôn lại" (khung Nội dung khi chưa chọn mục, tầng Sách / Tài liệu): một highlight ngẫu nhiên; `invalidate` = rút cái khác.
+/// null = chưa có highlight nào. autoDispose: mỗi lần vào màn rút mới (như hub cũ).
 final resurfacedHighlightProvider = FutureProvider.autoDispose<ResurfacedHighlight?>(
   (ref) => ref.watch(highlightApiProvider).getRandomHighlight(),
 );
 
-/// Tham số = năm (trang chính và Kế hoạch đọc dùng năm hiện tại).
+/// Tham số = năm (mục tiêu đọc ở đầu tầng Sách dùng năm hiện tại).
 final readingGoalProvider = FutureProvider.autoDispose.family<ReadingGoal, int>(
   (ref, year) => ref.watch(readingGoalApiProvider).getReadingGoal(year),
 );

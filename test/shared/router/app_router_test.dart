@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:amber_flutter/features/auth/screens/login_screen.dart';
 import 'package:amber_flutter/features/du_do/screens/du_do_screen.dart';
-import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
-import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
 import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
 import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
@@ -13,6 +15,10 @@ import 'package:amber_flutter/shared/services/token_storage.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:amber_flutter/features/nghi_su_duong/screens/finance_month_screen.dart';
+import 'package:amber_flutter/features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
+import 'package:amber_flutter/shared/services/api_client.dart';
+import '../../features/nghi_su_duong/detail_test_support.dart' show offlineDio;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -149,23 +155,62 @@ void main() {
     String location(ProviderContainer c) =>
         c.read(routerProvider).routeInformationProvider.value.uri.toString();
 
-    testWidgets(
-      'Tàng Kinh Các: /du-lieu-huan-luyen và /:logId là route thật (không rơi vào trang 404)',
-      (tester) async {
-        final c = await pumpApp(
-          tester,
-          token: 'saved-access',
-          extra: [trainingLogApiProvider.overrideWithValue(FakeApi())],
-        );
-        c.read(routerProvider).go('/tang-kinh-cac/du-lieu-huan-luyen');
+    testWidgets('Tàng Kinh Các một màn (3 tầng): route cũ của từng tầng và ?tang=4 (go và push) về /tang-kinh-cac?tang=…[&id=]', (tester) async {
+      final c = await pumpApp(
+        tester,
+        token: 'saved-access',
+        extra: [trainingLogApiProvider.overrideWithValue(FakeApi()), apiClientProvider.overrideWithValue(offlineDio())],
+      );
+      final router = c.read(routerProvider);
+      for (final (old, to, tang, id) in const [
+        ('/tang-kinh-cac/sach', '/tang-kinh-cac?tang=1', 1, null),
+        ('/tang-kinh-cac/tai-lieu', '/tang-kinh-cac?tang=2', 2, null),
+        ('/tang-kinh-cac/ke-hoach-doc', '/tang-kinh-cac?tang=1', 1, null),
+        ('/tang-kinh-cac/du-lieu-huan-luyen', '/tang-kinh-cac?tang=3', 3, null),
+        ('/tang-kinh-cac/du-lieu-huan-luyen/l1', '/tang-kinh-cac?tang=3&id=l1', 3, 'l1'),
+        ('/tang-kinh-cac?tang=4', '/tang-kinh-cac?tang=3', 3, null),
+        ('/tang-kinh-cac?tang=4&id=l1', '/tang-kinh-cac?tang=3&id=l1', 3, 'l1'),
+      ]) {
+        router.go(old);
         await tester.pumpAndSettle();
-        expect(find.byType(TrainingLogsScreen), findsOneWidget);
-        c.read(routerProvider).go('/tang-kinh-cac/du-lieu-huan-luyen/l1');
+        expect(location(c), to, reason: 'go $old');
+        router.go('/');
         await tester.pumpAndSettle();
-        expect(find.byType(TrainingLogDetailScreen), findsOneWidget);
-        expect(find.text('chi 45k ăn trưa Momo'), findsOneWidget);
-      },
-    );
+        unawaited(router.push(old));
+        await tester.pumpAndSettle();
+        final s = tester.widget<TangKinhCacScreen>(find.byType(TangKinhCacScreen));
+        expect((s.tang, s.id), (tang, id), reason: 'push $old');
+      }
+      // Link thẳng vào một dòng nhật ký: khung Nội dung mở đúng dòng đó.
+      router.go('/tang-kinh-cac?tang=3&id=l1');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('log-view-l1')), findsOneWidget);
+      expect(find.text('chi 45k ăn trưa Momo'), findsWidgets);
+    });
+
+    testWidgets('Trà Đình một màn: /tra-dinh/hoc-tap/the (Kho thẻ riêng cũ) → /tra-dinh?kho=1[&subjectId], go và push', (tester) async {
+      final c = await pumpApp(tester, token: 'saved-access', extra: [apiClientProvider.overrideWithValue(offlineDio())]);
+      final router = c.read(routerProvider);
+      for (final (old, to, subject) in const [
+        ('/tra-dinh/hoc-tap/the', '/tra-dinh?kho=1', null),
+        ('/tra-dinh/hoc-tap/the?subjectId=s1', '/tra-dinh?kho=1&subjectId=s1', 's1'),
+      ]) {
+        router.go(old);
+        await tester.pumpAndSettle();
+        expect(location(c), to, reason: 'go $old');
+        router.go('/');
+        await tester.pumpAndSettle();
+        unawaited(router.push(old));
+        await tester.pumpAndSettle();
+        final s = tester.widget<TraDinhHocTapScreen>(find.byType(TraDinhHocTapScreen));
+        expect((s.cards, s.subjectId), (true, subject), reason: 'push $old');
+      }
+      // Các màn con thật của Kho thẻ (phiên ôn, nhập, thống kê) vẫn là route riêng, không bị redirect.
+      String? routePath(String l) => router.configuration.findMatch(Uri.parse(l)).last.route.path;
+      expect(routePath('/tra-dinh/hoc-tap/the/on?subjectId=s1'), 'hoc-tap/the/on');
+      expect(routePath('/tra-dinh/hoc-tap/the/them'), 'hoc-tap/the/them');
+      expect(routePath('/tra-dinh/hoc-tap/the/thong-ke'), 'hoc-tap/the/thong-ke');
+    });
 
     testWidgets('mở app còn token → vào thẳng Dư Đồ', (tester) async {
       final c = await pumpApp(tester, token: 'saved-access');
@@ -184,12 +229,13 @@ void main() {
       'đang ở trong app, phiên hết hạn → tự về /login, nhớ trang đang xem',
       (tester) async {
         final c = await pumpApp(tester, token: 'saved-access');
-        c.read(routerProvider).push('/tang-kinh-cac/sach');
+        // Nhớ cả query (tầng / mục của Tàng Kinh Các).
+        c.read(routerProvider).push('/tang-kinh-cac?tang=1');
         await tester.pump();
         c.read(authControllerProvider.notifier).sessionExpired();
         await tester.pumpAndSettle();
         expect(find.byType(LoginScreen), findsOneWidget);
-        expect(location(c), '/login?from=%2Ftang-kinh-cac%2Fsach');
+        expect(location(c), '/login?from=%2Ftang-kinh-cac%3Ftang%3D1');
       },
     );
 
@@ -249,6 +295,33 @@ void main() {
       expect(routePath('/hoc-tap/lich?view=month&date=2026-10-15'), 'lich');
       expect(routePath('/hoc-tap/thong-ke'), 'thong-ke');
       expect(routePath('/hoc-tap/thong-ke?range=7&subject=all'), 'thong-ke');
+    });
+
+    testWidgets('Nghị Sự Đường một màn: /du-an và /finance cũ redirect về /nghi-su-duong; chi tiết dự án / tháng giữ route', (tester) async {
+      // Mọi request của màn bị chặn ngay (màn tự hiện lỗi từng khung) — chỉ kiểm điều hướng.
+      final c = await pumpApp(tester, token: 'saved-access', extra: [apiClientProvider.overrideWithValue(offlineDio())]);
+      final router = c.read(routerProvider);
+      for (final old in ['/du-an', '/finance']) {
+        router.go(old);
+        await tester.pumpAndSettle();
+        expect(location(c), '/nghi-su-duong', reason: old);
+        expect(find.byType(NghiSuDuongScreen), findsOneWidget, reason: old);
+      }
+      // push (vd alert.href của Kiều Lâu) cũng đi qua redirect.
+      router.go('/');
+      await tester.pumpAndSettle();
+      unawaited(router.push('/du-an'));
+      await tester.pumpAndSettle();
+      expect(find.byType(NghiSuDuongScreen), findsOneWidget);
+
+      String? routePath(String l) => router.configuration.findMatch(Uri.parse(l)).last.route.path;
+      expect(routePath('/du-an/p1'), '/du-an/:projectId');
+      expect(routePath('/du-an/p1?task=t1'), '/du-an/:projectId');
+      expect(routePath('/finance/m11'), '/finance/:projectId');
+      router.go('/finance/m11');
+      await tester.pumpAndSettle();
+      expect(location(c), '/finance/m11');
+      expect(find.byType(FinanceMonthScreen), findsOneWidget);
     });
 
     test('liên kết cũ /tra-dinh?tab=… được chuyển hướng', () {

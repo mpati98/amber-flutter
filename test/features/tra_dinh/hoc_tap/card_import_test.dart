@@ -155,7 +155,7 @@ void main() {
       expect(api.cardImports.single.map((c) => c['phrase']), ['pick up on', 'come across']);
       expect(api.cardImports.single.first, {'phrase': 'pick up on', 'meaning': 'to notice', 'example': 'She picked up on his mood.', 'note': null, 'kind': 'PHRASAL_VERB', 'topics': ['daily life']});
       expect(find.text('Đã lưu 2 thẻ, bỏ qua 2 thẻ'), findsOneWidget);
-      expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=$_subject', reason: 'quay về kho thẻ');
+      expect(visited.last, '/tra-dinh?kho=1&subjectId=$_subject', reason: 'quay về khung Kho thẻ của /tra-dinh');
     });
 
     testWidgets('server bỏ qua thêm thẻ (đua với lần nhập khác): cộng vào số bỏ qua', (tester) async {

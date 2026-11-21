@@ -36,10 +36,15 @@ Future<void> showDocumentViewerModal(BuildContext context, Document doc) => show
 /// 2. Nhãn ghim sai: web đọc `doc.pinned` từ prop cũ nên bấm xong nhãn không
 ///    đổi. Ở đây [_pinned] là state cục bộ, đổi NGAY khi bấm rồi mới gọi API
 ///    (lỗi thì trả lại như cũ).
+///
+/// [embedded] (khung "Nội dung" của Tàng Kinh Các): không có vỏ cuộn riêng (khung tự cuộn) và nút đóng;
+/// xoá xong gọi [onDeleted] thay vì đóng route.
 class DocumentViewerModal extends ConsumerStatefulWidget {
-  const DocumentViewerModal({super.key, required this.doc});
+  const DocumentViewerModal({super.key, required this.doc, this.embedded = false, this.onDeleted});
 
   final Document doc;
+  final bool embedded;
+  final VoidCallback? onDeleted;
 
   @override
   ConsumerState<DocumentViewerModal> createState() => _DocumentViewerModalState();
@@ -126,7 +131,11 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
       // Lỗi khác (mạng...): vẫn mở, màn chi tiết khóa tự báo lỗi và có nút thử lại.
     }
     if (!mounted) return;
-    Navigator.of(context).pop();
+    if (widget.embedded) {
+      setState(() => _openingCourse = false);
+    } else {
+      Navigator.of(context).pop();
+    }
     router.push('/tra-dinh/hoc-tap/courses/$id');
   }
 
@@ -188,7 +197,12 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
     try {
       await ref.read(documentApiProvider).deleteDocument(_doc.id);
       ref.invalidate(documentsProvider);
-      if (mounted) Navigator.of(context).pop();
+      if (!mounted) return;
+      if (widget.embedded) {
+        widget.onDeleted?.call();
+      } else {
+        Navigator.of(context).pop();
+      }
     } on DioException {
       if (mounted) {
         setState(() => _busy = false);
@@ -217,9 +231,7 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+    final column = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 16, // space-y-4
@@ -230,11 +242,12 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
               Expanded(
                 child: Text(_doc.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 20)),
               ),
-              IconButton(
-                tooltip: 'Đóng',
-                icon: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.4)),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+              if (!widget.embedded)
+                IconButton(
+                  tooltip: 'Đóng',
+                  icon: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.4)),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
             ],
           ),
           _buildBody(),
@@ -243,12 +256,15 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
           Divider(color: Colors.white.withValues(alpha: 0.1), height: 1),
           Row(
             children: [
-              TextButton(
-                onPressed: _togglePin,
-                style: TextButton.styleFrom(foregroundColor: AppColors.yugen300, padding: EdgeInsets.zero),
-                child: Text(
-                  _pinned ? 'Bỏ ghim' : 'Ghim tài liệu',
-                  style: const TextStyle(decoration: TextDecoration.underline, decorationColor: AppColors.yugen300),
+              // Co được: khung hẹp / chữ phóng to (khung Nội dung của Tàng Kinh Các trên điện thoại) không đẩy tràn hàng.
+              Flexible(
+                child: TextButton(
+                  onPressed: _togglePin,
+                  style: TextButton.styleFrom(foregroundColor: AppColors.yugen300, padding: EdgeInsets.zero),
+                  child: Text(
+                    _pinned ? 'Bỏ ghim' : 'Ghim tài liệu',
+                    style: const TextStyle(decoration: TextDecoration.underline, decorationColor: AppColors.yugen300),
+                  ),
                 ),
               ),
               const Spacer(),
@@ -260,8 +276,8 @@ class _DocumentViewerModalState extends ConsumerState<DocumentViewerModal> {
             ],
           ),
         ],
-      ),
-    );
+      );
+    return widget.embedded ? column : SingleChildScrollView(padding: const EdgeInsets.all(24), child: column);
   }
 
   Widget _noteActions() {

@@ -20,13 +20,8 @@ import '../services/finance_api.dart';
 import '../widgets/add_account_modal.dart';
 import '../widgets/add_category_modal.dart';
 import '../widgets/add_transaction_modal.dart';
+import '../widgets/finance_widgets.dart';
 import '../widgets/set_budget_modal.dart';
-
-/// Giờ VN: "12/9 09:29".
-String _viDateTime(DateTime at) {
-  final d = vnNow(at);
-  return '${d.day}/${d.month} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
-}
 
 /// Port /finance/[projectId]: số liệu tháng, ví, ngân sách, giao dịch.
 class FinanceMonthScreen extends ConsumerStatefulWidget {
@@ -99,7 +94,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
 
     return DesignPage(
       title: summary?.projectName ?? 'Tháng tài chính',
-      backFallback: '/finance',
+      backFallback: '/nghi-su-duong',
       onRefresh: () async => _refreshAfterWrite(),
       overview: switch (summaryAsync) {
         AsyncData(:final value) => _overview(value, ended),
@@ -161,7 +156,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
                           ),
                     child: summary.budgetProgress.isEmpty
                         ? const Text('Chưa đặt ngân sách cho danh mục nào.', style: DesignText.muted)
-                        : Column(spacing: 12, children: [for (final b in summary.budgetProgress) _BudgetRow(b)]),
+                        : Column(spacing: 12, children: [for (final b in summary.budgetProgress) BudgetRow(b)]),
                   ),
                   _Section(
                     title: 'Giao dịch',
@@ -192,7 +187,7 @@ class _FinanceMonthScreenState extends ConsumerState<FinanceMonthScreen> {
                                   color: DesignColors.danger.withValues(alpha: 0.2),
                                   child: const Icon(Icons.delete_outline, color: DesignColors.danger),
                                 ),
-                                child: _TransactionRow(t),
+                                child: TransactionRow(t),
                               ),
                           ],
                         );
@@ -298,93 +293,6 @@ class _AccountChip extends StatelessWidget {
           Text(
             formatVnd(account.currentBalance),
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: DesignColors.gold),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Port BudgetProgressRow: kincha bình thường, shuiro khi vượt hạn mức.
-class _BudgetRow extends StatelessWidget {
-  const _BudgetRow(this.budget);
-
-  final BudgetProgress budget;
-
-  @override
-  Widget build(BuildContext context) {
-    final over = budget.isOver;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 4,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                '${budget.icon != null ? '${budget.icon} ' : ''}${budget.categoryName}',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
-            Text(
-              '${formatVnd(budget.spent)} / ${formatVnd(budget.limitAmount)}',
-              style: over
-                  ? const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: DesignColors.danger)
-                  : DesignText.muted,
-            ),
-          ],
-        ),
-        DesignProgressBar(budget.percent, color: over ? DesignColors.danger : DesignColors.gold),
-      ],
-    );
-  }
-}
-
-class _TransactionRow extends StatelessWidget {
-  const _TransactionRow(this.transaction);
-
-  final FinanceTransaction transaction;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = transaction;
-    final isIncome = t.kind == MoneyKind.income;
-    final subtitle = [
-      if (t.note != null && t.note!.isNotEmpty) t.note!,
-      if (t.accountName != null) t.accountName!,
-      _viDateTime(t.occurredAt),
-    ].join(' · ');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8), // py-2
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: DesignColors.rowDivider)),
-      ),
-      child: Row(
-        spacing: 8,
-        children: [
-          Text(t.categoryIcon ?? (isIncome ? '💰' : '💸'), style: const TextStyle(fontSize: 18)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  t.categoryName ?? 'Chưa phân loại',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13),
-                ),
-                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: DesignColors.muted)),
-              ],
-            ),
-          ),
-          Text(
-            '${isIncome ? '+' : '−'}${formatVnd(t.amount)}',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: isIncome ? DesignColors.success : DesignColors.danger,
-            ),
           ),
         ],
       ),

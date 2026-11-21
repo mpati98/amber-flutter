@@ -47,7 +47,7 @@ class _Insights extends ConsumerWidget {
 
     return DesignScaffold(
       title: 'Nhóm khó',
-      backFallback: '/tra-dinh/hoc-tap/the',
+      backFallback: '/tra-dinh?kho=1',
       bottomNavigationBar: insights == null
           ? null
           : SafeArea(

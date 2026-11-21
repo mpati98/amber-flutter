@@ -111,13 +111,16 @@ class CardRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  spacing: 6,
-                  children: [
-                    Text(due, key: ValueKey('due-${card.id}'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: dueColor)),
-                    KindTag(card.kind),
-                  ],
+                // Co được: khung Kho thẻ hẹp hơn màn cũ (điện thoại nhỏ, chữ phóng to) — không đẩy tràn dòng.
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    spacing: 6,
+                    children: [
+                      Text(due, key: ValueKey('due-${card.id}'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: dueColor)),
+                      KindTag(card.kind),
+                    ],
+                  ),
                 ),
               ],
             ),

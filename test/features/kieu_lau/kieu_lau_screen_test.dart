@@ -11,6 +11,7 @@ import 'package:amber_flutter/shared/theme/design_tokens.dart';
 import 'package:amber_flutter/shared/widgets/list_frame.dart';
 import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +59,7 @@ Future<_FakeApi> _pump(
   List<ActivityLogEntry>? activity,
   List<FeedSource> sources = const [],
   List<FeedArticle> articles = const [],
-  Size size = const Size(390, 1400),
+  Size size = const Size(1280, 720),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -72,7 +73,7 @@ Future<_FakeApi> _pump(
         builder: (_, _) => const KieuLauScreen(),
         routes: [GoRoute(path: 'nhac', builder: (_, _) => const Scaffold(body: Text('ĐÍCH nhạc')))],
       ),
-      for (final p in ['/finance', '/tra-dinh', '/du-an', '/tang-kinh-cac/du-lieu-huan-luyen'])
+      for (final p in ['/nghi-su-duong', '/du-an', '/tra-dinh', '/tang-kinh-cac/du-lieu-huan-luyen'])
         GoRoute(path: p, builder: (_, _) => Scaffold(body: Text('ĐÍCH $p'))),
     ],
   );
@@ -101,6 +102,13 @@ Future<void> _chip(WidgetTester tester, String label) async {
   await tester.ensureVisible(find.byKey(ValueKey('chip-$label')));
   await tester.pumpAndSettle();
   await tester.tap(find.byKey(ValueKey('chip-$label')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _tab(WidgetTester tester, String id) async {
+  await tester.ensureVisible(find.byKey(ValueKey('zone-tab-$id')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(ValueKey('zone-tab-$id')));
   await tester.pumpAndSettle();
 }
 
@@ -178,7 +186,7 @@ void main() {
     expect(find.text('4 mục · 11/11'), findsOneWidget);
     final pill = tester.widget<DesignPill>(find.byType(DesignPill));
     expect((pill.text, pill.color), ('×4', DesignColors.info));
-    expect(find.text('Chạm vào một mục để xem chi tiết'), findsOneWidget);
+    expect(find.byKey(const ValueKey('kl-hint')), findsOneWidget);
   });
 
   testWidgets('chip lọc: Tài chính chỉ FINANCE; Học tập chỉ học; quay lại Tất cả', (tester) async {
@@ -191,7 +199,8 @@ void main() {
     expect(_rowTitles(tester), hasLength(5));
   });
 
-  for (final (i, path) in [(0, '/finance'), (2, '/tra-dinh'), (4, '/du-an')]) {
+  // Tài chính / Dự án mở thẳng màn Nghị Sự Đường (một màn) — /finance, /du-an cũ chỉ còn là redirect.
+  for (final (i, path) in [(0, '/nghi-su-duong'), (2, '/tra-dinh'), (4, '/nghi-su-duong')]) {
     testWidgets('bấm dòng nhật ký $i → $path', (tester) async {
       await _pump(tester);
       await tester.tap(find.byKey(ValueKey('kl-activity-$i')));
@@ -260,16 +269,120 @@ void main() {
     });
   });
 
-  testWidgets('320 px, chữ ×2,0: không tràn (cả khi mở Tin tức)', (tester) async {
+  testWidgets('320 px, chữ ×2,0: không tràn ở cả 3 tab (cả khi mở Tin tức)', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 2.0;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await _pump(
       tester,
-      size: const Size(320, 2400),
+      size: const Size(320, 640),
       alerts: const [Alert(id: 'b', kind: 'BUDGET_EXCEEDED', title: 'Vượt ngân sách ăn uống', href: '/finance')],
     );
     expect(tester.takeException(), isNull);
+    for (final tab in ['alerts', 'activity']) {
+      await _tab(tester, tab);
+      expect(tester.takeException(), isNull);
+    }
     await _chip(tester, 'Tin tức');
     expect(tester.takeException(), isNull);
+  });
+
+  group('bố cục vừa một màn', () {
+    /// Mọi Scrollable dọc phải nằm trong một ZoneFrame (khung thường hoặc modal mở rộng) — trang không cuộn.
+    void expectNoPageScroll(WidgetTester tester) {
+      final frames = find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key as ValueKey<String>).value.startsWith('zone-frame-'));
+      var vertical = 0;
+      for (final e in find.byType(Scrollable).evaluate()) {
+        final s = e.widget as Scrollable;
+        if (axisDirectionToAxis(s.axisDirection) != Axis.vertical) continue;
+        vertical++;
+        expect(find.ancestor(of: find.byWidget(s), matching: frames), findsWidgets, reason: 'Scrollable dọc ngoài ZoneFrame');
+      }
+      expect(vertical, greaterThan(0), reason: 'phép kiểm phải gặp ít nhất vùng cuộn của các khung');
+    }
+
+    for (final size in const [Size(1920, 1080), Size(1280, 720)]) {
+      testWidgets('${size.width.toInt()}×${size.height.toInt()}: 3 khung cùng lúc, không tràn, không cuộn trang', (tester) async {
+        await _pump(
+          tester,
+          size: size,
+          alerts: [for (var i = 0; i < 30; i++) Alert(id: 'a$i', kind: 'TASK_DUE', title: 'Trễ hạn $i', href: '/du-an')],
+          activity: [for (var i = 0; i < 40; i++) _e('DU_AN', 'task.created', 'Việc $i', _vn(11).subtract(Duration(days: i)))],
+        );
+        expect(tester.takeException(), isNull);
+        for (final t in ['Tổng quan', 'Cần chú ý', 'Hoạt động']) {
+          expect(find.byKey(ValueKey('zone-frame-$t')), findsOneWidget);
+        }
+        expect(find.byKey(const ValueKey('zone-tab-overview')), findsNothing);
+        expectNoPageScroll(tester);
+
+        // Cột trái : cột phải = 1 : 2; khung không vượt màn; Tổng quan cao vừa nội dung, Cần chú ý lấp phần còn lại.
+        final overview = tester.getRect(find.byKey(const ValueKey('zone-frame-Tổng quan')));
+        final alerts = tester.getRect(find.byKey(const ValueKey('zone-frame-Cần chú ý')));
+        final activity = tester.getRect(find.byKey(const ValueKey('zone-frame-Hoạt động')));
+        expect(activity.width / overview.width, closeTo(2, 0.05));
+        expect(overview.left, 16);
+        expect(activity.right, size.width - 16);
+        expect(overview.height, lessThan(alerts.height));
+        expect(alerts.bottom, activity.bottom);
+        expect(activity.bottom, lessThanOrEqualTo(size.height - 16));
+      });
+    }
+
+    testWidgets('800×1000 (600–1023): 2 cột, Tổng quan + Cần chú ý chia đều bên trái, Hoạt động bên phải', (tester) async {
+      await _pump(tester, size: const Size(800, 1000));
+      expect(tester.takeException(), isNull);
+      expectNoPageScroll(tester);
+      final overview = tester.getRect(find.byKey(const ValueKey('zone-frame-Tổng quan')));
+      final alerts = tester.getRect(find.byKey(const ValueKey('zone-frame-Cần chú ý')));
+      final activity = tester.getRect(find.byKey(const ValueKey('zone-frame-Hoạt động')));
+      expect(overview.height, closeTo(alerts.height, 0.5));
+      expect(overview.width, closeTo(activity.width, 0.5));
+      expect(activity.bottom, alerts.bottom);
+    });
+
+    testWidgets('390×844: 3 tab, tab đang chọn lấp chiều cao; không tràn, không cuộn trang', (tester) async {
+      await _pump(tester, size: const Size(390, 844));
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('zone-frame-Tổng quan')), findsOneWidget);
+      expect(find.byKey(const ValueKey('zone-frame-Hoạt động')), findsNothing);
+      expectNoPageScroll(tester);
+
+      await _tab(tester, 'alerts');
+      expect(find.text('Không có gì cần chú ý. Mọi thứ ổn.'), findsOneWidget);
+      await _tab(tester, 'activity');
+      expect(_rowTitles(tester), hasLength(5));
+      final frame = tester.getRect(find.byKey(const ValueKey('zone-frame-Hoạt động')));
+      expect(frame.bottom, closeTo(844 - 16, 0.5));
+      expect(tester.takeException(), isNull);
+      expectNoPageScroll(tester);
+    });
+
+    testWidgets('mở rộng Hoạt động: modal toàn màn, chip đồng bộ với khung; đóng bằng nút và bằng Esc', (tester) async {
+      await _pump(tester, size: const Size(1280, 720));
+      await tester.tap(find.byKey(const ValueKey('zone-expand-Hoạt động')));
+      await tester.pumpAndSettle();
+      final modal = find.byKey(const ValueKey('zone-expanded-Hoạt động'));
+      expect(modal, findsOneWidget);
+      expect(tester.getSize(modal), const Size(1280, 720));
+      expect(tester.takeException(), isNull);
+      expectNoPageScroll(tester);
+
+      // Lọc trong modal → khung gốc cũng đổi theo.
+      await tester.tap(find.descendant(of: modal, matching: find.byKey(const ValueKey('chip-Tài chính'))));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: modal, matching: find.byType(FrameRow)), findsNWidgets(2));
+
+      await tester.tap(find.byKey(const ValueKey('zone-expanded-close')));
+      await tester.pumpAndSettle();
+      expect(modal, findsNothing);
+      expect(_rowTitles(tester), ['ăn tối, ăn trưa, cafe, ăn sáng', 'Tài chính — Tháng 11/2026']);
+
+      await tester.tap(find.byKey(const ValueKey('zone-expand-Hoạt động')));
+      await tester.pumpAndSettle();
+      expect(modal, findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(modal, findsNothing);
+    });
   });
 }

@@ -14,7 +14,8 @@ import '../widgets/card_widgets.dart';
 import '../widgets/hoc_tap_common.dart';
 import 'card_session_end_screen.dart';
 
-const _libraryPath = '/tra-dinh/hoc-tap/the';
+// Kho thẻ là một khung của /tra-dinh (`?kho=1`: điện thoại mở sẵn tab Kho thẻ).
+const _libraryPath = '/tra-dinh?kho=1';
 
 /// Ôn thẻ: mỗi lần một thẻ (mặt trước → Hiện đáp án → mặt sau + ba nút đánh giá), chờ thẻ "Chưa nhớ" quay lại,
 /// rồi màn kết thúc phiên. Logic phiên nằm ở [CardReviewNotifier].
@@ -160,7 +161,7 @@ class _Empty extends StatelessWidget {
         children: [
           const Text('Hôm nay chưa có thẻ cần ôn', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           Text('Thêm thẻ mới hoặc chờ thẻ đến hạn ôn.', textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.62))),
-          FilledButton.tonal(key: const ValueKey('review-empty-library'), onPressed: () => goBackOr(context, '$_libraryPath?subjectId=$subjectId'), child: const Text('Mở kho thẻ')),
+          FilledButton.tonal(key: const ValueKey('review-empty-library'), onPressed: () => goBackOr(context, '$_libraryPath&subjectId=$subjectId'), child: const Text('Mở kho thẻ')),
         ],
       ),
     ),
