@@ -5,41 +5,102 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/widgets/app_toast.dart';
+import '../../../shared/widgets/form_bits.dart';
 import '../../../shared/widgets/list_frame.dart';
-import '../../../shared/widgets/overview_block.dart';
 import '../models/reading_goal.dart';
 import '../providers/tang_kinh_cac_provider.dart';
 import '../services/reading_goal_api.dart';
 
-/// Tầng 3 (Kế hoạch đọc) trong khung "Nội dung" của Tàng Kinh Các: tiến độ năm [year] (sách / mục tiêu + thanh, trang đã
-/// đọc, ghi chú) → "Đặt mục tiêu" (số sách, ghi chú). Form chỉ có 2 ô như web — web không có ô targetPages dù model/API có.
-/// Không có vỏ cuộn riêng — khung chứa tự cuộn.
-class ReadingGoalView extends ConsumerStatefulWidget {
-  const ReadingGoalView({super.key, required this.year});
+// Kế hoạch đọc (trước là tầng 3 riêng) — nay nằm ở đầu cố định khung Danh sách của tầng Sách: [ReadingGoalStrip] + form
+// đặt / sửa mục tiêu mở dạng modal ([showReadingGoalSheet]).
+
+/// Tiến độ mục tiêu đọc năm [year]: "x / y sách" + thanh (khi có mục tiêu), số trang đã đọc, ghi chú; nút đặt / sửa mục tiêu.
+class ReadingGoalStrip extends ConsumerWidget {
+  const ReadingGoalStrip({super.key, required this.year});
 
   final int year;
 
   @override
-  ConsumerState<ReadingGoalView> createState() => _ReadingGoalViewState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goal = ref.watch(readingGoalProvider(year));
+    final g = goal.value;
+    final target = g?.targetBooks;
+    final hasTarget = target != null && target > 0;
+    return Column(
+      key: const ValueKey('reading-goal-strip'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 2,
+      children: [
+        Row(
+          spacing: 8,
+          children: [
+            Expanded(
+              child: Text(
+                'MỤC TIÊU ĐỌC $year',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, letterSpacing: 1, color: DesignColors.gold),
+              ),
+            ),
+            // Co được: khung Danh sách hẹp (điện thoại, chữ phóng to) không đẩy tràn hàng.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: DesignButton.outline(
+                  key: const ValueKey('goal-edit'),
+                  label: hasTarget ? 'Sửa mục tiêu' : 'Đặt mục tiêu',
+                  onPressed: g == null ? null : () => showReadingGoalSheet(context, year),
+                ),
+              ),
+            ),
+          ],
+        ),
+        Text(
+          switch (goal) {
+            AsyncData(value: final v) => v.targetBooks == null ? '${v.booksRead} sách · chưa đặt mục tiêu' : '${v.booksRead} / ${v.targetBooks} sách',
+            AsyncError() => 'Không tải được tiến độ.',
+            _ => 'Đang tải…',
+          },
+          key: const ValueKey('goal-progress'),
+          style: DesignText.muted,
+        ),
+        // Chưa đặt mục tiêu thì không có mẫu số → không vẽ thanh.
+        if (g != null && hasTarget) DesignProgressBar(g.booksRead * 100 / target),
+        if (g != null)
+          Text(
+            [
+              '${g.pagesRead} trang đã đọc',
+              if (g.note case final n? when n.trim().isNotEmpty) n.trim(),
+            ].join(' · '),
+            key: const ValueKey('goal-pages'),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: DesignText.muted,
+          ),
+      ],
+    );
+  }
 }
 
-class _ReadingGoalViewState extends ConsumerState<ReadingGoalView> {
-  late final _year = widget.year;
-  final _targetBooks = TextEditingController();
-  final _note = TextEditingController();
-  bool _saving = false;
+/// Form đặt / sửa mục tiêu năm [year] (form toàn màn chung — [showFinanceSheet]). Chỉ 2 ô như web: số sách, ghi chú
+/// (web không có ô targetPages dù model / API có). Lưu xong đóng form.
+Future<void> showReadingGoalSheet(BuildContext context, int year) => showFinanceSheet<void>(context, ReadingGoalSheet(year: year));
+
+class ReadingGoalSheet extends ConsumerStatefulWidget {
+  const ReadingGoalSheet({super.key, required this.year});
+
+  final int year;
 
   @override
-  void initState() {
-    super.initState();
-    // Điền form từ dữ liệu server, cả lần đầu lẫn sau khi lưu (giống web gọi lại load()).
-    ref.listenManual(readingGoalProvider(_year), (_, next) {
-      final goal = next.value;
-      if (goal == null) return;
-      _targetBooks.text = goal.targetBooks?.toString() ?? '';
-      _note.text = goal.note ?? '';
-    }, fireImmediately: true);
-  }
+  ConsumerState<ReadingGoalSheet> createState() => _ReadingGoalSheetState();
+}
+
+class _ReadingGoalSheetState extends ConsumerState<ReadingGoalSheet> {
+  late final ReadingGoal? _initial = ref.read(readingGoalProvider(widget.year)).value;
+  late final _targetBooks = TextEditingController(text: _initial?.targetBooks?.toString() ?? '');
+  late final _note = TextEditingController(text: _initial?.note ?? '');
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -53,101 +114,47 @@ class _ReadingGoalViewState extends ConsumerState<ReadingGoalView> {
     try {
       // Giống web: ô trống gửi null (xoá mục tiêu/ghi chú); targetPages không gửi → giữ nguyên.
       await ref.read(readingGoalApiProvider).upsertReadingGoal(
-        _year,
+        widget.year,
         targetBooks: int.tryParse(_targetBooks.text),
         note: _note.text.trim().isEmpty ? null : _note.text.trim(),
       );
-      ref.invalidate(readingGoalProvider(_year));
-      if (mounted) showToast(context, 'Đã lưu mục tiêu.', type: ToastType.success);
+      ref.invalidate(readingGoalProvider(widget.year));
+      if (!mounted) return;
+      showToast(context, 'Đã lưu mục tiêu.', type: ToastType.success);
+      Navigator.of(context).pop();
     } on DioException {
-      if (mounted) showToast(context, 'Không lưu được mục tiêu, thử lại nhé.', type: ToastType.error);
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) {
+        showToast(context, 'Không lưu được mục tiêu, thử lại nhé.', type: ToastType.error);
+        setState(() => _saving = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final goal = ref.watch(readingGoalProvider(_year));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 14,
+    return FinanceSheetBody(
+      title: 'Mục tiêu đọc ${widget.year}',
       children: [
-        OverviewBlock(
-          title: 'Tiến độ $_year',
-          labelWidth: 90,
-          rows: switch (goal) {
-            AsyncData(:final value) => _progressRows(value),
-            AsyncError() => [OverviewRow.muted(label: 'Sách', text: 'Không tải được tiến độ.')],
-            _ => [OverviewRow.muted(label: 'Sách', text: 'Đang tải…')],
-          },
+        TextField(
+          key: const ValueKey('goal-books'),
+          controller: _targetBooks,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(labelText: 'Số sách muốn đọc'),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 10,
-          children: [
-            Text(
-              'ĐẶT MỤC TIÊU CHO $_year',
-              style: const TextStyle(fontSize: 13, letterSpacing: 1, color: DesignColors.gold),
-            ),
-            TextField(
-              key: const ValueKey('goal-books'),
-              controller: _targetBooks,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              style: DesignText.body,
-              cursorColor: DesignColors.gold,
-              decoration: designInput('Số sách muốn đọc'),
-            ),
-            TextField(
-              key: const ValueKey('goal-note'),
-              controller: _note,
-              minLines: 2,
-              maxLines: 5,
-              style: DesignText.body,
-              cursorColor: DesignColors.gold,
-              decoration: designInput('Ghi chú định hướng đọc năm nay...'),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: DesignButton.primary(
-                key: const ValueKey('goal-save'),
-                label: _saving ? 'Đang lưu...' : 'Lưu mục tiêu',
-                onPressed: _saving ? null : _save,
-                minHeight: 40,
-              ),
-            ),
-          ],
+        TextField(
+          key: const ValueKey('goal-note'),
+          controller: _note,
+          minLines: 2,
+          maxLines: 5,
+          decoration: const InputDecoration(labelText: 'Ghi chú định hướng đọc năm nay'),
+        ),
+        FilledButton(
+          key: const ValueKey('goal-save'),
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Đang lưu...' : 'Lưu mục tiêu'),
         ),
       ],
     );
-  }
-
-  List<Widget> _progressRows(ReadingGoal g) {
-    final target = g.targetBooks;
-    return [
-      OverviewRow(
-        label: 'Sách',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              target == null ? '${g.booksRead} sách · chưa đặt mục tiêu' : '${g.booksRead} / $target sách',
-              key: const ValueKey('goal-progress'),
-              style: DesignText.muted,
-            ),
-            // Chưa đặt mục tiêu thì không có mẫu số → không vẽ thanh.
-            if (target != null && target > 0) DesignProgressBar(g.booksRead * 100 / target),
-          ],
-        ),
-      ),
-      OverviewRow.muted(label: 'Trang', text: '${g.pagesRead} trang đã đọc'),
-      if (g.note != null)
-        OverviewRow(
-          label: 'Ghi chú',
-          child: Text(g.note!, style: DesignText.muted.copyWith(fontStyle: FontStyle.italic)),
-        ),
-    ];
   }
 }

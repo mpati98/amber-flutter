@@ -6,6 +6,7 @@ import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/utils/currency.dart';
 import '../../../shared/utils/date_format.dart';
 import '../../../shared/utils/vn_time.dart';
+import '../../../shared/widgets/form_bits.dart';
 import '../../../shared/widgets/list_frame.dart';
 import '../../../shared/widgets/zone_frame.dart';
 import '../../../shared/widgets/zone_scaffold.dart';
@@ -187,10 +188,43 @@ class _NoticeLine extends StatelessWidget {
       ),
     );
     final href = n.href;
-    if (href == null) return KeyedSubtree(key: ValueKey('nsd-notice-${n.id}'), child: text);
+    final VoidCallback? onTap = n.tasks.isNotEmpty
+        ? () => showFinanceSheet<void>(context, _TaskListSheet(title: n.title, tasks: n.tasks))
+        : (href == null ? null : () => context.push(href));
+    if (onTap == null) return KeyedSubtree(key: ValueKey('nsd-notice-${n.id}'), child: text);
     return Semantics(
       button: true,
-      child: InkWell(key: ValueKey('nsd-notice-${n.id}'), onTap: () => context.push(href), child: text),
+      child: InkWell(key: ValueKey('nsd-notice-${n.id}'), onTap: onTap, child: text),
+    );
+  }
+}
+
+/// Danh sách việc của một dòng gộp ("N việc nằm im"): tên · dự án · số ngày; bấm → chi tiết dự án, mở đúng việc đó.
+class _TaskListSheet extends StatelessWidget {
+  const _TaskListSheet({required this.title, required this.tasks});
+
+  final String title;
+  final List<AttentionItem> tasks;
+
+  @override
+  Widget build(BuildContext context) {
+    return FinanceSheetBody(
+      title: title,
+      children: [
+        for (final t in tasks)
+          ListTile(
+            key: ValueKey('idle-task-${t.taskId}'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(t.title),
+            subtitle: Text('${t.projectName} · nằm im ${t.days} ngày'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              final router = GoRouter.of(context);
+              Navigator.of(context).pop();
+              router.push(attentionLocation(t));
+            },
+          ),
+      ],
     );
   }
 }

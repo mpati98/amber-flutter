@@ -112,8 +112,8 @@ String? traDinhLegacyTabRedirect(Uri uri) {
   };
 }
 
-/// Màn danh sách riêng từng tầng cũ của Tàng Kinh Các → tầng tương ứng trên màn chính.
-const tkcLegacyFloors = [('sach', 1), ('tai-lieu', 2), ('ke-hoach-doc', 3), ('du-lieu-huan-luyen', 4)];
+/// Màn danh sách riêng từng tầng cũ của Tàng Kinh Các → tầng tương ứng trên màn chính (3 tầng: Kế hoạch đọc nằm ở tầng Sách).
+const tkcLegacyFloors = [('sach', 1), ('tai-lieu', 2), ('ke-hoach-doc', 1), ('du-lieu-huan-luyen', tkcTrainingFloor)];
 
 /// Màn trung gian cũ của Nghị Sự Đường (/du-an, /finance) → màn chính /nghi-su-duong. Chỉ đúng hai đường dẫn đó:
 /// chi tiết (/du-an/:id, /finance/:id) là route riêng nên không đi qua đây.
@@ -153,10 +153,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const KieuLauScreen(),
         routes: [GoRoute(path: 'nhac', builder: (_, _) => const MusicScreen())],
       ),
-      // Tàng Kinh Các là MỘT màn: tầng + mục ở query (?tang=1..4&id=). Các màn danh sách riêng từng tầng và chi tiết
+      // Tàng Kinh Các là MỘT màn: tầng + mục ở query (?tang=1..3&id=). Các màn danh sách riêng từng tầng và chi tiết
       // nhật ký huấn luyện cũ đã gộp vào đó; route cũ chỉ còn redirect để link cũ không gãy.
       GoRoute(
         path: '/tang-kinh-cac',
+        // ?tang=4 (khi còn 4 tầng) → ?tang=3.
+        redirect: (_, state) => tkcLegacyQueryRedirect(state.uri),
         builder: (_, state) => TangKinhCacScreen(
           tang: tkcFloorOf(state.uri.queryParameters['tang']),
           id: state.uri.queryParameters['id'],
@@ -165,7 +167,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           for (final (path, tang) in tkcLegacyFloors) GoRoute(path: path, redirect: (_, _) => tkcLocation(tang)),
           GoRoute(
             path: 'du-lieu-huan-luyen/:logId',
-            redirect: (_, state) => tkcLocation(4, id: state.pathParameters['logId']),
+            redirect: (_, state) => tkcLocation(tkcTrainingFloor, id: state.pathParameters['logId']),
           ),
         ],
       ),

@@ -141,7 +141,7 @@ class FakeApi extends TrainingLogApi {
   }
 }
 
-/// Tàng Kinh Các tầng 4 (một màn): [at] '' = chưa chọn (Nội dung = dòng mới nhất), '/l1' = mở dòng l1 (`&id=l1`).
+/// Tàng Kinh Các tầng 3 Huấn luyện (một màn): [at] '' = chưa chọn (Nội dung = dòng mới nhất), '/l1' = mở dòng l1 (`&id=l1`).
 /// 800 px: hai khung Danh sách | Nội dung cạnh nhau.
 Future<void> pumpScreens(
   WidgetTester tester,
@@ -154,7 +154,7 @@ Future<void> pumpScreens(
   addTearDown(tester.view.reset);
   final id = at.isEmpty ? null : at.substring(1);
   final router = GoRouter(
-    initialLocation: tkcLocation(4, id: id),
+    initialLocation: tkcLocation(tkcTrainingFloor, id: id),
     routes: [
       GoRoute(
         path: '/tang-kinh-cac',

@@ -155,7 +155,7 @@ void main() {
     String location(ProviderContainer c) =>
         c.read(routerProvider).routeInformationProvider.value.uri.toString();
 
-    testWidgets('Tàng Kinh Các một màn: route cũ của từng tầng (go và push) về /tang-kinh-cac?tang=…[&id=]', (tester) async {
+    testWidgets('Tàng Kinh Các một màn (3 tầng): route cũ của từng tầng và ?tang=4 (go và push) về /tang-kinh-cac?tang=…[&id=]', (tester) async {
       final c = await pumpApp(
         tester,
         token: 'saved-access',
@@ -165,9 +165,11 @@ void main() {
       for (final (old, to, tang, id) in const [
         ('/tang-kinh-cac/sach', '/tang-kinh-cac?tang=1', 1, null),
         ('/tang-kinh-cac/tai-lieu', '/tang-kinh-cac?tang=2', 2, null),
-        ('/tang-kinh-cac/ke-hoach-doc', '/tang-kinh-cac?tang=3', 3, null),
-        ('/tang-kinh-cac/du-lieu-huan-luyen', '/tang-kinh-cac?tang=4', 4, null),
-        ('/tang-kinh-cac/du-lieu-huan-luyen/l1', '/tang-kinh-cac?tang=4&id=l1', 4, 'l1'),
+        ('/tang-kinh-cac/ke-hoach-doc', '/tang-kinh-cac?tang=1', 1, null),
+        ('/tang-kinh-cac/du-lieu-huan-luyen', '/tang-kinh-cac?tang=3', 3, null),
+        ('/tang-kinh-cac/du-lieu-huan-luyen/l1', '/tang-kinh-cac?tang=3&id=l1', 3, 'l1'),
+        ('/tang-kinh-cac?tang=4', '/tang-kinh-cac?tang=3', 3, null),
+        ('/tang-kinh-cac?tang=4&id=l1', '/tang-kinh-cac?tang=3&id=l1', 3, 'l1'),
       ]) {
         router.go(old);
         await tester.pumpAndSettle();
@@ -180,7 +182,7 @@ void main() {
         expect((s.tang, s.id), (tang, id), reason: 'push $old');
       }
       // Link thẳng vào một dòng nhật ký: khung Nội dung mở đúng dòng đó.
-      router.go('/tang-kinh-cac?tang=4&id=l1');
+      router.go('/tang-kinh-cac?tang=3&id=l1');
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('log-view-l1')), findsOneWidget);
       expect(find.text('chi 45k ăn trưa Momo'), findsWidgets);

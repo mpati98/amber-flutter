@@ -161,6 +161,44 @@ void main() {
       expect(n[0].toWorld(), {'text': 'Âm quỹ · ${formatVnd(-1165565)}', 'lvl': 'bad'});
     });
 
+    test('việc nằm im QUÁ 7 ngày (IDLE của summary) gộp một dòng "N việc nằm im", đứng trước routine', () {
+      final n = buildNsdNotices(
+        attention: [
+          _att('t1', 'Quá hạn', days: 2),
+          _att('i1', 'Đứng 8 ngày', kind: 'IDLE', days: 8),
+          _att('i2', 'Đứng 30 ngày', kind: 'IDLE', days: 30),
+          _att('i3', 'Đứng đúng 7 ngày', kind: 'IDLE', days: 7),
+        ],
+        routines: [mkRoutine('a', 'Tập thể dục')],
+      );
+      expect(n.map((x) => x.id), ['task:t1', 'idle', 'routines']);
+      final idle = n[1];
+      expect(idle.title, '2 việc nằm im');
+      expect(idle.tasks.map((t) => t.taskId), ['i1', 'i2']);
+      expect(idle.href, isNull);
+      expect(idle.toWorld(), {'text': '2 việc nằm im · quá 7 ngày chưa cập nhật', 'lvl': 'warn'}, reason: 'popup cảnh 3D dùng chung nguồn');
+      expect(buildNsdNotices(attention: [_att('i3', 'x', kind: 'IDLE', days: 7)]), isEmpty);
+    });
+
+    testWidgets('chạm "N việc nằm im" → modal liệt kê; chạm một việc → chi tiết dự án mở đúng việc', (tester) async {
+      await pumpNsd(
+        tester,
+        api: _api(
+          attention: [_att('i1', 'Việc đứng lâu', kind: 'IDLE', days: 9), _att('i2', 'Việc khác', kind: 'IDLE', days: 12)],
+          tasks: [mkTask('i1', 'Việc đứng lâu', TaskStatus.inProgress), mkTask('i2', 'Việc khác', TaskStatus.inProgress)],
+        ),
+      );
+      expect(find.descendant(of: nsdFrame('Cần chú ý'), matching: find.textContaining('2 việc nằm im', findRichText: true)), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('nsd-notice-idle')));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AppBar, '2 việc nằm im'), findsOneWidget);
+      expect(find.text('Sự kiện tháng 11 · nằm im 9 ngày'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('idle-task-i2')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProjectDetailScreen), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'Chi tiết việc'), findsOneWidget);
+    });
+
     test('attentionLocation: mở dự án kèm id việc', () {
       expect(attentionLocation(_att('t9', 'x')), '/du-an/p1?task=t9');
     });

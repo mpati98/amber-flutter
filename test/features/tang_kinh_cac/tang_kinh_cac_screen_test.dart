@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/models/document.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/models/highlight.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/models/publication.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/models/reading_goal.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/providers/document_provider.dart';
@@ -105,6 +106,8 @@ Future<_Harness> _pump(
   String location = '/tang-kinh-cac',
   Size size = const Size(1280, 720),
   ReadingGoal Function(int year)? goal,
+  /// Highlight "Ôn lại" (null = chưa có highlight nào → Nội dung là mục mới nhất).
+  ResurfacedHighlight? Function()? resurface,
   List<Override> extra = const [],
 }) async {
   tester.view.physicalSize = size;
@@ -117,10 +120,11 @@ Future<_Harness> _pump(
       GoRoute(path: '/', builder: (_, _) => const Scaffold(body: Text('HOME'))),
       GoRoute(
         path: '/tang-kinh-cac',
+        redirect: (_, s) => tkcLegacyQueryRedirect(s.uri),
         builder: (_, s) => TangKinhCacScreen(tang: tkcFloorOf(s.uri.queryParameters['tang']), id: s.uri.queryParameters['id']),
         routes: [
           for (final (path, tang) in tkcLegacyFloors) GoRoute(path: path, redirect: (_, _) => tkcLocation(tang)),
-          GoRoute(path: 'du-lieu-huan-luyen/:logId', redirect: (_, s) => tkcLocation(4, id: s.pathParameters['logId'])),
+          GoRoute(path: 'du-lieu-huan-luyen/:logId', redirect: (_, s) => tkcLocation(tkcTrainingFloor, id: s.pathParameters['logId'])),
         ],
       ),
     ],
@@ -133,6 +137,7 @@ Future<_Harness> _pump(
         publicationsProvider.overrideWith((ref, status) async => status == null ? _books : _books.where((b) => b.status == status).toList()),
         documentsProvider.overrideWith((ref, type) async => type == null ? _docs : _docs.where((d) => d.type == type).toList()),
         bookHighlightsProvider.overrideWith((ref, id) async => const []),
+        resurfacedHighlightProvider.overrideWith((ref) async => resurface?.call()),
         readingGoalProvider.overrideWith(
           (ref, y) async => goal?.call(y) ?? ReadingGoal(year: y, booksRead: 2, pagesRead: 340, targetBooks: 12, note: 'Đọc chậm'),
         ),
@@ -177,7 +182,7 @@ void main() {
     for (final size in const [Size(1920, 1080), Size(1280, 720), Size(800, 1000)]) {
       testWidgets('${size.width.toInt()}×${size.height.toInt()}: Danh sách | Nội dung tỉ lệ 2 / 3, mọi tầng không tràn, không cuộn trang', (tester) async {
         await _pump(tester, size: size);
-        for (final n in [2, 1, 3, 4]) {
+        for (final n in [2, 1, 3]) {
           await _tapVisible(tester, find.byKey(ValueKey('tkc-tang-$n')));
           expect(tester.takeException(), isNull, reason: 'tầng $n');
           _expectNoPageScroll(tester);
@@ -233,21 +238,26 @@ void main() {
     testWidgets('320 px, chữ ×2,0: mọi tầng (danh sách + nội dung) không tràn', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 2.0;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      for (final (tang, id) in const [(1, 'a'), (2, '1'), (3, null), (4, 'l1')]) {
+      for (final (tang, id) in const [(1, 'a'), (2, '1'), (3, 'l1')]) {
         await tester.pumpWidget(const SizedBox());
         await _pump(tester, size: const Size(320, 640), location: tkcLocation(tang));
         expect(tester.takeException(), isNull, reason: 'danh sách tầng $tang');
         await tester.pumpWidget(const SizedBox());
-        await _pump(tester, size: const Size(320, 640), location: tkcLocation(tang, id: id ?? '${DateTime.now().year}'));
+        await _pump(tester, size: const Size(320, 640), location: tkcLocation(tang, id: id));
         expect(tester.takeException(), isNull, reason: 'nội dung tầng $tang');
       }
     });
   });
 
   group('tầng và mục qua query', () {
-    test('tkcFloorOf: 1–4 hợp lệ, còn lại về tầng 2', () {
-      expect([for (final r in ['1', '2', '3', '4', '0', '5', 'x', null]) tkcFloorOf(r)], [1, 2, 3, 4, 2, 2, 2, 2]);
-      expect(tkcLocation(4, id: 'l1'), '/tang-kinh-cac?tang=4&id=l1');
+    test('tkcFloorOf: 1–3 hợp lệ, còn lại về tầng 2; ?tang=4 cũ → ?tang=3 (giữ id)', () {
+      expect([for (final r in ['1', '2', '3', '4', '0', 'x', null]) tkcFloorOf(r)], [1, 2, 3, 2, 2, 2, 2]);
+      expect(tkcLocation(3, id: 'l1'), '/tang-kinh-cac?tang=3&id=l1');
+      String? r(String u) => tkcLegacyQueryRedirect(Uri.parse(u));
+      expect(r('/tang-kinh-cac?tang=4'), '/tang-kinh-cac?tang=3');
+      expect(r('/tang-kinh-cac?tang=4&id=l2'), '/tang-kinh-cac?tang=3&id=l2');
+      expect(r('/tang-kinh-cac?tang=3'), isNull, reason: '?tang=3 mới = Huấn luyện');
+      expect(r('/tang-kinh-cac?tang=1&id=a'), isNull);
     });
 
     testWidgets('mặc định tầng 2; chưa chọn → Nội dung là tài liệu mới nhất', (tester) async {
@@ -257,19 +267,15 @@ void main() {
       expect(tester.widget<FrameRow>(find.byKey(const ValueKey('doc-1'))).borderColor, DesignColors.gold);
     });
 
-    testWidgets('?tang=1&id=c mở đúng cuốn; ?tang=4&id=l2 mở đúng dòng nhật ký; ?tang=3 mở năm nay', (tester) async {
+    testWidgets('?tang=1&id=c mở đúng cuốn; ?tang=3&id=l2 mở đúng dòng nhật ký', (tester) async {
       await _pump(tester, location: '/tang-kinh-cac?tang=1&id=c');
       expect(_inContent(find.byKey(const ValueKey('book-view-c'))), findsOneWidget);
       expect(tester.widget<FrameTile>(find.byKey(const ValueKey('book-c'))).borderColor, DesignColors.gold);
       expect(tester.widget<FrameTile>(find.byKey(const ValueKey('book-a'))).borderColor, isNot(DesignColors.gold));
 
       await tester.pumpWidget(const SizedBox());
-      await _pump(tester, location: '/tang-kinh-cac?tang=4&id=l2');
+      await _pump(tester, location: '/tang-kinh-cac?tang=3&id=l2');
       expect(_inContent(find.byKey(const ValueKey('log-view-l2'))), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-      await _pump(tester, location: '/tang-kinh-cac?tang=3');
-      expect(_inContent(find.byKey(const ValueKey('goal-progress'))), findsOneWidget);
     });
 
     testWidgets('?id không có → câu báo trong Nội dung, danh sách vẫn dùng được', (tester) async {
@@ -302,7 +308,7 @@ void main() {
       expect(_inList(find.byKey(const ValueKey('doc-2'))), findsOneWidget);
       expect(tester.widget<TextField>(find.byKey(const ValueKey('tkc-search'))).controller!.text, '', reason: 'ô tìm riêng từng tầng');
 
-      await _tapVisible(tester, find.byKey(const ValueKey('tkc-tang-4')));
+      await _tapVisible(tester, find.byKey(const ValueKey('tkc-tang-3')));
       expect(_inList(find.byKey(const ValueKey('log-l1'))), findsOneWidget);
       expect(_inList(find.byKey(const ValueKey('doc-2'))), findsNothing);
 
@@ -352,7 +358,7 @@ void main() {
       expect(h.location, '/tang-kinh-cac?tang=1');
     });
 
-    testWidgets('"+ Thêm" ở tầng 1 mở form Thêm sách, ở tầng 2 mở form lưu tài liệu; tầng 3 / 4 không có', (tester) async {
+    testWidgets('"+ Thêm" ở tầng 1 mở form Thêm sách, ở tầng 2 mở form lưu tài liệu; tầng 3 không có', (tester) async {
       await _pump(tester, location: '/tang-kinh-cac?tang=1');
       await tester.tap(find.byKey(const ValueKey('tkc-add')));
       await tester.pumpAndSettle();
@@ -364,7 +370,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.widgetWithText(AppBar, 'Lưu tài liệu mới'), findsOneWidget);
 
-      for (final n in [3, 4]) {
+      for (final n in [3]) {
         await tester.pumpWidget(const SizedBox());
         await _pump(tester, location: tkcLocation(n));
         expect(find.byKey(const ValueKey('tkc-add')), findsNothing, reason: 'tầng $n');
@@ -388,45 +394,111 @@ void main() {
     });
   });
 
-  group('Kế hoạch đọc (tầng 3)', () {
-    testWidgets('một mục "Năm nay" ở Danh sách; Nội dung: "2 / 12 sách" + thanh, trang, ghi chú; form điền sẵn', (tester) async {
-      await _pump(tester, location: '/tang-kinh-cac?tang=3');
-      final year = DateTime.now().year;
-      expect(_inList(find.byKey(ValueKey('goal-year-$year'))), findsOneWidget);
-      expect(find.byKey(const ValueKey('tkc-search')), findsNothing);
+  group('mục tiêu đọc ở đầu tầng Sách (trước là tầng Kế hoạch đọc)', () {
+    testWidgets('đầu cố định khung Danh sách tầng Sách: "2 / 12 sách" + thanh, trang + ghi chú, nút "Sửa mục tiêu"; tầng khác không có', (tester) async {
+      await _pump(tester, location: '/tang-kinh-cac?tang=1');
+      final strip = _inList(find.byKey(const ValueKey('reading-goal-strip')));
+      expect(strip, findsOneWidget);
+      expect(tester.getTopLeft(strip).dy, lessThan(tester.getTopLeft(find.byKey(const ValueKey('tkc-search'))).dy), reason: 'trên ô tìm');
+      expect(find.ancestor(of: strip, matching: find.byWidgetPredicate((w) => w is SingleChildScrollView && w.padding == const EdgeInsets.only(right: 8, bottom: 8))), findsOneWidget,
+          reason: 'nằm trong phần đầu cố định của khung, không trong vùng cuộn danh sách');
       expect(tester.widget<Text>(find.byKey(const ValueKey('goal-progress'))).data, '2 / 12 sách');
-      expect(_inContent(find.byType(DesignProgressBar)), findsOneWidget);
-      expect(find.text('340 trang đã đọc'), findsOneWidget);
-      expect(_inContent(find.text('Đọc chậm')), findsNWidgets(2)); // tiến độ + ô ghi chú
+      expect(find.descendant(of: strip, matching: find.byType(DesignProgressBar)), findsOneWidget);
+      expect(tester.widget<Text>(find.byKey(const ValueKey('goal-pages'))).data, '340 trang đã đọc · Đọc chậm');
+      expect(find.text('Sửa mục tiêu'), findsOneWidget);
+      for (final n in [2, 3]) {
+        await _tapVisible(tester, find.byKey(ValueKey('tkc-tang-$n')));
+        expect(find.byKey(const ValueKey('reading-goal-strip')), findsNothing, reason: 'tầng $n');
+      }
     });
 
-    testWidgets('chưa đặt mục tiêu: không có thanh tiến độ', (tester) async {
-      await _pump(tester, location: '/tang-kinh-cac?tang=3', goal: (y) => ReadingGoal(year: y, booksRead: 3, pagesRead: 0));
+    testWidgets('chưa đặt mục tiêu: không có thanh, nút "Đặt mục tiêu"', (tester) async {
+      await _pump(tester, location: '/tang-kinh-cac?tang=1', goal: (y) => ReadingGoal(year: y, booksRead: 3, pagesRead: 0));
       expect(tester.widget<Text>(find.byKey(const ValueKey('goal-progress'))).data, '3 sách · chưa đặt mục tiêu');
-      expect(_inContent(find.byType(DesignProgressBar)), findsNothing);
+      expect(find.descendant(of: find.byKey(const ValueKey('reading-goal-strip')), matching: find.byType(DesignProgressBar)), findsNothing);
+      expect(find.text('Đặt mục tiêu'), findsOneWidget);
     });
 
-    testWidgets('Lưu → gửi số sách + ghi chú (rỗng = null), toast thành công; lỗi → toast lỗi', (tester) async {
+    testWidgets('nút mở form (modal) điền sẵn; Lưu → gửi số sách + ghi chú (rỗng = null), toast, đóng form; lỗi → toast, form còn mở', (tester) async {
       final api = _FakeGoalApi();
       await _pump(
         tester,
-        location: '/tang-kinh-cac?tang=3',
-        goal: (y) => ReadingGoal(year: y, booksRead: 0, pagesRead: 0),
+        location: '/tang-kinh-cac?tang=1',
+        goal: (y) => ReadingGoal(year: y, booksRead: 0, pagesRead: 0, targetBooks: 12, note: 'Đọc chậm'),
         extra: [readingGoalApiProvider.overrideWithValue(api)],
       );
+      await tester.tap(find.byKey(const ValueKey('goal-edit')));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(AppBar, 'Mục tiêu đọc ${DateTime.now().year}'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget, reason: 'điền sẵn số sách');
       await tester.enterText(find.byKey(const ValueKey('goal-books')), '20');
+      await tester.enterText(find.byKey(const ValueKey('goal-note')), '');
       await tester.tap(find.byKey(const ValueKey('goal-save')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 750));
       expect(api.saved, [(20, null)]);
       expect(find.byKey(const ValueKey('toast-success')), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('goal-save')), findsNothing, reason: 'lưu xong đóng form');
 
       api.fail = true;
+      await tester.tap(find.byKey(const ValueKey('goal-edit')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('goal-save')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 750));
-      expect(find.text('Không lưu được mục tiêu, thử lại nhé.'), findsOneWidget);
+      // SnackBar của ScaffoldMessenger vẽ trên mọi Scaffold đang có (form toàn màn + màn bên dưới) — người dùng thấy cái trên cùng.
+      expect(find.text('Không lưu được mục tiêu, thử lại nhé.'), findsWidgets);
+      expect(find.byKey(const ValueKey('goal-save')), findsOneWidget);
+    });
+  });
+
+  group('"Ôn lại" khi chưa chọn mục', () {
+    final quote = ResurfacedHighlight.fromJson({
+      'id': 'h1',
+      'publicationId': 'c',
+      'quote': 'Đọc sách là sống thêm nhiều đời',
+      'page': 42,
+      'createdAt': '2026-11-01T00:00:00.000Z',
+      'publication': {'title': 'Sách c', 'author': 'Người viết C'},
+    });
+
+    testWidgets('có highlight: Nội dung là câu trích + nguồn (thay mục mới nhất), danh sách không đánh dấu mục nào', (tester) async {
+      await _pump(tester, resurface: () => quote);
+      final card = _inContent(find.byKey(const ValueKey('tkc-resurface')));
+      expect(card, findsOneWidget);
+      expect(find.textContaining('Đọc sách là sống thêm nhiều đời'), findsOneWidget);
+      expect(find.text('— Sách c, Người viết C · trang 42'), findsOneWidget);
+      expect(_inContent(find.byType(DocumentViewerModal)), findsNothing);
+      expect(tester.widget<FrameRow>(find.byKey(const ValueKey('doc-1'))).borderColor, isNot(DesignColors.gold));
+    });
+
+    testWidgets('chạm câu trích → mở cuốn gốc ở tầng Sách; "Highlight khác" rút lại', (tester) async {
+      var calls = 0;
+      final h = await _pump(tester, resurface: () { calls++; return quote; });
+      expect(calls, 1);
+      await tester.tap(find.byKey(const ValueKey('resurface-next')));
+      await tester.pumpAndSettle();
+      expect(calls, 2);
+      await tester.tap(find.byKey(const ValueKey('resurface-open')));
+      await tester.pumpAndSettle();
+      expect(h.location, '/tang-kinh-cac?tang=1&id=c');
+      expect(_inContent(find.byKey(const ValueKey('book-view-c'))), findsOneWidget);
+    });
+
+    testWidgets('đã chọn mục (?id) hoặc tầng Huấn luyện → không có "Ôn lại"', (tester) async {
+      await _pump(tester, location: '/tang-kinh-cac?tang=2&id=3', resurface: () => quote);
+      expect(find.byKey(const ValueKey('tkc-resurface')), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await _pump(tester, location: '/tang-kinh-cac?tang=3', resurface: () => quote);
+      expect(find.byKey(const ValueKey('tkc-resurface')), findsNothing);
+      expect(_inContent(find.byKey(const ValueKey('log-view-l1'))), findsOneWidget);
+    });
+
+    testWidgets('chưa có highlight nào → mục mới nhất như cũ', (tester) async {
+      await _pump(tester, location: '/tang-kinh-cac?tang=1');
+      expect(find.byKey(const ValueKey('tkc-resurface')), findsNothing);
+      expect(_inContent(find.byKey(const ValueKey('book-view-a'))), findsOneWidget);
     });
   });
 
@@ -434,9 +506,11 @@ void main() {
     for (final (old, to) in const [
       ('/tang-kinh-cac/sach', '/tang-kinh-cac?tang=1'),
       ('/tang-kinh-cac/tai-lieu', '/tang-kinh-cac?tang=2'),
-      ('/tang-kinh-cac/ke-hoach-doc', '/tang-kinh-cac?tang=3'),
-      ('/tang-kinh-cac/du-lieu-huan-luyen', '/tang-kinh-cac?tang=4'),
-      ('/tang-kinh-cac/du-lieu-huan-luyen/l2', '/tang-kinh-cac?tang=4&id=l2'),
+      ('/tang-kinh-cac/ke-hoach-doc', '/tang-kinh-cac?tang=1'),
+      ('/tang-kinh-cac/du-lieu-huan-luyen', '/tang-kinh-cac?tang=3'),
+      ('/tang-kinh-cac/du-lieu-huan-luyen/l2', '/tang-kinh-cac?tang=3&id=l2'),
+      ('/tang-kinh-cac?tang=4', '/tang-kinh-cac?tang=3'),
+      ('/tang-kinh-cac?tang=4&id=l2', '/tang-kinh-cac?tang=3&id=l2'),
     ]) {
       testWidgets('$old → $to', (tester) async {
         final h = await _pump(tester, location: '/');

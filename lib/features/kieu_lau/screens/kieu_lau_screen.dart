@@ -34,7 +34,7 @@ const _filters = [
 const _sources = <String, (String, String?)>{
   'FINANCE': ('財', '/nghi-su-duong'),
   'TRA_DINH': ('學', '/tra-dinh'),
-  'LEARN': ('訓', '/tang-kinh-cac?tang=4'), // nhật ký sửa đáp án amber-brain (Tàng Kinh Các, tầng 4)
+  'LEARN': ('訓', '/tang-kinh-cac?tang=3'), // nhật ký sửa đáp án amber-brain (Tàng Kinh Các, tầng 3 Huấn luyện)
   'DU_AN': ('案', '/nghi-su-duong'),
   'MUSIC': ('樂', '/kieu-lau/nhac'),
   'KIEU_LAU': ('樓', null),

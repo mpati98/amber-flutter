@@ -12,7 +12,7 @@ enum NsdNoticeLevel { bad, warn }
 /// Một dòng "Cần chú ý" của Nghị Sự Đường. Cùng nguồn cho khung "Cần chú ý" của màn chính và popup Nghị Sự Đường
 /// trên cảnh 3D ([buildNsdNotices]).
 class NsdNotice {
-  const NsdNotice({required this.id, required this.title, this.detail, this.href, this.level = NsdNoticeLevel.warn});
+  const NsdNotice({required this.id, required this.title, this.detail, this.href, this.level = NsdNoticeLevel.warn, this.tasks = const []});
 
   final String id;
   final String title;
@@ -22,9 +22,16 @@ class NsdNotice {
   final String? href;
   final NsdNoticeLevel level;
 
+  /// Dòng gộp nhiều việc (vd "N việc nằm im"): bấm mở danh sách các việc này thay vì [href].
+  final List<AttentionItem> tasks;
+
   /// Dạng `push` của cảnh 3D: `{text, lvl}`.
   Map<String, Object?> toWorld() => {'text': detail == null ? title : '$title · $detail', 'lvl': level.name};
 }
+
+/// Việc "nằm im" vào Cần chú ý khi đứng yên QUÁ chừng này ngày. Dữ liệu có sẵn ở client là `summary.attention` loại IDLE
+/// (backend: việc Đang làm / Chờ duyệt của dự án đang chạy, ≥ 5 ngày kể từ lần đổi trạng thái `statusChangedAt`, kèm số ngày).
+const idleNoticeDays = 7;
 
 /// Đường dẫn mở dự án và trang chi tiết đúng việc đó.
 String attentionLocation(AttentionItem a) => '/du-an/${a.projectId}?task=${a.taskId}';
@@ -37,7 +44,8 @@ String? _href(String href) => href == '/du-an' || href == '/finance' ? null : hr
 
 /// Gộp cảnh báo, thứ tự: âm quỹ → cảnh báo backend (việc sắp/đã trễ hạn trong 3 ngày theo `prepLeadDays`,
 /// vượt ngân sách, chưa mở tháng) → việc quá hạn của dự án (summary.attention, bỏ việc đã có ở trên)
-/// → routine hôm nay chưa xong (gộp một dòng). Phần nào null (chưa tải / lỗi) thì bỏ qua phần đó.
+/// → việc nằm im quá [idleNoticeDays] ngày (gộp một dòng, bấm mở danh sách) → routine hôm nay chưa xong (gộp một dòng).
+/// Phần nào null (chưa tải / lỗi) thì bỏ qua phần đó.
 List<NsdNotice> buildNsdNotices({
   FinanceOverview? finance,
   List<Alert>? alerts,
@@ -71,6 +79,10 @@ List<NsdNotice> buildNsdNotices({
         level: NsdNoticeLevel.bad,
       ),
     );
+  }
+  final idle = [for (final a in attention ?? const <AttentionItem>[]) if (!a.isOverdue && a.days > idleNoticeDays) a];
+  if (idle.isNotEmpty) {
+    out.add(NsdNotice(id: 'idle', title: '${idle.length} việc nằm im', detail: 'quá $idleNoticeDays ngày chưa cập nhật', tasks: idle));
   }
   final pending = [for (final r in routines ?? const <Routine>[]) if (r.dueToday && !r.doneToday) r.name];
   if (pending.isNotEmpty) out.add(NsdNotice(id: 'routines', title: 'Hôm nay chưa xong', detail: pending.join(', ')));

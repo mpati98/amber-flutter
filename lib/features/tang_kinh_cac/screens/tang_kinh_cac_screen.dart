@@ -10,6 +10,7 @@ import '../../du_lieu_huan_luyen/providers/training_log_provider.dart';
 import '../../du_lieu_huan_luyen/widgets/training_log_detail_view.dart';
 import '../../du_lieu_huan_luyen/widgets/training_log_list.dart';
 import '../models/document.dart';
+import '../models/highlight.dart';
 import '../models/publication.dart';
 import '../providers/document_provider.dart';
 import '../providers/publication_provider.dart';
@@ -23,16 +24,27 @@ import '../widgets/reading_goal_view.dart';
 import '../widgets/status_badge.dart';
 import '../widgets/type_tag.dart';
 
-/// 4 tầng, giữ đúng dữ liệu hiện có: số tầng (`?tang=`) · nhãn trên thanh chọn tầng.
-const tkcFloors = [(1, 'Tầng 1 · Sách'), (2, 'Tầng 2 · Tài liệu'), (3, 'Tầng 3 · Kế hoạch đọc'), (4, 'Tầng 4 · Huấn luyện')];
+/// 3 tầng (`?tang=`) · nhãn trên thanh chọn tầng. Kế hoạch đọc (trước là tầng 3) nay là phần đầu khung Danh sách của
+/// tầng Sách; Dữ liệu huấn luyện từ tầng 4 thành tầng 3 (`?tang=4` cũ được router chuyển hướng — [tkcLegacyQueryRedirect]).
+const tkcFloors = [(1, 'Tầng 1 · Sách'), (2, 'Tầng 2 · Tài liệu'), (3, 'Tầng 3 · Huấn luyện')];
+
+/// Tầng Dữ liệu huấn luyện.
+const tkcTrainingFloor = 3;
 
 /// Tầng mở khi không có / sai `?tang=`.
 const tkcDefaultFloor = 2;
 
-/// `?tang=` hợp lệ (1–4) hoặc [tkcDefaultFloor].
+/// `?tang=` hợp lệ (1–3) hoặc [tkcDefaultFloor].
 int tkcFloorOf(String? raw) {
   final n = int.tryParse(raw ?? '');
   return n != null && n >= 1 && n <= tkcFloors.length ? n : tkcDefaultFloor;
+}
+
+/// `/tang-kinh-cac?tang=4[&id=]` (Dữ liệu huấn luyện khi còn 4 tầng) → `?tang=3[&id=]`; còn lại null (không chuyển hướng).
+/// `?tang=3` cũ (Kế hoạch đọc) không phân biệt được với `?tang=3` mới nên giữ nghĩa mới — link cũ đó chưa từng lên production.
+String? tkcLegacyQueryRedirect(Uri uri) {
+  if (uri.path != '/tang-kinh-cac' || uri.queryParameters['tang'] != '4') return null;
+  return tkcLocation(tkcTrainingFloor, id: uri.queryParameters['id']);
 }
 
 /// Đường dẫn màn Tàng Kinh Các ở tầng [tang], mở mục [id] (nếu có).
@@ -121,10 +133,9 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
     switch (_tang) {
       case 1:
         ref.invalidate(publicationsProvider);
+        ref.invalidate(readingGoalProvider);
       case 2:
         ref.invalidate(documentsProvider);
-      case 3:
-        ref.invalidate(readingGoalProvider);
       default:
         ref.invalidate(trainingStatsProvider);
         ref.invalidate(logListProvider);
@@ -191,7 +202,7 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
         _ => 'Tìm câu gốc, agent, công cụ…',
       }).copyWith(prefixIcon: const Icon(Icons.search, size: 18, color: DesignColors.muted)),
     );
-    final Widget? extra = switch (_tang) {
+    final Widget extra = switch (_tang) {
       1 => DesignChipRow<PublicationStatus?>(
         items: [for (final f in _bookFilters) (f, f?.label ?? 'Tất cả')],
         selected: _bookStatus,
@@ -202,12 +213,18 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
         selected: _docType,
         onSelected: (f) => setState(() => _docType = f),
       ),
-      4 => const TrainingLogListHeader(),
-      _ => null,
+      _ => const TrainingLogListHeader(),
     };
-    // Tầng 3 chỉ có một mục (năm nay) — không cần ô tìm / chip.
-    if (_tang == 3) return null;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: 8, children: [search, ?extra]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 8,
+      children: [
+        // Tầng Sách: mục tiêu đọc năm nay (trước là tầng Kế hoạch đọc riêng) trên ô tìm.
+        if (_tang == 1) ReadingGoalStrip(year: DateTime.now().year),
+        search,
+        extra,
+      ],
+    );
   }
 
   bool _hit(Iterable<String?> fields) {
@@ -215,12 +232,18 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
     return q.isEmpty || fields.any((f) => f != null && f.toLowerCase().contains(q));
   }
 
+  /// Tầng Sách / Tài liệu chưa chọn mục và có highlight → khung Nội dung là "Ôn lại" (không phải mục mới nhất).
+  bool get _resurfacing => widget.id == null && _tang != tkcTrainingFloor && ref.watch(resurfacedHighlightProvider).value != null;
+
+  /// Danh sách không đánh dấu mục "đang mở" khi chưa chọn: điện thoại (không có khung Nội dung) hoặc đang "Ôn lại".
+  bool get _noDefault => _compact(context) || _resurfacing;
+
   /// [selectedId] null trên điện thoại (danh sách không có mục "đang mở").
   Widget _list(String? selectedId) {
     switch (_tang) {
       case 1:
         final books = ref.watch(publicationsProvider(_bookStatus));
-        final current = selectedId ?? (_compact(context) ? null : ref.watch(publicationsProvider(null)).value?.firstOrNull?.id);
+        final current = selectedId ?? (_noDefault ? null : ref.watch(publicationsProvider(null)).value?.firstOrNull?.id);
         return books.when(
           loading: () => const _Message('Đang tải…'),
           error: (_, _) => const _Message('Không tải được danh sách sách.'),
@@ -234,7 +257,7 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
         );
       case 2:
         final docs = ref.watch(documentsProvider(_docType));
-        final current = selectedId ?? (_compact(context) ? null : ref.watch(documentsProvider(null)).value?.firstOrNull?.id);
+        final current = selectedId ?? (_noDefault ? null : ref.watch(documentsProvider(null)).value?.firstOrNull?.id);
         return docs.when(
           loading: () => const _Message('Đang tải…'),
           error: (_, _) => const _Message('Không tải được danh sách tài liệu.'),
@@ -245,24 +268,6 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
               children: [for (final d in shown) DocumentCard(doc: d, selected: d.id == current, onTap: () => _select(d.id))],
             );
           },
-        );
-      case 3:
-        final year = DateTime.now().year;
-        final goal = ref.watch(readingGoalProvider(year));
-        final g = goal.value;
-        return FrameRows(
-          children: [
-            FrameRow(
-              key: ValueKey('goal-year-$year'),
-              glyph: '標',
-              title: 'Năm $year',
-              borderColor: _compact(context) ? null : DesignColors.gold,
-              subtitle: g == null
-                  ? (goal.hasError ? 'Không tải được tiến độ.' : 'Đang tải…')
-                  : (g.targetBooks == null ? '${g.booksRead} sách · chưa đặt mục tiêu' : '${g.booksRead} / ${g.targetBooks} sách'),
-              onTap: () => _select('$year'),
-            ),
-          ],
         );
       default:
         final current = selectedId ?? (_compact(context) ? null : ref.watch(logListProvider).value?.items.firstOrNull?.id);
@@ -275,6 +280,16 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
   Widget _content(BuildContext frameContext, bool expanded) {
     void deleted() => _afterDelete(frameContext, expanded);
     final id = widget.id;
+    if (_resurfacing) {
+      return _Resurface(
+        highlight: ref.watch(resurfacedHighlightProvider).value!,
+        onOpen: (publicationId) {
+          if (expanded) Navigator.of(frameContext).pop();
+          context.go(tkcLocation(1, id: publicationId));
+        },
+        onNext: () => ref.invalidate(resurfacedHighlightProvider),
+      );
+    }
     switch (_tang) {
       case 1:
         final all = ref.watch(publicationsProvider(null));
@@ -291,8 +306,6 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
         if (d == null) return _Message(id == null ? 'Chưa có tài liệu nào — bấm "+ Thêm".' : 'Không tìm thấy tài liệu này.');
         // Key theo id + updatedAt: tài liệu đổi (ghim, sửa ghi chú khóa ở nơi khác) thì dựng lại state từ dữ liệu mới.
         return DocumentViewerModal(key: ValueKey('doc-view-${d.id}-${d.updatedAt}'), doc: d, embedded: true, onDeleted: deleted);
-      case 3:
-        return ReadingGoalView(year: int.tryParse(id ?? '') ?? DateTime.now().year);
       default:
         final logId = id ?? ref.watch(logListProvider).value?.items.firstOrNull?.id;
         if (logId == null) {
@@ -301,6 +314,49 @@ class _TangKinhCacScreenState extends ConsumerState<TangKinhCacScreen> {
         }
         return TrainingLogDetailView(key: ValueKey('log-view-$logId'), logId: logId);
     }
+  }
+}
+
+/// "Ôn lại" (như hub cũ): một highlight ngẫu nhiên — câu trích + nguồn. Chạm → mở cuốn sách gốc ở tầng Sách;
+/// "Highlight khác" → rút cái khác.
+class _Resurface extends StatelessWidget {
+  const _Resurface({required this.highlight, required this.onOpen, required this.onNext});
+
+  final ResurfacedHighlight highlight;
+  final ValueChanged<String> onOpen;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final h = highlight.highlight;
+    final s = highlight.source;
+    return Column(
+      key: const ValueKey('tkc-resurface'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        const Text('ÔN LẠI', style: TextStyle(fontSize: 12, letterSpacing: 1, color: DesignColors.gold)),
+        FrameTile(
+          key: const ValueKey('resurface-open'),
+          semanticLabel: s == null ? 'Mở cuốn sách' : 'Mở ${s.title}',
+          onTap: () => onOpen(h.publicationId),
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 8,
+            children: [
+              Text('"${h.quote}"', style: DesignText.serif(fontSize: 17, color: DesignColors.text, height: 1.5).copyWith(fontStyle: FontStyle.italic)),
+              if (s != null)
+                Text('— ${s.title}${s.author != null ? ', ${s.author}' : ''}${h.page != null ? ' · trang ${h.page}' : ''}', style: DesignText.muted),
+            ],
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: DesignButton.outline(key: const ValueKey('resurface-next'), label: 'Highlight khác', onPressed: onNext),
+        ),
+      ],
+    );
   }
 }
 
