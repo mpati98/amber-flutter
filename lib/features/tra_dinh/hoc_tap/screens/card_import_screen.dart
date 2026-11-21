@@ -41,7 +41,7 @@ class _ImportState extends ConsumerState<_Import> {
   bool _saving = false;
   String? _error;
 
-  String get _libraryPath => '/tra-dinh/hoc-tap/the?subjectId=${widget.subjectId}';
+  String get _libraryPath => '/tra-dinh?kho=1&subjectId=${widget.subjectId}';
 
   @override
   void dispose() {
@@ -107,7 +107,7 @@ class _ImportState extends ConsumerState<_Import> {
     return DesignScaffold(
       // fallback hằng số (test chặn tái phát yêu cầu `const AppBarBack`): mở thẳng URL rồi bấm quay lại → kho thẻ của môn đầu tiên.
       title: 'Nhập thẻ từ Claude',
-      backFallback: '/tra-dinh/hoc-tap/the',
+      backFallback: '/tra-dinh?kho=1',
       bottomNavigationBar: parsed == null
           ? null
           : SafeArea(

@@ -1,16 +1,17 @@
 import 'dart:async';
 
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_card.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/card_library_screen.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'hoc_tap_test_support.dart';
 import 'hoc_tap_widget_support.dart';
 
-// Màn Kho thẻ: tải, danh sách, trống, lọc / tìm, cuộn vô hạn, sửa - tạm dừng - xoá, lỗi. API giả có dữ liệu thật (fixture).
+// Khung Kho thẻ của màn Trà Đình (web rộng: Hôm nay | Kho thẻ): tải, danh sách, trống, lọc / tìm, cuộn vô hạn, sửa - tạm dừng - xoá, lỗi. API giả có dữ liệu thật (fixture).
 
-const _subject = 'subject-1';
+/// Môn đầu tiên của fixture Tổng quan — môn màn Trà Đình chọn sẵn.
+const _subject = '291d6fb1-6c9b-4820-a1f2-8763f05e9e3b';
 Finder _k(String key) => find.byKey(ValueKey(key));
 
 /// Chip nằm trong hàng cuộn ngang có thể ở ngoài màn hình: cuộn tới rồi mới chạm (người dùng cũng làm vậy).
@@ -27,8 +28,13 @@ StudyCard _card(String id, String phrase, {CardStage stage = CardStage.weekly, D
 
 FakeHocTapApi _api({List<StudyCard>? cards}) => FakeHocTapApi()..cards = cards ?? [_card('a', 'break the ice', dueAt: _vnDay(0)), _card('b', 'look forward to', stage: CardStage.newCard, kind: CardKind.phrasalVerb)];
 
+/// Web rộng (1280): khung Kho thẻ hiện cạnh khung Hôm nay.
 Future<void> _pump(WidgetTester tester, FakeHocTapApi api, {String? subjectId = _subject, bool settle = true, double height = 2600}) =>
-    pumpHocTap(tester, CardLibraryScreen(subjectId: subjectId), api: api, settle: settle, height: height);
+    pumpHocTap(tester, TraDinhHocTapScreen(subjectId: subjectId), api: api, settle: settle, height: height, width: 1280);
+
+/// Trong khung Kho thẻ (khung Hôm nay bên cạnh cũng có nút, vòng quay…).
+final _frame = find.byKey(const ValueKey('zone-frame-Kho thẻ'));
+Finder _inFrame(Finder f) => find.descendant(of: _frame, matching: f);
 
 void main() {
   group('trạng thái tải', () {
@@ -38,11 +44,11 @@ void main() {
       api.cardsGate = gate;
       await _pump(tester, api, settle: false);
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(_inFrame(find.byType(CircularProgressIndicator)), findsOneWidget);
       expect(_k('card-a'), findsNothing);
       gate.complete();
       await tester.pumpAndSettle();
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(_inFrame(find.byType(CircularProgressIndicator)), findsNothing);
       expect(_k('card-a'), findsOneWidget);
     });
 
@@ -51,12 +57,12 @@ void main() {
       await _pump(tester, api);
       expect(find.textContaining('Không tải được kho thẻ'), findsOneWidget);
       api.cardsError = null;
-      await tester.tap(find.text('Thử lại'));
+      await tester.tap(_inFrame(find.text('Thử lại')));
       await tester.pumpAndSettle();
       expect(_k('card-a'), findsOneWidget);
     });
 
-    testWidgets('không có subjectId → dùng môn đầu tiên của Tổng quan', (tester) async {
+    testWidgets('không có subjectId → khung Kho thẻ theo môn đầu tiên của Tổng quan', (tester) async {
       final api = _api();
       await _pump(tester, api, subjectId: null);
       expect(api.cardQueries.first.subjectId, api.overview.subjects.first.subjectId);
@@ -74,7 +80,7 @@ void main() {
         _card('e', 'paused one', suspended: true, dueAt: _vnDay(0)),
       ]);
       await _pump(tester, api);
-      expect(find.text('Kho thẻ'), findsOneWidget);
+      expect(find.text('KHO THẺ'), findsOneWidget, reason: 'tiêu đề khung');
       expect(_k('library-total'), findsOneWidget);
       expect(find.textContaining('5 thẻ'), findsOneWidget);
       expect(find.text('break the ice'), findsOneWidget);
@@ -92,7 +98,8 @@ void main() {
     });
 
     testWidgets('hàng chip giai đoạn cuộn ngang, không xuống dòng (máy hẹp)', (tester) async {
-      await pumpHocTap(tester, const CardLibraryScreen(subjectId: _subject), api: _api(), width: 320);
+      // Điện thoại hẹp: tab Kho thẻ.
+      await pumpHocTap(tester, const TraDinhHocTapScreen(subjectId: _subject, cards: true), api: _api(), width: 320);
       final row = find.ancestor(of: _k('stage-chip-all'), matching: find.byType(SingleChildScrollView)).first;
       expect(tester.widget<SingleChildScrollView>(row).scrollDirection, Axis.horizontal);
       // Mọi chip nằm trên cùng một hàng ngang (cùng toạ độ y).
@@ -111,17 +118,13 @@ void main() {
       expect(visited.last, '/tra-dinh/hoc-tap/the/them?subjectId=$_subject');
     });
 
-    testWidgets('nút chính "Ôn thẻ hôm nay" ở đầu màn mở màn ôn thẻ của môn', (tester) async {
+    testWidgets('khung Kho thẻ không có nút vàng (Ôn thẻ là việc của khung Hôm nay — nút vàng duy nhất của màn)', (tester) async {
       await _pump(tester, _api());
-      expect(find.text('Ôn thẻ hôm nay'), findsOneWidget);
-      // nằm trên ô tìm kiếm
-      expect(tester.getTopLeft(_k('card-review-start')).dy, lessThan(tester.getTopLeft(_k('card-search')).dy));
-      await tester.tap(_k('card-review-start'));
-      await tester.pumpAndSettle();
-      expect(visited.last, '/tra-dinh/hoc-tap/the/on?subjectId=$_subject');
+      expect(_inFrame(find.byType(FilledButton)), findsNothing);
+      expect(find.text('Ôn thẻ hôm nay'), findsNothing);
     });
 
-    testWidgets('thanh trên có nút "Thống kê" mở màn Nhóm khó của môn', (tester) async {
+    testWidgets('đầu khung có nút "Thống kê" mở màn Nhóm khó của môn', (tester) async {
       await _pump(tester, _api());
       expect(find.byTooltip('Thống kê'), findsOneWidget);
       await tester.tap(_k('card-stats'));
@@ -129,9 +132,9 @@ void main() {
       expect(visited.last, '/tra-dinh/hoc-tap/the/thong-ke?subjectId=$_subject');
     });
 
-    testWidgets('nút "+ Thêm thẻ từ Claude" mở màn nhập', (tester) async {
+    testWidgets('action "+ Nhập thẻ" (nút viền) mở màn nhập', (tester) async {
       await _pump(tester, _api());
-      expect(find.text('+ Thêm thẻ từ Claude'), findsOneWidget);
+      expect(find.text('+ Nhập thẻ'), findsOneWidget);
       await tester.tap(_k('card-import'));
       await tester.pumpAndSettle();
       expect(visited.last, '/tra-dinh/hoc-tap/the/them?subjectId=$_subject');
@@ -253,6 +256,9 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(api.cardQueries.length, calls, reason: 'không tự thử lại liên tục');
       api.cardsMoreError = null;
+      // Khung Kho thẻ thấp hơn màn cũ: cuộn tới nút ở cuối danh sách rồi mới bấm (người dùng cũng làm vậy).
+      await tester.ensureVisible(_k('library-retry-more'));
+      await tester.pumpAndSettle();
       await tester.tap(_k('library-retry-more'));
       await tester.pumpAndSettle();
       expect(find.text('Không tải thêm được thẻ.'), findsNothing);

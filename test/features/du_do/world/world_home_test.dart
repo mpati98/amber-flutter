@@ -17,6 +17,8 @@ import 'package:amber_flutter/features/tang_kinh_cac/models/reading_goal.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/services/document_api.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/services/publication_api.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/services/reading_goal_api.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/shared/providers/auth_provider.dart';
 import 'package:amber_flutter/shared/services/token_storage.dart';
 import 'package:dio/dio.dart';
@@ -27,6 +29,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../amber_brain/fake_brain.dart';
+import '../../tra_dinh/hoc_tap/hoc_tap_test_support.dart' show fixtureMap;
 
 class _FakeWorldApi extends WorldApi {
   _FakeWorldApi() : super(Dio());
@@ -92,6 +95,13 @@ class _FakeGoalApi extends ReadingGoalApi {
   Future<ReadingGoal> getReadingGoal(int year) async => ReadingGoal(year: year, booksRead: 0, pagesRead: 0);
 }
 
+class _FakeHocTapApi extends HocTapApi {
+  _FakeHocTapApi() : super(Dio());
+
+  @override
+  Future<StudyOverview> getOverview() async => StudyOverview.fromJson(fixtureMap('overview_cards'));
+}
+
 class _Auth extends AuthController {
   @override
   Future<AuthState> build() async => const Authenticated({'id': 'u', 'email': 'me@example.invalid'});
@@ -116,6 +126,7 @@ void main() {
         publicationApiProvider.overrideWithValue(_FakePublicationApi()),
         documentApiProvider.overrideWithValue(_FakeDocumentApi()),
         readingGoalApiProvider.overrideWithValue(_FakeGoalApi()),
+        hocTapApiProvider.overrideWithValue(_FakeHocTapApi()),
         brainStatusProvider.overrideWith(() => FixedBrainStatus()),
         authControllerProvider.overrideWith(_Auth.new),
       ],
@@ -127,6 +138,8 @@ void main() {
     final notices = {for (final c in calls.where((c) => c.$1 == 'setTowerNotices')) c.$2.first: c.$2.last as List};
     expect(notices['nghisu']!.map((n) => (n as Map)['lvl']), ['bad'], reason: 'cùng nguồn với khung Cần chú ý: âm quỹ');
     expect(notices['tangkinh']!.map((n) => (n as Map)['text']), ['Chưa đặt mục tiêu đọc năm ${DateTime.now().year}']);
+    expect(notices['tradinh'], isNotEmpty, reason: 'Trà Đình: từ Tổng quan học tập');
+    expect((notices['tradinh']!.first as Map)['text'], startsWith('Hôm nay '));
 
     bridge.receive(const WorldNavigate('/finance'));
     await tester.pumpAndSettle();
@@ -153,6 +166,7 @@ void main() {
         publicationApiProvider.overrideWithValue(_FakePublicationApi()),
         documentApiProvider.overrideWithValue(_FakeDocumentApi()),
         readingGoalApiProvider.overrideWithValue(_FakeGoalApi()),
+        hocTapApiProvider.overrideWithValue(_FakeHocTapApi()),
         brainStatusProvider.overrideWith(() => FixedBrainStatus()),
         authControllerProvider.overrideWith(_Auth.new),
       ],

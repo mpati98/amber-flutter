@@ -4,6 +4,7 @@ import 'package:amber_flutter/features/amber_brain/providers/brain_status_provid
 import 'package:amber_flutter/features/auth/screens/login_screen.dart';
 import 'package:amber_flutter/features/du_do/screens/du_do_screen.dart';
 import 'package:amber_flutter/features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
 import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
 import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
@@ -183,6 +184,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('log-view-l1')), findsOneWidget);
       expect(find.text('chi 45k ăn trưa Momo'), findsWidgets);
+    });
+
+    testWidgets('Trà Đình một màn: /tra-dinh/hoc-tap/the (Kho thẻ riêng cũ) → /tra-dinh?kho=1[&subjectId], go và push', (tester) async {
+      final c = await pumpApp(tester, token: 'saved-access', extra: [apiClientProvider.overrideWithValue(offlineDio())]);
+      final router = c.read(routerProvider);
+      for (final (old, to, subject) in const [
+        ('/tra-dinh/hoc-tap/the', '/tra-dinh?kho=1', null),
+        ('/tra-dinh/hoc-tap/the?subjectId=s1', '/tra-dinh?kho=1&subjectId=s1', 's1'),
+      ]) {
+        router.go(old);
+        await tester.pumpAndSettle();
+        expect(location(c), to, reason: 'go $old');
+        router.go('/');
+        await tester.pumpAndSettle();
+        unawaited(router.push(old));
+        await tester.pumpAndSettle();
+        final s = tester.widget<TraDinhHocTapScreen>(find.byType(TraDinhHocTapScreen));
+        expect((s.cards, s.subjectId), (true, subject), reason: 'push $old');
+      }
+      // Các màn con thật của Kho thẻ (phiên ôn, nhập, thống kê) vẫn là route riêng, không bị redirect.
+      String? routePath(String l) => router.configuration.findMatch(Uri.parse(l)).last.route.path;
+      expect(routePath('/tra-dinh/hoc-tap/the/on?subjectId=s1'), 'hoc-tap/the/on');
+      expect(routePath('/tra-dinh/hoc-tap/the/them'), 'hoc-tap/the/them');
+      expect(routePath('/tra-dinh/hoc-tap/the/thong-ke'), 'hoc-tap/the/thong-ke');
     });
 
     testWidgets('mở app còn token → vào thẳng Dư Đồ', (tester) async {

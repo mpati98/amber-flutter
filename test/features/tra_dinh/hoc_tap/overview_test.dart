@@ -5,7 +5,6 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
 import 'package:amber_flutter/shared/router/app_router.dart' show traDinhLegacyTabRedirect;
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/services/hoc_tap_api.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/next_action.dart';
@@ -40,7 +39,7 @@ StudyOverview _practiceOverview([void Function(Map<String, dynamic> subject)? ed
   return StudyOverview.fromJson(json);
 }
 
-Future<void> _pumpTab(WidgetTester tester, FakeHocTapApi api, {double width = 390}) => pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api, width: width);
+Future<void> _pumpTab(WidgetTester tester, FakeHocTapApi api, {double width = 390}) => pumpHocTap(tester, const TraDinhHocTapScreen(), api: api, width: width);
 
 void main() {
   group('nextTodayAction (hàm thuần)', () {
@@ -99,7 +98,8 @@ void main() {
     expect(_k('task-lesson'), findsOneWidget);
     expect(find.text('First English Sentences'), findsOneWidget);
     expect(_k('task-practice'), findsOneWidget);
-    expect(_k('cards-tile'), findsOneWidget);
+    expect(_k('cards-tile'), findsNothing, reason: 'Kho thẻ là khung / tab riêng bên cạnh Hôm nay');
+    expect(_k('zone-tab-cards'), findsOneWidget);
     expect(find.text('Thư viện'), findsNothing);
     expect(_k('subject-chip-${FakeHocTapApi().subjects.first.id}'), findsOneWidget, reason: 'fixture có 2 môn');
     expect(_k('week-chart'), findsNothing, reason: 'biểu đồ tuần đã chuyển sang dải chấm');
@@ -246,7 +246,7 @@ void main() {
     expect(_k('set-goal'), findsOneWidget);
   });
 
-  testWidgets('nút "Ghi buổi học thủ công" mở sheet; Luyện AI và Kho thẻ điều hướng đúng', (tester) async {
+  testWidgets('nút "Ghi buổi học thủ công" mở sheet; Luyện AI điều hướng đúng; tab Kho thẻ mở khung Kho thẻ', (tester) async {
     final api = FakeHocTapApi();
     await _pumpTab(tester, api);
     await tester.tap(_k('manual-log'));
@@ -261,10 +261,10 @@ void main() {
     GoRouter.of(tester.element(find.byType(Scaffold).first)).pop();
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(_k('cards-tile'));
-    await tester.tap(_k('cards-tile'));
+    await tester.tap(_k('zone-tab-cards'));
     await tester.pumpAndSettle();
-    expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=${api.overview.subjects.first.subjectId}');
+    expect(_k('zone-frame-Kho thẻ'), findsOneWidget);
+    expect(api.cardQueries.last.subjectId, api.overview.subjects.first.subjectId);
   });
 
   testWidgets('buổi đã ghi hôm nay vẫn hiện trong "Việc hôm nay", bấm → sheet sửa; lý do hiện "Dừng sớm"', (tester) async {
@@ -343,27 +343,25 @@ void main() {
     expect(_k('today-main'), findsOneWidget);
   });
 
-  group('hàng Kho thẻ và Ghi buổi học thủ công', () {
-    testWidgets('hàng "Kho thẻ" cao ≥ 56, dòng phụ có số thẻ, bấm mở Kho thẻ của môn', (tester) async {
+  group('Kho thẻ và Ghi buổi học thủ công', () {
+    testWidgets('Kho thẻ theo môn đang chọn: đổi chip môn ở khung Hôm nay thì khung Kho thẻ đổi môn theo', (tester) async {
       final api = FakeHocTapApi();
-      final first = api.overview.subjects.first;
-      await _pumpTab(tester, api);
-      await tester.ensureVisible(_k('cards-tile'));
-      expect(tester.getSize(_k('cards-tile')).height, greaterThanOrEqualTo(56));
-      expect(find.text('Kho thẻ'), findsOneWidget);
-      expect(find.text('Thư viện'), findsNothing);
-      expect(find.textContaining('hập thẻ, thẻ khó'), findsOneWidget);
-      await tester.tap(_k('cards-tile'));
+      final second = api.overview.subjects[1];
+      await _pumpTab(tester, api, width: 1280);
+      expect(_k('zone-frame-Kho thẻ'), findsOneWidget, reason: 'web rộng: hai khung cạnh nhau');
+      expect(api.cardQueries.last.subjectId, api.overview.subjects.first.subjectId);
+      await tester.tap(_k('subject-chip-${second.subjectId}'));
       await tester.pumpAndSettle();
-      expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=${first.subjectId}');
+      expect(api.cardQueries.last.subjectId, second.subjectId);
+      expect(find.text('Thư viện'), findsNothing);
     });
 
     testWidgets('"Ghi buổi học thủ công": liên kết căn giữa ở cuối màn (cao ≥ 44), mở form ghi buổi học', (tester) async {
       await _pumpTab(tester, FakeHocTapApi());
       await tester.ensureVisible(_k('manual-log'));
       expect(tester.getSize(_k('manual-log')).height, greaterThanOrEqualTo(44));
-      expect(tester.getCenter(_k('manual-log')).dx, closeTo(195, 1.0), reason: 'căn giữa màn 390');
-      expect(tester.getTopLeft(_k('manual-log')).dy, greaterThan(tester.getTopLeft(_k('cards-tile')).dy), reason: 'dưới hàng Kho thẻ');
+      expect(tester.getCenter(_k('manual-log')).dx, closeTo(tester.getCenter(_k('today-tasks')).dx, 1.0), reason: 'căn giữa khung');
+      expect(tester.getTopLeft(_k('manual-log')).dy, greaterThan(tester.getTopLeft(_k('today-tasks')).dy), reason: 'dưới việc hôm nay');
       await tester.tap(_k('manual-log'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Chỉ ghi cho hôm nay.'), findsOneWidget);

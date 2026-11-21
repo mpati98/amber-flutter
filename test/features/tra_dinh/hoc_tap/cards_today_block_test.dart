@@ -3,7 +3,7 @@ import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_log.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_overview.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_schedule.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/models/study_subject.dart';
-import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/overview_tab.dart';
+import 'package:amber_flutter/features/tra_dinh/hoc_tap/screens/tra_dinh_hoc_tap_screen.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/utils/log_labels.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/today_tasks_card.dart';
 import 'package:amber_flutter/features/tra_dinh/hoc_tap/widgets/schedule_day_row.dart';
@@ -25,7 +25,7 @@ SubjectOverview _subject(StudyOverview o, String name) => o.subjects.firstWhere(
 Future<FakeHocTapApi> _pump(WidgetTester tester, {StudyOverview? overview, String? select, FakeHocTapApi? fake}) async {
   final o = overview ?? _overview();
   final api = fake ?? FakeHocTapApi(overview: o);
-  await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
+  await pumpHocTap(tester, const TraDinhHocTapScreen(), api: api);
   if (select != null) {
     final id = _subject(o, select).subjectId;
     await tester.ensureVisible(_k('subject-chip-$id'));
@@ -147,7 +147,7 @@ void main() {
     });
 
     testWidgets('backend cũ (không có khối cards): không có hàng Ôn thẻ; hàng Học bài và Luyện AI vẫn có', (tester) async {
-      await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: FakeHocTapApi());
+      await pumpHocTap(tester, const TraDinhHocTapScreen(), api: FakeHocTapApi());
       expect(_k('task-cards'), findsNothing);
       expect(_k('task-lesson'), findsOneWidget);
       expect(_k('task-practice'), findsOneWidget);
@@ -180,7 +180,7 @@ void main() {
           StudyLog(id: 'card', subjectId: sid, logDate: vnToday(), minutes: 15, createdAt: DateTime.now(), activity: LogActivity.cardReview),
           StudyLog(id: 'free', subjectId: sid, logDate: vnToday(), minutes: 20, createdAt: DateTime.now()),
         ];
-      await pumpHocTap(tester, const Scaffold(body: OverviewTab()), api: api);
+      await pumpHocTap(tester, const TraDinhHocTapScreen(), api: api);
       await tester.ensureVisible(_k('subject-chip-$sid'));
       await tester.tap(_k('subject-chip-$sid'));
       await tester.pumpAndSettle();

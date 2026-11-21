@@ -18,7 +18,6 @@ import '../../features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
 import '../../features/tra_dinh/hoc_tap/models/study_enums.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_import_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_insights_screen.dart';
-import '../../features/tra_dinh/hoc_tap/screens/card_library_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_review_screen.dart';
 import '../../features/tra_dinh/hoc_tap/screens/course_detail_screen.dart'
     as hoc_tap;
@@ -120,6 +119,10 @@ const tkcLegacyFloors = [('sach', 1), ('tai-lieu', 2), ('ke-hoach-doc', 3), ('du
 /// chi tiết (/du-an/:id, /finance/:id) là route riêng nên không đi qua đây.
 String? nsdLegacyRedirect(BuildContext _, GoRouterState state) => '/nghi-su-duong';
 
+/// Khung Kho thẻ của Trà Đình (`?kho=1`: điện thoại mở sẵn tab Kho thẻ) cho môn [subjectId] (null = môn đang chọn).
+String traDinhCardsLocation(String? subjectId) =>
+    Uri(path: '/tra-dinh', queryParameters: {'kho': '1', 'subjectId': ?subjectId}).toString();
+
 /// Tạo 1 lần cho cả app — KHÔNG watch authControllerProvider ở đây (dựng lại
 /// GoRouter sẽ mất toàn bộ stack điều hướng). Đổi trạng thái đăng nhập chỉ
 /// kích hoạt chạy lại redirect qua [GoRouter.refreshListenable].
@@ -210,6 +213,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => TraDinhHocTapScreen(
           openLog: state.uri.queryParameters['openLog'] == '1',
           subjectId: state.uri.queryParameters['subjectId'],
+          cards: state.uri.queryParameters['kho'] == '1',
         ),
         routes: [
           // Mọi route con cố định phải đứng trước ':sessionId', nếu không bị hiểu là 1 sessionId.
@@ -251,11 +255,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               subjectId: state.uri.queryParameters['subjectId'],
             ),
           ),
-          // Kho thẻ từ vựng: hai route tĩnh, đứng trước ':sessionId'.
-          GoRoute(
-            path: 'hoc-tap/the',
-            builder: (_, state) => CardLibraryScreen(subjectId: state.uri.queryParameters['subjectId']),
-          ),
+          // Kho thẻ từ vựng: route tĩnh, đứng trước ':sessionId'. Màn danh sách Kho thẻ riêng đã gộp vào khung "Kho thẻ"
+          // của /tra-dinh — route cũ chỉ còn redirect (giữ môn).
+          GoRoute(path: 'hoc-tap/the', redirect: (_, state) => traDinhCardsLocation(state.uri.queryParameters['subjectId'])),
           GoRoute(
             path: 'hoc-tap/the/on',
             builder: (_, state) => CardReviewScreen(subjectId: state.uri.queryParameters['subjectId']),

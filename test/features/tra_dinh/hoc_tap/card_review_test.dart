@@ -419,7 +419,7 @@ void main() {
       expect(find.byKey(const ValueKey('design-top-bar-back')), findsOneWidget);
       await tester.tap(_k('review-empty-library'));
       await tester.pumpAndSettle();
-      expect(visited.last, '/tra-dinh/hoc-tap/the?subjectId=$_sid');
+      expect(visited.last, '/tra-dinh?kho=1&subjectId=$_sid');
     });
 
     testWidgets('lỗi tải hàng ôn: báo lỗi + Thử lại', (tester) async {

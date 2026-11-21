@@ -65,6 +65,7 @@ class ZoneScaffold extends StatefulWidget {
     this.toolbar,
     this.compact,
     this.medium,
+    this.initialPane,
   });
 
   final String title;
@@ -82,6 +83,9 @@ class ZoneScaffold extends StatefulWidget {
   /// 600–1023: lưới riêng thay cho 2 cột chia đều (vd giữ đúng tỉ lệ của [wide]).
   final ZoneLayout? medium;
 
+  /// < 600: tab mở sẵn (id của [panes]); đổi giá trị này (vd link `?kho=1`) thì chuyển sang tab đó.
+  final String? initialPane;
+
   /// < 600: bố cục riêng thay cho tab (vd chỉ Danh sách; chạm một mục mới mở nội dung).
   final WidgetBuilder? compact;
 
@@ -93,7 +97,13 @@ class ZoneScaffold extends StatefulWidget {
 }
 
 class _ZoneScaffoldState extends State<ZoneScaffold> {
-  String? _tab;
+  late String? _tab = widget.initialPane;
+
+  @override
+  void didUpdateWidget(ZoneScaffold old) {
+    super.didUpdateWidget(old);
+    if (widget.initialPane != old.initialPane && widget.initialPane != null) _tab = widget.initialPane;
+  }
 
   Widget _pane(String id) {
     final pane = widget.panes.where((p) => p.id == id).firstOrNull;

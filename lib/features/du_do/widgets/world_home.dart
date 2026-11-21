@@ -15,6 +15,8 @@ import '../../tang_kinh_cac/services/document_api.dart';
 import '../../tang_kinh_cac/services/publication_api.dart';
 import '../../tang_kinh_cac/services/reading_goal_api.dart';
 import '../../tang_kinh_cac/utils/tkc_notices.dart';
+import '../../tra_dinh/hoc_tap/services/hoc_tap_api.dart';
+import '../../tra_dinh/hoc_tap/utils/tra_dinh_notices.dart';
 import '../world/world_api.dart';
 import '../world/world_bridge.dart';
 import '../world/world_feeder.dart';
@@ -51,6 +53,7 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
       'nghisu': () async => [
         for (final n in await fetchNsdNotices(kieuLau: ref.read(kieuLauApiProvider), nsd: ref.read(nghiSuDuongApiProvider))) n.toWorld(),
       ],
+      'tradinh': () => fetchTraDinhNotices(ref.read(hocTapApiProvider)),
       'tangkinh': () => fetchTkcNotices(
         publications: ref.read(publicationApiProvider),
         documents: ref.read(documentApiProvider),
