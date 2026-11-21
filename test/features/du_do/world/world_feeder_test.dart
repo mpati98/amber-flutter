@@ -100,24 +100,38 @@ void main() {
     expect(pickEvents(many.sublist(0, 3)).length, 3);
   });
 
-  test('Nghị Sự Đường: setTowerNotices("nghisu", tối đa 3 dòng {text, lvl}); rỗng vẫn gửi để cảnh hiện "Mọi thứ ổn"; lỗi thì bỏ qua', () async {
+  test('popup tòa: setTowerNotices(id, tối đa 3 dòng {text, lvl}) cho từng tòa; rỗng vẫn gửi ("Mọi thứ ổn"); tòa lỗi thì chỉ bỏ tòa đó', () async {
     SharedPreferences.setMockInitialValues({});
-    final notices = [for (var i = 0; i < 5; i++) NsdNotice(id: 'n$i', title: 'Cảnh báo $i', level: i == 0 ? NsdNoticeLevel.bad : NsdNoticeLevel.warn)];
-    await WorldFeeder(bridge: bridge, api: _FakeWorldApi(), loadTracks: () async => [], loadNsdNotices: () async => notices).refresh();
-    final call = calls.firstWhere((c) => c.$1 == 'setTowerNotices').$2;
-    expect(call.first, 'nghisu');
-    expect(call.last, [
+    final nsd = [for (var i = 0; i < 5; i++) NsdNotice(id: 'n$i', title: 'Cảnh báo $i', level: i == 0 ? NsdNoticeLevel.bad : NsdNoticeLevel.warn)];
+    await WorldFeeder(
+      bridge: bridge,
+      api: _FakeWorldApi(),
+      loadTracks: () async => [],
+      towerNotices: {
+        'nghisu': () async => [for (final n in nsd) n.toWorld()],
+        'tangkinh': () async => const [],
+      },
+    ).refresh();
+    final sent = {for (final c in calls.where((c) => c.$1 == 'setTowerNotices')) c.$2.first: c.$2.last};
+    expect(sent['nghisu'], [
       {'text': 'Cảnh báo 0', 'lvl': 'bad'},
       {'text': 'Cảnh báo 1', 'lvl': 'warn'},
       {'text': 'Cảnh báo 2', 'lvl': 'warn'},
     ]);
+    expect(sent['tangkinh'], <Object?>[]);
 
     calls.clear();
-    await WorldFeeder(bridge: bridge, api: _FakeWorldApi(), loadTracks: () async => [], loadNsdNotices: () async => const []).refresh();
-    expect(calls.firstWhere((c) => c.$1 == 'setTowerNotices').$2, ['nghisu', <Object?>[]]);
-
-    calls.clear();
-    await WorldFeeder(bridge: bridge, api: _FakeWorldApi(), loadTracks: () async => [], loadNsdNotices: () async => throw Exception('x')).refresh();
-    expect(calls.where((c) => c.$1 == 'setTowerNotices'), isEmpty);
+    await WorldFeeder(
+      bridge: bridge,
+      api: _FakeWorldApi(),
+      loadTracks: () async => [],
+      towerNotices: {
+        'nghisu': () async => throw Exception('x'),
+        'tangkinh': () async => [
+          {'text': '2 mục mới tuần này', 'lvl': 'ok'},
+        ],
+      },
+    ).refresh();
+    expect(calls.where((c) => c.$1 == 'setTowerNotices').map((c) => c.$2.first), ['tangkinh']);
   });
 }

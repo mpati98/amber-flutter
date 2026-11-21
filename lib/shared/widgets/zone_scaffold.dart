@@ -62,6 +62,9 @@ class ZoneScaffold extends StatefulWidget {
     this.backFallback = '/',
     this.actions = const [],
     this.bottomBar,
+    this.toolbar,
+    this.compact,
+    this.medium,
   });
 
   final String title;
@@ -72,6 +75,15 @@ class ZoneScaffold extends StatefulWidget {
 
   /// Thanh cố định dưới đáy (vd trình phát nhạc mini).
   final Widget? bottomBar;
+
+  /// Hàng cố định ngay trên lưới, mọi cỡ màn (vd chọn tầng của Tàng Kinh Các).
+  final Widget? toolbar;
+
+  /// 600–1023: lưới riêng thay cho 2 cột chia đều (vd giữ đúng tỉ lệ của [wide]).
+  final ZoneLayout? medium;
+
+  /// < 600: bố cục riêng thay cho tab (vd chỉ Danh sách; chạm một mục mới mở nội dung).
+  final WidgetBuilder? compact;
 
   static const padding = 16.0;
   static const gap = 16.0;
@@ -165,9 +177,17 @@ class _ZoneScaffoldState extends State<ZoneScaffold> {
       body: LayoutBuilder(
         builder: (context, c) {
           final w = c.maxWidth;
-          final Widget body = w >= DesignLayout.wide
+          final compact = widget.compact;
+          Widget body = w >= DesignLayout.wide
               ? _node(widget.wide)
-              : (w >= DesignLayout.medium ? _medium() : _compact());
+              : (w >= DesignLayout.medium ? (widget.medium == null ? _medium() : _node(widget.medium!)) : (compact != null ? compact(context) : _compact()));
+          if (widget.toolbar case final t?) {
+            body = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 12,
+              children: [t, Expanded(child: body)],
+            );
+          }
           return Padding(padding: const EdgeInsets.all(ZoneScaffold.padding), child: body);
         },
       ),

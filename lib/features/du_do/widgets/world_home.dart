@@ -11,6 +11,10 @@ import '../../kieu_lau/services/music_api.dart';
 import '../../kieu_lau/services/kieu_lau_api.dart';
 import '../../nghi_su_duong/services/nghi_su_duong_api.dart';
 import '../../nghi_su_duong/utils/nsd_notices.dart';
+import '../../tang_kinh_cac/services/document_api.dart';
+import '../../tang_kinh_cac/services/publication_api.dart';
+import '../../tang_kinh_cac/services/reading_goal_api.dart';
+import '../../tang_kinh_cac/utils/tkc_notices.dart';
 import '../world/world_api.dart';
 import '../world/world_bridge.dart';
 import '../world/world_feeder.dart';
@@ -43,7 +47,16 @@ class _WorldHomeState extends ConsumerState<WorldHome> {
     bridge: _bridge,
     api: ref.read(worldApiProvider),
     loadTracks: () => ref.read(musicApiProvider).getTracks(),
-    loadNsdNotices: () => fetchNsdNotices(kieuLau: ref.read(kieuLauApiProvider), nsd: ref.read(nghiSuDuongApiProvider)),
+    towerNotices: {
+      'nghisu': () async => [
+        for (final n in await fetchNsdNotices(kieuLau: ref.read(kieuLauApiProvider), nsd: ref.read(nghiSuDuongApiProvider))) n.toWorld(),
+      ],
+      'tangkinh': () => fetchTkcNotices(
+        publications: ref.read(publicationApiProvider),
+        documents: ref.read(documentApiProvider),
+        goals: ref.read(readingGoalApiProvider),
+      ),
+    },
   );
   late final AppLifecycleListener _life;
   StreamSubscription<WorldEvent>? _sub;

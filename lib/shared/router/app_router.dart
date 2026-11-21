@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/screens/login_screen.dart';
-import '../../features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
-import '../../features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
 import '../../features/du_do/screens/du_do_screen.dart';
 import '../../features/sinh_luc/screens/sinh_luc_screen.dart';
 import '../../features/kieu_lau/screens/kieu_lau_screen.dart';
@@ -16,9 +14,6 @@ import '../../features/nghi_su_duong/screens/hoc_tap_schedule_screen.dart';
 import '../../features/nghi_su_duong/screens/hoc_tap_stats_screen.dart';
 import '../../features/nghi_su_duong/screens/nghi_su_duong_screen.dart';
 import '../../features/nghi_su_duong/screens/project_detail_screen.dart';
-import '../../features/tang_kinh_cac/screens/ke_hoach_doc_screen.dart';
-import '../../features/tang_kinh_cac/screens/sach_screen.dart';
-import '../../features/tang_kinh_cac/screens/tai_lieu_screen.dart';
 import '../../features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
 import '../../features/tra_dinh/hoc_tap/models/study_enums.dart';
 import '../../features/tra_dinh/hoc_tap/screens/card_import_screen.dart';
@@ -118,6 +113,9 @@ String? traDinhLegacyTabRedirect(Uri uri) {
   };
 }
 
+/// Màn danh sách riêng từng tầng cũ của Tàng Kinh Các → tầng tương ứng trên màn chính.
+const tkcLegacyFloors = [('sach', 1), ('tai-lieu', 2), ('ke-hoach-doc', 3), ('du-lieu-huan-luyen', 4)];
+
 /// Màn trung gian cũ của Nghị Sự Đường (/du-an, /finance) → màn chính /nghi-su-duong. Chỉ đúng hai đường dẫn đó:
 /// chi tiết (/du-an/:id, /finance/:id) là route riêng nên không đi qua đây.
 String? nsdLegacyRedirect(BuildContext _, GoRouterState state) => '/nghi-su-duong';
@@ -152,28 +150,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const KieuLauScreen(),
         routes: [GoRoute(path: 'nhac', builder: (_, _) => const MusicScreen())],
       ),
+      // Tàng Kinh Các là MỘT màn: tầng + mục ở query (?tang=1..4&id=). Các màn danh sách riêng từng tầng và chi tiết
+      // nhật ký huấn luyện cũ đã gộp vào đó; route cũ chỉ còn redirect để link cũ không gãy.
       GoRoute(
         path: '/tang-kinh-cac',
-        builder: (_, _) => const TangKinhCacScreen(),
+        builder: (_, state) => TangKinhCacScreen(
+          tang: tkcFloorOf(state.uri.queryParameters['tang']),
+          id: state.uri.queryParameters['id'],
+        ),
         routes: [
-          GoRoute(path: 'sach', builder: (_, _) => const SachScreen()),
-          GoRoute(path: 'tai-lieu', builder: (_, _) => const TaiLieuScreen()),
+          for (final (path, tang) in tkcLegacyFloors) GoRoute(path: path, redirect: (_, _) => tkcLocation(tang)),
           GoRoute(
-            path: 'ke-hoach-doc',
-            builder: (_, _) => const KeHoachDocScreen(),
-          ),
-          // Nhật ký lượt gọi mô hình của amber-brain (dataset fine-tune): tách riêng khỏi sách/tài liệu.
-          GoRoute(
-            path: 'du-lieu-huan-luyen',
-            builder: (_, _) => const TrainingLogsScreen(),
-            routes: [
-              GoRoute(
-                path: ':logId',
-                builder: (_, state) => TrainingLogDetailScreen(
-                  logId: state.pathParameters['logId']!,
-                ),
-              ),
-            ],
+            path: 'du-lieu-huan-luyen/:logId',
+            redirect: (_, state) => tkcLocation(4, id: state.pathParameters['logId']),
           ),
         ],
       ),

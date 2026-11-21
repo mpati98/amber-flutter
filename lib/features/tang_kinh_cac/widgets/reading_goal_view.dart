@@ -5,24 +5,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/design_page.dart';
 import '../../../shared/widgets/list_frame.dart';
 import '../../../shared/widgets/overview_block.dart';
 import '../models/reading_goal.dart';
 import '../providers/tang_kinh_cac_provider.dart';
 import '../services/reading_goal_api.dart';
 
-/// /tang-kinh-cac/ke-hoach-doc (Tầng 3): Tổng quan = tiến độ năm hiện tại (sách / mục tiêu + thanh, trang đã đọc, ghi chú)
-/// → khung "Đặt mục tiêu" (số sách, ghi chú). Form chỉ có 2 ô như web — web không có ô targetPages dù model/API có.
-class KeHoachDocScreen extends ConsumerStatefulWidget {
-  const KeHoachDocScreen({super.key});
+/// Tầng 3 (Kế hoạch đọc) trong khung "Nội dung" của Tàng Kinh Các: tiến độ năm [year] (sách / mục tiêu + thanh, trang đã
+/// đọc, ghi chú) → "Đặt mục tiêu" (số sách, ghi chú). Form chỉ có 2 ô như web — web không có ô targetPages dù model/API có.
+/// Không có vỏ cuộn riêng — khung chứa tự cuộn.
+class ReadingGoalView extends ConsumerStatefulWidget {
+  const ReadingGoalView({super.key, required this.year});
+
+  final int year;
 
   @override
-  ConsumerState<KeHoachDocScreen> createState() => _KeHoachDocScreenState();
+  ConsumerState<ReadingGoalView> createState() => _ReadingGoalViewState();
 }
 
-class _KeHoachDocScreenState extends ConsumerState<KeHoachDocScreen> {
-  final _year = DateTime.now().year;
+class _ReadingGoalViewState extends ConsumerState<ReadingGoalView> {
+  late final _year = widget.year;
   final _targetBooks = TextEditingController();
   final _note = TextEditingController();
   bool _saving = false;
@@ -68,21 +70,20 @@ class _KeHoachDocScreenState extends ConsumerState<KeHoachDocScreen> {
   Widget build(BuildContext context) {
     final goal = ref.watch(readingGoalProvider(_year));
 
-    return DesignPage(
-      title: 'Kế hoạch đọc',
-      backFallback: '/tang-kinh-cac',
-      onRefresh: () => ref.refresh(readingGoalProvider(_year).future),
-      overview: OverviewBlock(
-        title: 'Tiến độ $_year',
-        labelWidth: 90,
-        rows: switch (goal) {
-          AsyncData(:final value) => _progressRows(value),
-          AsyncError() => [OverviewRow.muted(label: 'Sách', text: 'Không tải được tiến độ.')],
-          _ => [OverviewRow.muted(label: 'Sách', text: 'Đang tải…')],
-        },
-      ),
-      content: (context, _) => ListFrame(
-        child: Column(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 14,
+      children: [
+        OverviewBlock(
+          title: 'Tiến độ $_year',
+          labelWidth: 90,
+          rows: switch (goal) {
+            AsyncData(:final value) => _progressRows(value),
+            AsyncError() => [OverviewRow.muted(label: 'Sách', text: 'Không tải được tiến độ.')],
+            _ => [OverviewRow.muted(label: 'Sách', text: 'Đang tải…')],
+          },
+        ),
+        Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 10,
           children: [
@@ -119,7 +120,7 @@ class _KeHoachDocScreenState extends ConsumerState<KeHoachDocScreen> {
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 

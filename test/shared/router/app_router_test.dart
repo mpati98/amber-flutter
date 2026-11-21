@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
 import 'package:amber_flutter/features/auth/screens/login_screen.dart';
 import 'package:amber_flutter/features/du_do/screens/du_do_screen.dart';
-import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
-import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
 import 'package:amber_flutter/features/kieu_lau/models/alert.dart';
 import 'package:amber_flutter/features/kieu_lau/models/activity_log_entry.dart';
@@ -155,23 +154,36 @@ void main() {
     String location(ProviderContainer c) =>
         c.read(routerProvider).routeInformationProvider.value.uri.toString();
 
-    testWidgets(
-      'Tàng Kinh Các: /du-lieu-huan-luyen và /:logId là route thật (không rơi vào trang 404)',
-      (tester) async {
-        final c = await pumpApp(
-          tester,
-          token: 'saved-access',
-          extra: [trainingLogApiProvider.overrideWithValue(FakeApi())],
-        );
-        c.read(routerProvider).go('/tang-kinh-cac/du-lieu-huan-luyen');
+    testWidgets('Tàng Kinh Các một màn: route cũ của từng tầng (go và push) về /tang-kinh-cac?tang=…[&id=]', (tester) async {
+      final c = await pumpApp(
+        tester,
+        token: 'saved-access',
+        extra: [trainingLogApiProvider.overrideWithValue(FakeApi()), apiClientProvider.overrideWithValue(offlineDio())],
+      );
+      final router = c.read(routerProvider);
+      for (final (old, to, tang, id) in const [
+        ('/tang-kinh-cac/sach', '/tang-kinh-cac?tang=1', 1, null),
+        ('/tang-kinh-cac/tai-lieu', '/tang-kinh-cac?tang=2', 2, null),
+        ('/tang-kinh-cac/ke-hoach-doc', '/tang-kinh-cac?tang=3', 3, null),
+        ('/tang-kinh-cac/du-lieu-huan-luyen', '/tang-kinh-cac?tang=4', 4, null),
+        ('/tang-kinh-cac/du-lieu-huan-luyen/l1', '/tang-kinh-cac?tang=4&id=l1', 4, 'l1'),
+      ]) {
+        router.go(old);
         await tester.pumpAndSettle();
-        expect(find.byType(TrainingLogsScreen), findsOneWidget);
-        c.read(routerProvider).go('/tang-kinh-cac/du-lieu-huan-luyen/l1');
+        expect(location(c), to, reason: 'go $old');
+        router.go('/');
         await tester.pumpAndSettle();
-        expect(find.byType(TrainingLogDetailScreen), findsOneWidget);
-        expect(find.text('chi 45k ăn trưa Momo'), findsOneWidget);
-      },
-    );
+        unawaited(router.push(old));
+        await tester.pumpAndSettle();
+        final s = tester.widget<TangKinhCacScreen>(find.byType(TangKinhCacScreen));
+        expect((s.tang, s.id), (tang, id), reason: 'push $old');
+      }
+      // Link thẳng vào một dòng nhật ký: khung Nội dung mở đúng dòng đó.
+      router.go('/tang-kinh-cac?tang=4&id=l1');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('log-view-l1')), findsOneWidget);
+      expect(find.text('chi 45k ăn trưa Momo'), findsWidgets);
+    });
 
     testWidgets('mở app còn token → vào thẳng Dư Đồ', (tester) async {
       final c = await pumpApp(tester, token: 'saved-access');
@@ -190,12 +202,13 @@ void main() {
       'đang ở trong app, phiên hết hạn → tự về /login, nhớ trang đang xem',
       (tester) async {
         final c = await pumpApp(tester, token: 'saved-access');
-        c.read(routerProvider).push('/tang-kinh-cac/sach');
+        // Nhớ cả query (tầng / mục của Tàng Kinh Các).
+        c.read(routerProvider).push('/tang-kinh-cac?tang=1');
         await tester.pump();
         c.read(authControllerProvider.notifier).sessionExpired();
         await tester.pumpAndSettle();
         expect(find.byType(LoginScreen), findsOneWidget);
-        expect(location(c), '/login?from=%2Ftang-kinh-cac%2Fsach');
+        expect(location(c), '/login?from=%2Ftang-kinh-cac%3Ftang%3D1');
       },
     );
 

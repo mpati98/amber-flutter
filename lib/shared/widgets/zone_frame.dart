@@ -42,6 +42,9 @@ class ZoneFrame extends StatelessWidget {
   /// Chỉ thấy khi đã cuộn tới cuối, nội dung ngắn thì không tốn chỗ.
   static const chatClearance = 56.0;
 
+  /// Phần [header] cao tối đa chừng này chiều cao màn — vượt thì cuộn riêng.
+  static const headerMaxFraction = 0.3;
+
   Future<void> _openExpanded(BuildContext context) {
     return showGeneralDialog<void>(
       context: context,
@@ -189,7 +192,12 @@ class _FrameShellState extends State<_FrameShell> {
                 ],
               ),
             ),
-            if (f.header case final h?) Padding(padding: const EdgeInsets.only(right: 8, bottom: 8), child: h),
+            if (f.header case final h?)
+              // Đầu cố định cao tối đa nửa khung (khung thấp / chữ phóng to): vượt thì tự cuộn, phần thân luôn còn chỗ.
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * ZoneFrame.headerMaxFraction),
+                child: SingleChildScrollView(padding: const EdgeInsets.only(right: 8, bottom: 8), child: h),
+              ),
             Flexible(child: body),
           ],
         ),

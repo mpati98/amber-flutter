@@ -1,6 +1,7 @@
 import 'package:amber_flutter/features/du_lieu_huan_luyen/models/training_log.dart';
-import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_log_detail_screen.dart';
-import 'package:amber_flutter/features/du_lieu_huan_luyen/screens/training_logs_screen.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/screens/tang_kinh_cac_screen.dart';
+import 'package:amber_flutter/shared/theme/design_tokens.dart';
+import 'package:amber_flutter/shared/widgets/list_frame.dart';
 import 'package:amber_flutter/features/du_lieu_huan_luyen/services/training_log_api.dart';
 import 'package:amber_flutter/features/amber_brain/models/brain_models.dart';
 import 'package:amber_flutter/features/amber_brain/providers/brain_status_provider.dart';
@@ -140,9 +141,8 @@ class FakeApi extends TrainingLogApi {
   }
 }
 
-const base = '/tang-kinh-cac/du-lieu-huan-luyen';
-
-/// Cùng cấu trúc route như app_router.dart; [at] là phần sau [base] ('' = danh sách, '/l1' = chi tiết).
+/// Tàng Kinh Các tầng 4 (một màn): [at] '' = chưa chọn (Nội dung = dòng mới nhất), '/l1' = mở dòng l1 (`&id=l1`).
+/// 800 px: hai khung Danh sách | Nội dung cạnh nhau.
 Future<void> pumpScreens(
   WidgetTester tester,
   FakeApi api, {
@@ -152,19 +152,13 @@ Future<void> pumpScreens(
   tester.view.physicalSize = const Size(800, 2400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+  final id = at.isEmpty ? null : at.substring(1);
   final router = GoRouter(
-    initialLocation: base + at,
+    initialLocation: tkcLocation(4, id: id),
     routes: [
       GoRoute(
-        path: base,
-        builder: (_, _) => const TrainingLogsScreen(),
-        routes: [
-          GoRoute(
-            path: ':logId',
-            builder: (_, s) =>
-                TrainingLogDetailScreen(logId: s.pathParameters['logId']!),
-          ),
-        ],
+        path: '/tang-kinh-cac',
+        builder: (_, s) => TangKinhCacScreen(tang: tkcFloorOf(s.uri.queryParameters['tang']), id: s.uri.queryParameters['id']),
       ),
     ],
   );
@@ -180,6 +174,11 @@ Future<void> pumpScreens(
   );
   await tester.pumpAndSettle();
 }
+
+/// Khung Danh sách / Nội dung của màn.
+final listFrame = find.byKey(const ValueKey('zone-frame-Danh sách'));
+final contentFrame = find.byKey(const ValueKey('zone-frame-Nội dung'));
+Finder inContent(Finder f) => find.descendant(of: contentFrame, matching: f);
 
 Finder inRow(String id, String text) => find.descendant(
   of: find.byKey(ValueKey('log-$id')),
@@ -249,9 +248,9 @@ void main() {
         );
         expect(find.text('Trò chuyện: 1 · Thu chi: 2'), findsOneWidget);
         expect(
-          find.textContaining('10/10 17:30'),
+          find.descendant(of: listFrame, matching: find.textContaining('10/10 17:30')),
           findsNWidgets(2),
-        ); // 10:30Z = 17:30 giờ VN
+        ); // 10:30Z = 17:30 giờ VN (khung Nội dung bên cạnh cũng hiện thời điểm của dòng đang mở)
         expect(inRow('l1', 'chi 45k ăn trưa Momo'), findsOneWidget);
         expect(inRow('l1', 'Thu chi'), findsOneWidget);
         expect(inRow('l1', 'Đúng'), findsOneWidget);
@@ -404,11 +403,13 @@ void main() {
       expect(find.byKey(const ValueKey('log-l1')), findsOneWidget);
     });
 
-    testWidgets('bấm một dòng mở chi tiết', (tester) async {
+    testWidgets('chưa chọn → khung Nội dung mở dòng mới nhất; bấm một dòng → Nội dung đổi sang dòng đó', (tester) async {
       await pumpScreens(tester, FakeApi());
-      await tester.tap(find.byKey(const ValueKey('log-l1')));
+      expect(inContent(find.byKey(const ValueKey('log-view-l1'))), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('log-l2')));
       await tester.pumpAndSettle();
-      expect(find.text('Chi tiết nhật ký'), findsOneWidget);
+      expect(inContent(find.byKey(const ValueKey('log-view-l2'))), findsOneWidget);
+      expect(tester.widget<FrameTile>(find.byKey(const ValueKey('log-l2'))).borderColor, DesignColors.gold, reason: 'dòng đang mở viền vàng');
     });
   });
 
@@ -417,7 +418,7 @@ void main() {
       tester,
     ) async {
       await pumpScreens(tester, FakeApi(), at: '/l1');
-      expect(find.text('chi 45k ăn trưa Momo'), findsOneWidget);
+      expect(inContent(find.text('chi 45k ăn trưa Momo')), findsOneWidget);
       expect(
         find.textContaining('Ăn uống'),
         findsOneWidget,
@@ -469,20 +470,20 @@ void main() {
     testWidgets('Đúng/Sai gọi feedback và cập nhật nút', (tester) async {
       final api = FakeApi();
       await pumpScreens(tester, api, at: '/l1');
-      await tester.tap(find.text('Đúng'));
+      await tester.tap(inContent(find.text('Đúng')));
       await tester.pumpAndSettle();
       expect(api.calls, ['feedback:l1:true']);
       expect(
-        find.byIcon(Icons.thumb_up),
+        inContent(find.byIcon(Icons.thumb_up)),
         findsOneWidget,
       ); // outcome accepted -> icon đặc
-      await tester.tap(find.text('Sai'));
+      await tester.tap(inContent(find.text('Sai')));
       await tester.pumpAndSettle();
       expect(api.calls, ['feedback:l1:true', 'feedback:l1:false']);
-      expect(find.byIcon(Icons.thumb_down), findsOneWidget);
+      expect(inContent(find.byIcon(Icons.thumb_down)), findsOneWidget);
     });
 
-    testWidgets('đánh giá làm mới thống kê và danh sách ở màn bên dưới', (
+    testWidgets('đánh giá làm mới thống kê và danh sách (cùng màn, khung Danh sách bên cạnh)', (
       tester,
     ) async {
       final api = FakeApi();
@@ -490,12 +491,8 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('log-l1')));
       await tester.pumpAndSettle();
       final (stats, lists) = (api.statsCalls, api.listCalls.length);
-      await tester.tap(find.text('Đúng'));
+      await tester.tap(inContent(find.text('Đúng')));
       await tester.pumpAndSettle();
-      // Riverpod tạm dừng provider của màn đang bị che: quay lại danh sách là nó tải lại. Nút ← của thanh trên mới (pageBack chỉ tìm BackButton của AppBar).
-      await tester.tap(find.byKey(const ValueKey('design-top-bar-back')));
-      await tester.pumpAndSettle();
-      expect(find.text('Chi tiết nhật ký'), findsNothing);
       expect(api.statsCalls, greaterThan(stats));
       expect(api.listCalls.length, greaterThan(lists));
     });
@@ -527,10 +524,10 @@ void main() {
     ) async {
       final api = FakeApi()..failActions = true;
       await pumpScreens(tester, api, at: '/l1');
-      await tester.tap(find.text('Đúng'));
+      await tester.tap(inContent(find.text('Đúng')));
       await tester.pumpAndSettle();
       expect(find.text('Không gửi được đánh giá.'), findsOneWidget);
-      expect(find.byIcon(Icons.thumb_up), findsNothing);
+      expect(inContent(find.byIcon(Icons.thumb_up)), findsNothing);
     });
 
     testWidgets('lỗi khi đổi cờ loại → báo, công tắc không đổi', (
@@ -559,11 +556,12 @@ void main() {
         await tester.tap(find.text(t));
         await tester.pumpAndSettle();
       }
-      expect(find.byType(TextField), findsNothing);
-      expect(find.byType(TextFormField), findsNothing);
+      // Ô tìm của khung Danh sách không tính: chỉ xét khung Nội dung.
+      expect(inContent(find.byType(TextField)), findsNothing);
+      expect(inContent(find.byType(TextFormField)), findsNothing);
       // SelectableText dựng EditableText chỉ-đọc để chọn/chép; không được có ô nhập nào ghi được.
       final editables = tester.widgetList<EditableText>(
-        find.byType(EditableText),
+        inContent(find.byType(EditableText)),
       );
       expect(editables, isNotEmpty);
       expect(editables.every((e) => e.readOnly), isTrue);
@@ -683,7 +681,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('invalid_request'), findsNothing);
-      expect(find.text('Chi tiết nhật ký'), findsOneWidget);
+      expect(inContent(find.byKey(const ValueKey('log-view-l1'))), findsOneWidget);
     });
   });
 }

@@ -11,6 +11,12 @@ import 'package:amber_flutter/features/nghi_su_duong/models/overview.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/project_summary.dart';
 import 'package:amber_flutter/features/nghi_su_duong/models/routine.dart';
 import 'package:amber_flutter/features/nghi_su_duong/services/nghi_su_duong_api.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/models/document.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/models/publication.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/models/reading_goal.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/services/document_api.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/services/publication_api.dart';
+import 'package:amber_flutter/features/tang_kinh_cac/services/reading_goal_api.dart';
 import 'package:amber_flutter/shared/providers/auth_provider.dart';
 import 'package:amber_flutter/shared/services/token_storage.dart';
 import 'package:dio/dio.dart';
@@ -65,6 +71,27 @@ class _FakeNsdApi extends NghiSuDuongApi {
   Future<List<Routine>> getRoutines({String? date}) async => const [];
 }
 
+class _FakePublicationApi extends PublicationApi {
+  _FakePublicationApi() : super(Dio());
+
+  @override
+  Future<List<Publication>> getPublications({PublicationStatus? status, PublicationFormat? format, String? search}) async => const [];
+}
+
+class _FakeDocumentApi extends DocumentApi {
+  _FakeDocumentApi() : super(Dio());
+
+  @override
+  Future<List<Document>> getDocuments({DocumentType? type, String? search, bool? pinned, String? topicId}) async => const [];
+}
+
+class _FakeGoalApi extends ReadingGoalApi {
+  _FakeGoalApi() : super(Dio());
+
+  @override
+  Future<ReadingGoal> getReadingGoal(int year) async => ReadingGoal(year: year, booksRead: 0, pagesRead: 0);
+}
+
 class _Auth extends AuthController {
   @override
   Future<AuthState> build() async => const Authenticated({'id': 'u', 'email': 'me@example.invalid'});
@@ -86,6 +113,9 @@ void main() {
         musicApiProvider.overrideWithValue(_FakeMusicApi()),
         kieuLauApiProvider.overrideWithValue(_FakeKieuLauApi()),
         nghiSuDuongApiProvider.overrideWithValue(_FakeNsdApi()),
+        publicationApiProvider.overrideWithValue(_FakePublicationApi()),
+        documentApiProvider.overrideWithValue(_FakeDocumentApi()),
+        readingGoalApiProvider.overrideWithValue(_FakeGoalApi()),
         brainStatusProvider.overrideWith(() => FixedBrainStatus()),
         authControllerProvider.overrideWith(_Auth.new),
       ],
@@ -94,9 +124,9 @@ void main() {
     bridge.receive(const WorldReady());
     await tester.pumpAndSettle();
     expect(api.summaries, 1, reason: 'cảnh sẵn sàng → nạp dữ liệu');
-    final notices = calls.where((c) => c.$1 == 'setTowerNotices').single.$2;
-    expect(notices.first, 'nghisu');
-    expect((notices.last as List).map((n) => (n as Map)['lvl']), ['bad'], reason: 'cùng nguồn với khung Cần chú ý: âm quỹ');
+    final notices = {for (final c in calls.where((c) => c.$1 == 'setTowerNotices')) c.$2.first: c.$2.last as List};
+    expect(notices['nghisu']!.map((n) => (n as Map)['lvl']), ['bad'], reason: 'cùng nguồn với khung Cần chú ý: âm quỹ');
+    expect(notices['tangkinh']!.map((n) => (n as Map)['text']), ['Chưa đặt mục tiêu đọc năm ${DateTime.now().year}']);
 
     bridge.receive(const WorldNavigate('/finance'));
     await tester.pumpAndSettle();
@@ -120,6 +150,9 @@ void main() {
         musicApiProvider.overrideWithValue(_FakeMusicApi()),
         kieuLauApiProvider.overrideWithValue(_FakeKieuLauApi()),
         nghiSuDuongApiProvider.overrideWithValue(_FakeNsdApi()),
+        publicationApiProvider.overrideWithValue(_FakePublicationApi()),
+        documentApiProvider.overrideWithValue(_FakeDocumentApi()),
+        readingGoalApiProvider.overrideWithValue(_FakeGoalApi()),
         brainStatusProvider.overrideWith(() => FixedBrainStatus()),
         authControllerProvider.overrideWith(_Auth.new),
       ],

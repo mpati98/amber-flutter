@@ -39,7 +39,8 @@ class ToolStatus extends StatelessWidget {
     return Row(mainAxisSize: MainAxisSize.min, children: [
       Icon(icon, size: 14, color: color),
       const SizedBox(width: 4),
-      Text(label, style: TextStyle(fontSize: 11, color: color)),
+      // Co được khi khung hẹp / chữ phóng to (khung Nội dung của Tàng Kinh Các trên điện thoại).
+      Flexible(child: Text(label, style: TextStyle(fontSize: 11, color: color))),
     ]);
   }
 }
