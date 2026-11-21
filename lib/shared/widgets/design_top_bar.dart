@@ -10,7 +10,14 @@ import 'app_bar_back.dart';
 /// [trailing] mặc định là logo Amber tĩnh; các màn đã đăng nhập truyền `AccountMenu` (logo bấm ra menu tài khoản).
 /// Nội dung thanh căn theo cùng cột với thân màn ([DesignLayout]) để trên web rộng không bị dạt ra hai mép.
 class DesignTopBar extends StatelessWidget implements PreferredSizeWidget {
-  const DesignTopBar({super.key, required this.title, this.backFallback, this.trailing, this.titleWidget});
+  const DesignTopBar({
+    super.key,
+    required this.title,
+    this.backFallback,
+    this.trailing,
+    this.titleWidget,
+    this.fullWidth = false,
+  });
 
   final String title;
 
@@ -18,6 +25,9 @@ class DesignTopBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? titleWidget;
   final String? backFallback;
   final Widget? trailing;
+
+  /// true = trải hết bề ngang màn (lề 8), cho màn thân full width ([ZoneScaffold]); false = căn theo cột [DesignLayout].
+  final bool fullWidth;
 
   static const height = 52.0;
 
@@ -39,9 +49,9 @@ class DesignTopBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           alignment: Alignment.center,
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: DesignLayout.maxContentWidth(width)),
+            constraints: BoxConstraints(maxWidth: fullWidth ? double.infinity : DesignLayout.maxContentWidth(width)),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: DesignLayout.gutter(width)),
+              padding: EdgeInsets.symmetric(horizontal: fullWidth ? 8 : DesignLayout.gutter(width)),
               child: Row(
                 children: [
                   if (fallback != null)

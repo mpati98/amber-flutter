@@ -6,9 +6,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../shared/theme/design_tokens.dart';
 import '../../../shared/widgets/app_toast.dart';
-import '../../../shared/widgets/design_page.dart';
 import '../../../shared/widgets/list_frame.dart';
 import '../../../shared/widgets/overview_block.dart';
+import '../../../shared/widgets/zone_frame.dart';
+import '../../../shared/widgets/zone_scaffold.dart';
 import '../models/alert.dart';
 import '../models/feed_article.dart';
 import '../models/feed_source.dart';
@@ -46,8 +47,10 @@ bool _matches(KieuLauFilter f, String source) => switch (f) {
   KieuLauFilter.news => false,
 };
 
-/// /kieu-lau theo design/ref/kieu-lau.html: Tổng quan (Nhạc · Cần chú ý) → khung có chip lọc:
-/// nhật ký gần đây đã gộp ([groupActivity]) hoặc Tin tức (bài RSS + quản lý nguồn). Trình phát mini cố định dưới đáy.
+/// /kieu-lau theo bố cục "vừa một màn" ([ZoneScaffold], không cuộn trang): khung Tổng quan (Nhạc) · Cần chú ý ·
+/// Hoạt động (chip lọc cố định đầu khung: nhật ký đã gộp [groupActivity] hoặc Tin tức RSS; mở rộng toàn màn được).
+/// Web rộng: cột trái (Tổng quan vừa nội dung + Cần chú ý) | cột phải gấp đôi (Hoạt động). Điện thoại: 3 tab.
+/// Trình phát mini cố định dưới đáy.
 class KieuLauScreen extends ConsumerStatefulWidget {
   const KieuLauScreen({super.key});
 
@@ -56,49 +59,91 @@ class KieuLauScreen extends ConsumerStatefulWidget {
 }
 
 class _KieuLauScreenState extends ConsumerState<KieuLauScreen> {
-  KieuLauFilter _filter = KieuLauFilter.all;
+  // ValueNotifier (không phải setState): khung Hoạt động mở rộng là route riêng, phải đổi theo chip cùng lúc với khung gốc.
+  final _filter = ValueNotifier(KieuLauFilter.all);
+
+  @override
+  void dispose() {
+    _filter.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    ref.invalidate(notificationsProvider);
+    if (_filter.value == KieuLauFilter.news) {
+      ref.invalidate(feedSourcesProvider);
+      ref.invalidate(feedArticlesProvider);
+    }
+    await ref.read(notificationsProvider.future).then<void>((_) {}, onError: (_) {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DesignPage(
+    return ZoneScaffold(
       title: 'Kiều Lâu',
-      onRefresh: () async {
-        ref.invalidate(notificationsProvider);
-        if (_filter == KieuLauFilter.news) {
-          ref.invalidate(feedSourcesProvider);
-          ref.invalidate(feedArticlesProvider);
-        }
-        await ref.read(notificationsProvider.future).then<void>((_) {}, onError: (_) {});
-      },
-      overview: OverviewBlock(
-        title: 'Tổng quan',
-        labelWidth: 90,
-        rows: [
-          OverviewRow(
-            key: const ValueKey('kl-music'),
-            label: 'Nhạc',
-            onTap: () => context.push('/kieu-lau/nhac'),
-            child: const Text('Tải lên và phát bộ sưu tập MP3 riêng ›', style: DesignText.muted),
-          ),
-          const OverviewRow(label: 'Cần chú ý', child: _Alerts()),
-        ],
-      ),
-      content: (context, _) => ListFrame(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 8,
-          children: [
-            DesignChipRow<KieuLauFilter>(
-              items: _filters,
-              selected: _filter,
-              onSelected: (f) => setState(() => _filter = f),
-            ),
-            if (_filter == KieuLauFilter.news) const _News() else _Activity(filter: _filter),
-          ],
-        ),
-      ),
-      hint: 'Chạm vào một mục để xem chi tiết',
       bottomBar: MusicMiniPlayer(controller: ref.watch(musicPlayerProvider)),
+      wide: const ZoneRow([
+        ZoneColumn([ZoneCell.fit('overview'), ZoneCell('alerts')]),
+        ZoneCell('activity', flex: 2),
+      ]),
+      panes: [
+        ZonePane(
+          id: 'overview',
+          label: 'Tổng quan',
+          child: ZoneFrame(
+            title: 'Tổng quan',
+            childBuilder: (context, _) => OverviewRows(
+              labelWidth: 90,
+              rows: [
+                OverviewRow(
+                  key: const ValueKey('kl-music'),
+                  label: 'Nhạc',
+                  onTap: () => context.push('/kieu-lau/nhac'),
+                  child: const Text('Tải lên và phát bộ sưu tập MP3 riêng ›', style: DesignText.muted),
+                ),
+              ],
+            ),
+          ),
+        ),
+        ZonePane(
+          id: 'alerts',
+          label: 'Cần chú ý',
+          child: ZoneFrame(title: 'Cần chú ý', onRefresh: _refresh, childBuilder: (_, _) => const _Alerts()),
+        ),
+        ZonePane(
+          id: 'activity',
+          label: 'Hoạt động',
+          child: ZoneFrame(
+            title: 'Hoạt động',
+            expandable: true,
+            onRefresh: _refresh,
+            header: ValueListenableBuilder(
+              valueListenable: _filter,
+              builder: (_, filter, _) => DesignChipRow<KieuLauFilter>(
+                items: _filters,
+                selected: filter,
+                onSelected: (f) => _filter.value = f,
+              ),
+            ),
+            childBuilder: (_, _) => ValueListenableBuilder(
+              valueListenable: _filter,
+              builder: (_, filter, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 12,
+                children: [
+                  if (filter == KieuLauFilter.news) const _News() else _Activity(filter: filter),
+                  const Text(
+                    'Chạm vào một mục để xem chi tiết',
+                    key: ValueKey('kl-hint'),
+                    textAlign: TextAlign.center,
+                    style: DesignText.muted,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
